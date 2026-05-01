@@ -3,6 +3,7 @@
  * Email Template Class
  * 
  * Manages HTML email template and placeholder replacement.
+ * Supports flexible body content with markdown formatting.
  * 
  * @package Penalis_Emailer
  */
@@ -15,7 +16,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class Penalis_Email_Template
  * 
- * Handles email template rendering with placeholder replacement.
+ * Handles email template rendering with placeholder replacement and markdown support.
  */
 class Penalis_Email_Template {
     
@@ -34,7 +35,7 @@ class Penalis_Email_Template {
     private $template_option_key = 'penalis_email_template';
     
     /**
-     * Render email template with placeholder replacement
+     * Render email template with placeholder replacement (legacy method for auto emails)
      * 
      * @param array  $placeholders   Associative array of placeholder values
      * @param bool   $use_template   Whether to use template or custom message
@@ -51,7 +52,108 @@ class Penalis_Email_Template {
     }
     
     /**
+     * Render flexible email with custom body content
+     * Used for manual emails with markdown support
+     * 
+     * @param string $body_content   Plain text/markdown body content
+     * @param array  $user_data      User data for personalization (display_name, user_email, user_login)
+     * @return string Complete HTML email
+     */
+    public function render_flexible_email(string $body_content, array $user_data = []): string {
+        // Replace user placeholders first
+        $body_content = $this->replace_user_placeholders($body_content, $user_data);
+        
+        // Convert markdown to HTML
+        $body_html = $this->format_markdown_to_html($body_content);
+        
+        // Wrap in body container
+        $body_section = $this->get_body_wrapper_html($body_html);
+        
+        // Combine header + body + footer
+        return $this->get_header_html() . $body_section . $this->get_footer_html();
+    }
+    
+    /**
+     * Get email header HTML
+     * 
+     * @return string HTML header section
+     */
+    public function get_header_html(): string {
+        ob_start();
+        ?>
+<table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0" style="margin:0; padding:0;">
+<tr>
+<td align="center" style="padding: 20px 10px;">
+
+<!-- Main Container -->
+<table role="presentation" border="0" width="600" cellspacing="0" cellpadding="0" style="width:100%; max-width:600px; background-color:#FEFEFE; border-radius:8px; overflow:hidden; border:1px solid #e5e5e5;">
+<tr>
+<td>
+
+<!-- Header -->
+<table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td style="background-color:#f0f0f0; padding:16px;">
+<img src="<?php echo esc_url($this->logo_url); ?>" alt="Logo Penalis" width="130" style="display:block; border:0; height:auto;">
+</td>
+</tr>
+</table>
+        <?php
+        return ob_get_clean();
+    }
+    
+    /**
+     * Get email footer HTML
+     * 
+     * @return string HTML footer section
+     */
+    public function get_footer_html(): string {
+        ob_start();
+        ?>
+<!-- Footer -->
+<table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td style="background-color:#f0f0f0; padding:20px; font-size:12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#777777;">
+<p style="margin:0;"><i>Kamu menerima email ini karena terdaftar sebagai kontributor Penalis.<br>Jika ada pertanyaan atau kendala, kamu bisa menghubungi kami di admin@penalis.com</i></p>
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+</table>
+        <?php
+        return ob_get_clean();
+    }
+    
+    /**
+     * Get body wrapper HTML with custom content
+     * 
+     * @param string $body_html HTML content for body
+     * @return string Wrapped body HTML
+     */
+    public function get_body_wrapper_html(string $body_html): string {
+        ob_start();
+        ?>
+<!-- Body -->
+<table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding:20px; font-size:14px; color:#333333; line-height:1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<?php echo $body_html; ?>
+</td>
+</tr>
+</table>
+        <?php
+        return ob_get_clean();
+    }
+    
+    /**
      * Get email template HTML (from database or default)
+     * Legacy method for backward compatibility
      * 
      * @return string HTML email template
      */
@@ -156,6 +258,7 @@ class Penalis_Email_Template {
     
     /**
      * Replace placeholders in HTML with actual values
+     * Legacy method for auto-email templates
      * 
      * @param string $html         HTML template with placeholders
      * @param array  $placeholders Associative array of placeholder values
@@ -180,5 +283,204 @@ class Penalis_Email_Template {
         ];
         
         return str_replace($search, $replace, $html);
+    }
+    
+    /**
+     * Replace user-specific placeholders in content
+     * 
+     * @param string $content   Content with placeholders
+     * @param array  $user_data User data array (display_name, user_email, user_login)
+     * @return string Content with replaced placeholders
+     */
+    private function replace_user_placeholders(string $content, array $user_data): string {
+        $placeholders = [
+            '{NAMA_USER}' => isset($user_data['display_name']) ? $user_data['display_name'] : '',
+            '{EMAIL_USER}' => isset($user_data['user_email']) ? $user_data['user_email'] : '',
+            '{USERNAME}' => isset($user_data['user_login']) ? $user_data['user_login'] : '',
+            '{TANGGAL}' => date_i18n(get_option('date_format')),
+            '{SITE_NAME}' => get_bloginfo('name'),
+            '{SITE_URL}' => home_url()
+        ];
+        
+        return str_replace(array_keys($placeholders), array_values($placeholders), $content);
+    }
+    
+    /**
+     * Convert markdown-style text to HTML
+     * Supports: bold, italic, links, lists, paragraphs
+     * 
+     * @param string $text Plain text with markdown formatting
+     * @return string HTML formatted content
+     */
+    private function format_markdown_to_html(string $text): string {
+        // Normalize line endings
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        
+        // Split into lines for processing
+        $lines = explode("\n", $text);
+        $html = '';
+        $in_list = false;
+        $in_ordered_list = false;
+        $paragraph_buffer = '';
+        
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            
+            // Empty line - close any open tags and start new paragraph
+            if (empty($trimmed)) {
+                // Close any open lists
+                if ($in_list) {
+                    $html .= '</ul>';
+                    $in_list = false;
+                }
+                if ($in_ordered_list) {
+                    $html .= '</ol>';
+                    $in_ordered_list = false;
+                }
+                
+                // Add paragraph buffer if exists
+                if (!empty($paragraph_buffer)) {
+                    $html .= '<p style="margin:0 0 12px 0;">' . $this->format_inline_markdown(trim($paragraph_buffer)) . '</p>';
+                    $paragraph_buffer = '';
+                }
+                
+                continue;
+            }
+            
+            // Unordered list item (- item)
+            if (preg_match('/^[-*]\s+(.+)$/', $trimmed, $matches)) {
+                // Close ordered list if open
+                if ($in_ordered_list) {
+                    $html .= '</ol>';
+                    $in_ordered_list = false;
+                }
+                
+                // Add paragraph buffer before list
+                if (!empty($paragraph_buffer)) {
+                    $html .= '<p style="margin:0 0 12px 0;">' . $this->format_inline_markdown(trim($paragraph_buffer)) . '</p>';
+                    $paragraph_buffer = '';
+                }
+                
+                // Open list if not already open
+                if (!$in_list) {
+                    $html .= '<ul style="margin:0 0 12px 0; padding-left:20px;">';
+                    $in_list = true;
+                }
+                
+                $html .= '<li>' . $this->format_inline_markdown($matches[1]) . '</li>';
+                continue;
+            }
+            
+            // Ordered list item (1. item)
+            if (preg_match('/^\d+\.\s+(.+)$/', $trimmed, $matches)) {
+                // Close unordered list if open
+                if ($in_list) {
+                    $html .= '</ul>';
+                    $in_list = false;
+                }
+                
+                // Add paragraph buffer before list
+                if (!empty($paragraph_buffer)) {
+                    $html .= '<p style="margin:0 0 12px 0;">' . $this->format_inline_markdown(trim($paragraph_buffer)) . '</p>';
+                    $paragraph_buffer = '';
+                }
+                
+                // Open list if not already open
+                if (!$in_ordered_list) {
+                    $html .= '<ol style="margin:0 0 12px 0; padding-left:20px;">';
+                    $in_ordered_list = true;
+                }
+                
+                $html .= '<li>' . $this->format_inline_markdown($matches[1]) . '</li>';
+                continue;
+            }
+            
+            // Regular text - add to paragraph buffer
+            if ($in_list || $in_ordered_list) {
+                // Close lists before starting paragraph
+                if ($in_list) {
+                    $html .= '</ul>';
+                    $in_list = false;
+                }
+                if ($in_ordered_list) {
+                    $html .= '</ol>';
+                    $in_ordered_list = false;
+                }
+            }
+            
+            $paragraph_buffer .= ($paragraph_buffer ? ' ' : '') . $trimmed;
+        }
+        
+        // Close any remaining open tags
+        if ($in_list) {
+            $html .= '</ul>';
+        }
+        if ($in_ordered_list) {
+            $html .= '</ol>';
+        }
+        if (!empty($paragraph_buffer)) {
+            $html .= '<p style="margin:0 0 12px 0;">' . $this->format_inline_markdown(trim($paragraph_buffer)) . '</p>';
+        }
+        
+        return $html;
+    }
+    
+    /**
+     * Format inline markdown (bold, italic, links)
+     * 
+     * @param string $text Text with inline markdown
+     * @return string HTML formatted text
+     */
+    private function format_inline_markdown(string $text): string {
+        $link_placeholders = [];
+        $autolink_placeholders = [];
+        
+        // Process markdown links FIRST before escaping HTML: [text](url)
+        $text = preg_replace_callback(
+            '/\[([^\]]+)\]\(([^\)]+)\)/',
+            function($matches) use (&$link_placeholders) {
+                $link_text = $matches[1];
+                $url = $matches[2];
+                $placeholder = '{{MDLINK' . count($link_placeholders) . '}}';
+                $link_placeholders[$placeholder] = '<a href="' . esc_url($url) . '" style="color:#3D55EF; text-decoration:underline;" target="_blank">' . esc_html($link_text) . '</a>';
+                return $placeholder;
+            },
+            $text
+        );
+        
+        // Auto-link URLs (http:// or https://) - also before escaping
+        $text = preg_replace_callback(
+            '/(https?:\/\/[^\s<\[{]+)/',
+            function($matches) use (&$autolink_placeholders) {
+                $url = $matches[1];
+                $placeholder = '{{AUTOLINK' . count($autolink_placeholders) . '}}';
+                $autolink_placeholders[$placeholder] = '<a href="' . esc_url($url) . '" style="color:#3D55EF; text-decoration:underline;" target="_blank">' . esc_html($url) . '</a>';
+                return $placeholder;
+            },
+            $text
+        );
+        
+        // NOW escape HTML for the rest of the text
+        $text = esc_html($text);
+        
+        // Bold: **text** or __text__
+        $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
+        $text = preg_replace('/__(.+?)__/', '<strong>$1</strong>', $text);
+        
+        // Italic: *text* or _text_ (but not in URLs or already processed bold)
+        $text = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/', '<em>$1</em>', $text);
+        $text = preg_replace('/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/', '<em>$1</em>', $text);
+        
+        // Replace link placeholders with actual HTML
+        foreach ($link_placeholders as $placeholder => $html) {
+            $text = str_replace($placeholder, $html, $text);
+        }
+        
+        // Replace autolink placeholders with actual HTML
+        foreach ($autolink_placeholders as $placeholder => $html) {
+            $text = str_replace($placeholder, $html, $text);
+        }
+        
+        return $text;
     }
 }

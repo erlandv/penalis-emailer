@@ -37,7 +37,7 @@ function penalis_emailer_init() {
     $template = new Penalis_Email_Template();
     $logger = new Penalis_Email_Logger();
     $sender = new Penalis_Email_Sender($template, $logger);
-    $admin = new Penalis_Admin_Interface($sender, $template);
+    $admin = new Penalis_Admin_Interface($sender, $template, $logger);
     
     // Register hooks
     add_action('transition_post_status', [$sender, 'handle_post_status_transition'], 10, 3);

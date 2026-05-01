@@ -36,6 +36,13 @@ class Penalis_Admin_Interface {
     private $email_template;
     
     /**
+     * Email logger instance
+     *
+     * @var Penalis_Email_Logger
+     */
+    private $email_logger;
+    
+    /**
      * Admin page slug
      *
      * @var string
@@ -61,10 +68,16 @@ class Penalis_Admin_Interface {
      *
      * @param Penalis_Email_Sender   $email_sender   Email sender instance
      * @param Penalis_Email_Template $email_template Email template instance
+     * @param Penalis_Email_Logger   $email_logger   Email logger instance
      */
-    public function __construct(Penalis_Email_Sender $email_sender, Penalis_Email_Template $email_template) {
+    public function __construct(
+        Penalis_Email_Sender $email_sender, 
+        Penalis_Email_Template $email_template,
+        Penalis_Email_Logger $email_logger
+    ) {
         $this->email_sender = $email_sender;
         $this->email_template = $email_template;
+        $this->email_logger = $email_logger;
     }
     
     /**
@@ -78,6 +91,7 @@ class Penalis_Admin_Interface {
         add_action('admin_post_penalis_save_template', [$this, 'handle_template_save']);
         add_action('admin_post_penalis_reset_template', [$this, 'handle_template_reset']);
         add_action('admin_notices', [$this, 'show_admin_notices']);
+        add_action('wp_ajax_penalis_preview_email', [$this, 'ajax_preview_email']);
     }
     
     /**
@@ -118,6 +132,48 @@ class Penalis_Admin_Interface {
             wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
         }
         
+        // Get current tab
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'compose';
+        
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Penalis Email', 'penalis-emailer'); ?></h1>
+            
+            <!-- Tabs -->
+            <h2 class="nav-tab-wrapper">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $this->page_slug . '&tab=compose')); ?>" 
+                   class="nav-tab <?php echo $current_tab === 'compose' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $this->page_slug . '&tab=history')); ?>" 
+                   class="nav-tab <?php echo $current_tab === 'history' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Email History', 'penalis-emailer'); ?>
+                </a>
+            </h2>
+            
+            <div class="tab-content" style="margin-top: 20px;">
+                <?php
+                switch ($current_tab) {
+                    case 'history':
+                        $this->render_history_tab();
+                        break;
+                    case 'compose':
+                    default:
+                        $this->render_compose_tab();
+                        break;
+                }
+                ?>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render compose email tab
+     *
+     * @return void
+     */
+    private function render_compose_tab(): void {
         // Get current page for pagination
         $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         
@@ -127,17 +183,15 @@ class Penalis_Admin_Interface {
         $total_pages = ceil($total_users / $this->users_per_page);
         
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html__('Penalis Email', 'penalis-emailer'); ?></h1>
-            
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <div class="penalis-compose-form">
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
                 <?php wp_nonce_field('penalis_send_email', 'penalis_email_nonce'); ?>
                 <input type="hidden" name="action" value="penalis_send_email">
                 
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?></label>
+                            <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?> <span class="required">*</span></label>
                         </th>
                         <td>
                             <input type="text" 
@@ -151,48 +205,43 @@ class Penalis_Admin_Interface {
                     
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Message Type', 'penalis-emailer'); ?>
+                            <label for="body"><?php echo esc_html__('Email Body', 'penalis-emailer'); ?> <span class="required">*</span></label>
                         </th>
                         <td>
-                            <label>
-                                <input type="radio" 
-                                       name="message_type" 
-                                       value="template" 
-                                       checked 
-                                       id="message_type_template">
-                                <?php echo esc_html__('Use Default Template', 'penalis-emailer'); ?>
-                            </label>
-                            <br>
-                            <label>
-                                <input type="radio" 
-                                       name="message_type" 
-                                       value="custom" 
-                                       id="message_type_custom">
-                                <?php echo esc_html__('Use Custom Message', 'penalis-emailer'); ?>
-                            </label>
-                        </td>
-                    </tr>
-                    
-                    <tr id="custom-message-row" style="display:none;">
-                        <th scope="row">
-                            <label for="custom_message"><?php echo esc_html__('Custom Message', 'penalis-emailer'); ?></label>
-                        </th>
-                        <td>
-                            <textarea name="custom_message" 
-                                      id="custom_message" 
-                                      rows="10" 
-                                      cols="50" 
-                                      class="large-text"
-                                      placeholder="<?php echo esc_attr__('Enter your custom message (HTML allowed)', 'penalis-emailer'); ?>"></textarea>
-                            <p class="description">
-                                <?php echo esc_html__('You can use HTML in your custom message.', 'penalis-emailer'); ?>
-                            </p>
+                            <textarea name="body" 
+                                      id="body" 
+                                      rows="15" 
+                                      class="large-text code"
+                                      required
+                                      style="font-family: monospace;"
+                                      placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"></textarea>
+                            
+                            <div class="description" style="margin-top: 10px;">
+                                <strong><?php echo esc_html__('Formatting Tips:', 'penalis-emailer'); ?></strong>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    <li><code>**bold**</code> atau <code>__bold__</code> → <strong>bold text</strong></li>
+                                    <li><code>*italic*</code> atau <code>_italic_</code> → <em>italic text</em></li>
+                                    <li><code>[link text](url)</code> → link</li>
+                                    <li><code>- item</code> → bullet list</li>
+                                    <li><code>1. item</code> → numbered list</li>
+                                    <li>Enter 2x untuk paragraf baru</li>
+                                </ul>
+                                <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    <li><code>{NAMA_USER}</code> → Nama penerima</li>
+                                    <li><code>{EMAIL_USER}</code> → Email penerima</li>
+                                    <li><code>{USERNAME}</code> → Username penerima</li>
+                                    <li><code>{TANGGAL}</code> → Tanggal hari ini</li>
+                                    <li><code>{SITE_NAME}</code> → Nama website</li>
+                                    <li><code>{SITE_URL}</code> → URL website</li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
                     
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?>
+                            <?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?> <span class="required">*</span>
                         </th>
                         <td>
                             <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
@@ -220,7 +269,7 @@ class Penalis_Admin_Interface {
                             <?php if ($total_pages > 1): ?>
                                 <div style="margin-top: 10px;">
                                     <?php
-                                    $base_url = admin_url('admin.php?page=' . $this->page_slug);
+                                    $base_url = admin_url('admin.php?page=' . $this->page_slug . '&tab=compose');
                                     
                                     if ($current_page > 1):
                                         $prev_url = add_query_arg('paged', $current_page - 1, $base_url);
@@ -253,21 +302,32 @@ class Penalis_Admin_Interface {
                     </tr>
                 </table>
                 
-                <?php submit_button(__('Send Emails', 'penalis-emailer')); ?>
+                <p class="submit">
+                    <button type="button" id="preview-email-btn" class="button">
+                        <?php echo esc_html__('Preview Email', 'penalis-emailer'); ?>
+                    </button>
+                    
+                    <?php submit_button(__('Send Email', 'penalis-emailer'), 'primary', 'submit', false); ?>
+                </p>
             </form>
+        </div>
+        
+        <!-- Preview Modal -->
+        <div id="email-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000;">
+            <div style="position:relative; width:90%; max-width:800px; height:90%; margin:2% auto; background:#fff; border-radius:5px; overflow:hidden;">
+                <div style="padding:20px; background:#f1f1f1; border-bottom:1px solid #ddd;">
+                    <h2 style="margin:0; display:inline-block;"><?php echo esc_html__('Email Preview', 'penalis-emailer'); ?></h2>
+                    <button type="button" id="close-preview-modal" style="float:right; font-size:20px; background:none; border:none; cursor:pointer;">&times;</button>
+                </div>
+                <div id="preview-loading" style="padding:40px; text-align:center; display:none;">
+                    <p><?php echo esc_html__('Loading preview...', 'penalis-emailer'); ?></p>
+                </div>
+                <iframe id="email-preview-iframe" style="width:100%; height:calc(100% - 70px); border:none;"></iframe>
+            </div>
         </div>
         
         <script type="text/javascript">
         jQuery(document).ready(function($) {
-            // Toggle custom message field
-            $('input[name="message_type"]').on('change', function() {
-                if ($('#message_type_custom').is(':checked')) {
-                    $('#custom-message-row').show();
-                } else {
-                    $('#custom-message-row').hide();
-                }
-            });
-            
             // Select all users functionality
             $('#select-all-users').on('change', function() {
                 $('.user-checkbox').prop('checked', $(this).is(':checked'));
@@ -278,8 +338,124 @@ class Penalis_Admin_Interface {
                 var allChecked = $('.user-checkbox:checked').length === $('.user-checkbox').length;
                 $('#select-all-users').prop('checked', allChecked);
             });
+            
+            // Preview email
+            $('#preview-email-btn').on('click', function() {
+                var body = $('#body').val();
+                
+                if (!body) {
+                    alert('<?php echo esc_js(__('Please enter email body first.', 'penalis-emailer')); ?>');
+                    return;
+                }
+                
+                $('#email-preview-modal').show();
+                $('#preview-loading').show();
+                $('#email-preview-iframe').hide();
+                
+                $.post(ajaxurl, {
+                    action: 'penalis_preview_email',
+                    body: body,
+                    nonce: '<?php echo wp_create_nonce('penalis_preview_email'); ?>'
+                }, function(response) {
+                    $('#preview-loading').hide();
+                    $('#email-preview-iframe').show();
+                    
+                    if (response.success) {
+                        var iframe = document.getElementById('email-preview-iframe');
+                        iframe.contentWindow.document.open();
+                        iframe.contentWindow.document.write(response.data.html);
+                        iframe.contentWindow.document.close();
+                    } else {
+                        alert('<?php echo esc_js(__('Failed to generate preview.', 'penalis-emailer')); ?>');
+                        $('#email-preview-modal').hide();
+                    }
+                });
+            });
+            
+            // Close preview modal
+            $('#close-preview-modal, #email-preview-modal').on('click', function(e) {
+                if (e.target === this) {
+                    $('#email-preview-modal').hide();
+                }
+            });
         });
         </script>
+        <?php
+    }
+    
+    /**
+     * Render email history tab
+     *
+     * @return void
+     */
+    private function render_history_tab(): void {
+        $log_entries = $this->email_logger->get_manual_email_log(50);
+        
+        ?>
+        <div class="penalis-history-list">
+            <h2><?php echo esc_html__('Email History', 'penalis-emailer'); ?></h2>
+            
+            <?php if (empty($log_entries)): ?>
+                <p><?php echo esc_html__('No emails sent yet.', 'penalis-emailer'); ?></p>
+            <?php else: ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
+                            <th><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
+                            <th><?php echo esc_html__('Sent By', 'penalis-emailer'); ?></th>
+                            <th><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
+                            <th><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($log_entries as $entry): ?>
+                            <?php
+                            // Handle both old and new log format
+                            $sent_time = isset($entry['sent_at']) ? $entry['sent_at'] : (isset($entry['timestamp']) ? $entry['timestamp'] : 0);
+                            $recipient_count = isset($entry['recipient_count']) ? $entry['recipient_count'] : 1;
+                            $sent_by_id = isset($entry['sent_by']) ? $entry['sent_by'] : 0;
+                            $sent_by_user = $sent_by_id ? get_userdata($sent_by_id) : null;
+                            $body_preview = isset($entry['body_preview']) ? $entry['body_preview'] : '';
+                            ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($entry['subject']); ?></strong>
+                                    <?php if (!empty($body_preview)): ?>
+                                        <br>
+                                        <small style="color: #666;"><?php echo esc_html($body_preview); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo esc_html($recipient_count); ?> <?php echo esc_html__('users', 'penalis-emailer'); ?></td>
+                                <td>
+                                    <?php 
+                                    if ($sent_by_user) {
+                                        echo esc_html($sent_by_user->display_name);
+                                    } else {
+                                        echo esc_html__('Unknown', 'penalis-emailer');
+                                    }
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $sent_time)); ?>
+                                    <br>
+                                    <small style="color: #666;">
+                                        <?php echo esc_html(human_time_diff($sent_time, current_time('timestamp'))); ?> <?php echo esc_html__('ago', 'penalis-emailer'); ?>
+                                    </small>
+                                </td>
+                                <td>
+                                    <span style="color: #46b450;">●</span> <?php echo esc_html__('Sent', 'penalis-emailer'); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <p class="description">
+                    <?php echo esc_html__('Showing last 50 emails. Older entries are automatically archived.', 'penalis-emailer'); ?>
+                </p>
+            <?php endif; ?>
+        </div>
         <?php
     }
     
@@ -303,21 +479,21 @@ class Penalis_Admin_Interface {
             return;
         }
         
+        if (empty($sanitized['body'])) {
+            $this->redirect_with_notice('error', __('Email body is required.', 'penalis-emailer'));
+            return;
+        }
+        
         if (empty($sanitized['user_ids'])) {
             $this->redirect_with_notice('error', __('Please select at least one recipient.', 'penalis-emailer'));
             return;
         }
         
-        // Determine if using template or custom message
-        $use_template = ($sanitized['message_type'] === 'template');
-        $custom_message = $use_template ? '' : $sanitized['custom_message'];
-        
-        // Send emails
+        // Send emails using flexible template
         $results = $this->email_sender->send_manual_email(
             $sanitized['subject'],
             $sanitized['user_ids'],
-            $custom_message,
-            $use_template
+            $sanitized['body']
         );
         
         // Prepare notice message
@@ -338,6 +514,38 @@ class Penalis_Admin_Interface {
             $message = __('Failed to send emails. Please check your configuration.', 'penalis-emailer');
             $this->redirect_with_notice('error', $message);
         }
+    }
+    
+    /**
+     * AJAX handler for email preview
+     *
+     * @return void
+     */
+    public function ajax_preview_email(): void {
+        // Check nonce
+        check_ajax_referer('penalis_preview_email', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        
+        if (empty($body)) {
+            wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
+        }
+        
+        // Generate preview with sample user data
+        $sample_user_data = [
+            'display_name' => 'John Doe',
+            'user_email' => 'john@example.com',
+            'user_login' => 'johndoe'
+        ];
+        
+        $preview_html = $this->email_template->render_flexible_email($body, $sample_user_data);
+        
+        wp_send_json_success(['html' => $preview_html]);
     }
     
     /**
@@ -385,11 +593,10 @@ class Penalis_Admin_Interface {
     private function sanitize_inputs(array $post_data): array {
         return [
             'subject' => sanitize_text_field($post_data['subject'] ?? ''),
+            'body' => wp_kses_post($post_data['body'] ?? ''),
             'user_ids' => isset($post_data['user_ids']) && is_array($post_data['user_ids']) 
                 ? array_map('intval', $post_data['user_ids']) 
-                : [],
-            'message_type' => sanitize_text_field($post_data['message_type'] ?? 'template'),
-            'custom_message' => wp_kses_post($post_data['custom_message'] ?? '')
+                : []
         ];
     }
     

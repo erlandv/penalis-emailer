@@ -61,20 +61,38 @@ class Penalis_Email_Logger {
     /**
      * Log manual email send
      *
-     * Appends log entry to options array with user_id, timestamp, and subject.
+     * Appends log entry to options array with enhanced details.
      * Receives sanitized data as parameters - NO direct $_POST access.
      *
-     * @param int    $user_id The user ID who received the email
-     * @param string $subject The email subject (already sanitized)
+     * @param array  $recipients Array of user IDs who received the email
+     * @param string $subject    The email subject (already sanitized)
+     * @param string $body       The email body content (for preview)
      * @return void
      */
-    public function log_manual_email(int $user_id, string $subject): void {
+    public function log_manual_email(array $recipients, string $subject, string $body = ''): void {
         $log = get_option($this->option_key, []);
         
+        // Get current user
+        $current_user = wp_get_current_user();
+        
+        // Generate unique log ID
+        $log_id = 'email_' . time() . '_' . wp_generate_password(8, false);
+        
+        // Create body preview (first 100 characters)
+        $body_preview = mb_substr(strip_tags($body), 0, 100);
+        if (mb_strlen(strip_tags($body)) > 100) {
+            $body_preview .= '...';
+        }
+        
         $log[] = [
-            'user_id' => $user_id,
-            'timestamp' => time(),
-            'subject' => $subject
+            'id' => $log_id,
+            'subject' => $subject,
+            'body_preview' => $body_preview,
+            'recipient_count' => count($recipients),
+            'recipients' => $recipients,
+            'sent_at' => time(),
+            'sent_by' => $current_user->ID,
+            'status' => 'sent'
         ];
         
         update_option($this->option_key, $log);
@@ -83,9 +101,64 @@ class Penalis_Email_Logger {
     /**
      * Get manual email log entries
      *
-     * @return array Array of log entries with user_id, timestamp, and subject
+     * @param int $limit Optional limit for number of entries
+     * @return array Array of log entries with enhanced details
      */
-    public function get_manual_email_log(): array {
-        return get_option($this->option_key, []);
+    public function get_manual_email_log(int $limit = 0): array {
+        $log = get_option($this->option_key, []);
+        
+        // Sort by sent_at descending (newest first)
+        usort($log, function($a, $b) {
+            $time_a = isset($a['sent_at']) ? $a['sent_at'] : (isset($a['timestamp']) ? $a['timestamp'] : 0);
+            $time_b = isset($b['sent_at']) ? $b['sent_at'] : (isset($b['timestamp']) ? $b['timestamp'] : 0);
+            return $time_b - $time_a;
+        });
+        
+        // Apply limit if specified
+        if ($limit > 0) {
+            $log = array_slice($log, 0, $limit);
+        }
+        
+        return $log;
+    }
+    
+    /**
+     * Get log entry by ID
+     *
+     * @param string $log_id Log entry ID
+     * @return array|null Log entry or null if not found
+     */
+    public function get_log_entry(string $log_id): ?array {
+        $log = get_option($this->option_key, []);
+        
+        foreach ($log as $entry) {
+            if (isset($entry['id']) && $entry['id'] === $log_id) {
+                return $entry;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Delete old log entries (keep last N entries)
+     *
+     * @param int $keep_count Number of entries to keep
+     * @return int Number of entries deleted
+     */
+    public function cleanup_old_logs(int $keep_count = 100): int {
+        $log = $this->get_manual_email_log();
+        
+        if (count($log) <= $keep_count) {
+            return 0;
+        }
+        
+        $deleted_count = count($log) - $keep_count;
+        $log = array_slice($log, 0, $keep_count);
+        
+        update_option($this->option_key, $log);
+        
+        return $deleted_count;
     }
 }
+

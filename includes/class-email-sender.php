@@ -132,8 +132,8 @@ class Penalis_Email_Sender {
      *
      * @param string $subject      Email subject
      * @param array  $user_ids     Array of user IDs to send to
-     * @param string $message      Custom message content (optional)
-     * @param bool   $use_template Whether to use template or custom message
+     * @param string $message      Custom message content (plain text/markdown)
+     * @param bool   $use_template Whether to use template or custom message (deprecated, always uses flexible template now)
      * @return array Results with 'success' count and 'failed' array of user IDs
      */
     public function send_manual_email(string $subject, array $user_ids, string $message = '', bool $use_template = true): array {
@@ -145,6 +145,8 @@ class Penalis_Email_Sender {
             'failed' => []
         ];
         
+        $successful_recipients = [];
+        
         // Loop through each user
         foreach ($user_ids as $user_id) {
             $user = get_userdata($user_id);
@@ -155,47 +157,50 @@ class Penalis_Email_Sender {
                 continue;
             }
             
-            // Prepare placeholders (use subject as POST_TITLE for manual emails)
-            $placeholders = [
-                'AUTHOR_NAME' => $user->display_name,
-                'POST_TITLE' => $subject,
-                'POST_URL' => home_url()
+            // Prepare user data for personalization
+            $user_data = [
+                'display_name' => $user->display_name,
+                'user_email' => $user->user_email,
+                'user_login' => $user->user_login
             ];
             
-            // Compose email
-            $email_data = [
-                'to' => $user->user_email,
-                'author_name' => $user->display_name,
-                'post_title' => $subject,
-                'post_url' => home_url(),
-                'placeholders' => $placeholders,
-                'custom_message' => $message,
-                'use_template' => $use_template
-            ];
-            
-            $email = $this->compose_email($email_data, $use_template);
+            // Render flexible email with markdown support
+            $email_body = $this->template->render_flexible_email($message, $user_data);
             
             // Apply filters (post_id = 0 for manual emails)
-            $filtered = $this->apply_email_filters($email['subject'], $email['message'], 0);
-            $email['subject'] = $filtered['subject'];
-            $email['message'] = $filtered['message'];
+            $filtered_subject = apply_filters('penalis_email_subject', $subject, 0);
+            $filtered_body = apply_filters('penalis_email_message', $email_body, 0);
+            
+            // Prepare headers
+            $site_domain = parse_url(home_url(), PHP_URL_HOST);
+            $headers = [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
+            ];
+            
+            // Apply headers filter
+            $headers = apply_filters('penalis_email_headers', $headers, 0);
             
             // Set content type filter before sending
             add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
             
             // Send email
-            $sent = wp_mail($email['to'], $email['subject'], $email['message'], $email['headers']);
+            $sent = wp_mail($user->user_email, $filtered_subject, $filtered_body, $headers);
             
             // Remove content type filter after sending
             remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
             
             if ($sent) {
                 $results['success']++;
-                // Log successful send
-                $this->logger->log_manual_email($user_id, $subject);
+                $successful_recipients[] = $user_id;
             } else {
                 $results['failed'][] = $user_id;
             }
+        }
+        
+        // Log successful sends
+        if ($results['success'] > 0) {
+            $this->logger->log_manual_email($successful_recipients, $subject, $message);
         }
         
         return $results;

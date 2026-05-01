@@ -260,14 +260,3 @@ For issues, questions, or feature requests, please contact the plugin author or 
 ## License
 
 This plugin is licensed under the GPL v2 or later.
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Automatic email notifications on post publish
-- Manual email sending interface
-- HTML email templates
-- Email logging
-- SMTP plugin compatibility
-- Extensibility filters
