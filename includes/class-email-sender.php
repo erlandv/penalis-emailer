@@ -133,10 +133,11 @@ class Penalis_Email_Sender {
      * @param string $subject      Email subject
      * @param array  $user_ids     Array of user IDs to send to
      * @param string $message      Custom message content (plain text/markdown)
+     * @param string $from_name    From name for email header (default: 'Penalis')
      * @param bool   $use_template Whether to use template or custom message (deprecated, always uses flexible template now)
      * @return array Results with 'success' count and 'failed' array of user IDs
      */
-    public function send_manual_email(string $subject, array $user_ids, string $message = '', bool $use_template = true): array {
+    public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis', bool $use_template = true): array {
         // Apply recipients filter
         $user_ids = apply_filters('penalis_email_recipients', $user_ids);
         
@@ -171,11 +172,11 @@ class Penalis_Email_Sender {
             $filtered_subject = apply_filters('penalis_email_subject', $subject, 0);
             $filtered_body = apply_filters('penalis_email_message', $email_body, 0);
             
-            // Prepare headers
+            // Prepare headers with custom from name
             $site_domain = parse_url(home_url(), PHP_URL_HOST);
             $headers = [
                 'Content-Type: text/html; charset=UTF-8',
-                'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
+                'From: ' . $from_name . ' <no-reply@' . $site_domain . '>'
             ];
             
             // Apply headers filter

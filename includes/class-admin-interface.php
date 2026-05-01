@@ -191,6 +191,24 @@ class Penalis_Admin_Interface {
                 <table class="form-table">
                     <tr>
                         <th scope="row">
+                            <label for="from_name"><?php echo esc_html__('Email From', 'penalis-emailer'); ?> <span class="required">*</span></label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   name="from_name" 
+                                   id="from_name" 
+                                   class="regular-text" 
+                                   required
+                                   value="Penalis"
+                                   placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
+                            <p class="description">
+                                <?php echo esc_html__('Nama pengirim yang akan muncul di email. Alamat email tetap menggunakan no-reply@domain.', 'penalis-emailer'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
                             <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?> <span class="required">*</span></label>
                         </th>
                         <td>
@@ -474,6 +492,11 @@ class Penalis_Admin_Interface {
         $sanitized = $this->sanitize_inputs($_POST);
         
         // Validate required fields
+        if (empty($sanitized['from_name'])) {
+            $this->redirect_with_notice('error', __('Email from name is required.', 'penalis-emailer'));
+            return;
+        }
+        
         if (empty($sanitized['subject'])) {
             $this->redirect_with_notice('error', __('Email subject is required.', 'penalis-emailer'));
             return;
@@ -493,7 +516,8 @@ class Penalis_Admin_Interface {
         $results = $this->email_sender->send_manual_email(
             $sanitized['subject'],
             $sanitized['user_ids'],
-            $sanitized['body']
+            $sanitized['body'],
+            $sanitized['from_name']
         );
         
         // Prepare notice message
@@ -592,6 +616,7 @@ class Penalis_Admin_Interface {
      */
     private function sanitize_inputs(array $post_data): array {
         return [
+            'from_name' => sanitize_text_field($post_data['from_name'] ?? 'Penalis'),
             'subject' => sanitize_text_field($post_data['subject'] ?? ''),
             'body' => wp_kses_post($post_data['body'] ?? ''),
             'user_ids' => isset($post_data['user_ids']) && is_array($post_data['user_ids']) 
