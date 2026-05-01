@@ -93,6 +93,7 @@ class Penalis_Admin_Interface {
         add_action('admin_notices', [$this, 'show_admin_notices']);
         add_action('wp_ajax_penalis_preview_email', [$this, 'ajax_preview_email']);
         add_action('wp_ajax_penalis_preview_auto_email', [$this, 'ajax_preview_auto_email']);
+        add_action('wp_ajax_penalis_send_test_email', [$this, 'ajax_send_test_email']);
     }
     
     /**
@@ -361,23 +362,52 @@ class Penalis_Admin_Interface {
                                 <label><?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?></label>
                             </th>
                             <td>
+                            <!-- Search Box -->
+                            <div style="margin-bottom: 10px;">
+                                <input type="text" 
+                                       id="user-search" 
+                                       class="regular-text" 
+                                       placeholder="<?php echo esc_attr__('Search by name or email...', 'penalis-emailer'); ?>"
+                                       style="width: 100%; max-width: 400px;">
+                            </div>
+                            
+                            <!-- User Count -->
+                            <div style="margin-bottom: 10px; padding: 8px 12px; background: #e7f5ff; border-left: 3px solid #2271b1; border-radius: 3px;">
+                                <strong id="selected-count">0</strong> of <strong id="total-count"><?php echo count($users); ?></strong> users selected
+                            </div>
+                            
+                            <!-- Bulk Actions -->
+                            <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button type="button" class="button" id="select-all-users-btn">
+                                    <?php echo esc_html__('Select All', 'penalis-emailer'); ?>
+                                </button>
+                                <button type="button" class="button" id="deselect-all-users-btn">
+                                    <?php echo esc_html__('Deselect All', 'penalis-emailer'); ?>
+                                </button>
+                                <button type="button" class="button" id="select-authors-btn">
+                                    <?php echo esc_html__('Select All Authors', 'penalis-emailer'); ?>
+                                </button>
+                                <button type="button" class="button" id="select-contributors-btn">
+                                    <?php echo esc_html__('Select All Contributors', 'penalis-emailer'); ?>
+                                </button>
+                            </div>
+                            
                             <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
                                 <?php if (empty($users)): ?>
                                     <p><?php echo esc_html__('No eligible users found.', 'penalis-emailer'); ?></p>
                                 <?php else: ?>
-                                    <label style="display: block; margin-bottom: 10px;">
-                                        <input type="checkbox" id="select-all-users">
-                                        <strong><?php echo esc_html__('Select All', 'penalis-emailer'); ?></strong>
-                                    </label>
-                                    <hr style="margin: 10px 0;">
                                     <?php foreach ($users as $user): ?>
-                                        <label style="display: block; margin-bottom: 5px;">
+                                        <?php 
+                                        $user_roles = implode(', ', $user->roles);
+                                        ?>
+                                        <label style="display: block; margin-bottom: 5px;" class="user-item" data-name="<?php echo esc_attr(strtolower($user->display_name)); ?>" data-email="<?php echo esc_attr(strtolower($user->user_email)); ?>" data-role="<?php echo esc_attr($user_roles); ?>">
                                             <input type="checkbox" 
                                                    name="user_ids[]" 
                                                    value="<?php echo esc_attr($user->ID); ?>"
                                                    class="user-checkbox">
                                             <?php echo esc_html($user->display_name); ?> 
                                             (<?php echo esc_html($user->user_email); ?>)
+                                            <span style="color: #666; font-size: 12px;"> - <?php echo esc_html(ucfirst($user_roles)); ?></span>
                                         </label>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -468,15 +498,90 @@ class Penalis_Admin_Interface {
         
         <script type="text/javascript">
         jQuery(document).ready(function($) {
-            // Select all users functionality
-            $('#select-all-users').on('change', function() {
-                $('.user-checkbox').prop('checked', $(this).is(':checked'));
+            // Update selected count
+            function updateSelectedCount() {
+                var selectedCount = $('.user-checkbox:checked').length;
+                var totalCount = $('.user-checkbox').length;
+                $('#selected-count').text(selectedCount);
+            }
+            
+            // Search/filter users
+            $('#user-search').on('keyup', function() {
+                var searchTerm = $(this).val().toLowerCase();
+                
+                $('.user-item').each(function() {
+                    var name = $(this).data('name');
+                    var email = $(this).data('email');
+                    
+                    if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
             });
             
-            // Update select all checkbox when individual checkboxes change
+            // Select all users
+            $('#select-all-users-btn').on('click', function() {
+                $('.user-checkbox:visible').prop('checked', true);
+                updateSelectedCount();
+            });
+            
+            // Deselect all users
+            $('#deselect-all-users-btn').on('click', function() {
+                $('.user-checkbox').prop('checked', false);
+                updateSelectedCount();
+            });
+            
+            // Select all authors
+            $('#select-authors-btn').on('click', function() {
+                $('.user-item').each(function() {
+                    var role = $(this).data('role');
+                    if (role.includes('author')) {
+                        $(this).find('.user-checkbox').prop('checked', true);
+                    }
+                });
+                updateSelectedCount();
+            });
+            
+            // Select all contributors
+            $('#select-contributors-btn').on('click', function() {
+                $('.user-item').each(function() {
+                    var role = $(this).data('role');
+                    if (role.includes('contributor')) {
+                        $(this).find('.user-checkbox').prop('checked', true);
+                    }
+                });
+                updateSelectedCount();
+            });
+            
+            // Update count when checkbox changes
             $('.user-checkbox').on('change', function() {
-                var allChecked = $('.user-checkbox:checked').length === $('.user-checkbox').length;
-                $('#select-all-users').prop('checked', allChecked);
+                updateSelectedCount();
+            });
+            
+            // Initialize count
+            updateSelectedCount();
+            
+            // Confirmation dialog before sending
+            $('#penalis-email-form').on('submit', function(e) {
+                var selectedCount = $('.user-checkbox:checked').length;
+                var subject = $('#subject').val();
+                
+                if (selectedCount === 0) {
+                    alert('<?php echo esc_js(__('Please select at least one recipient.', 'penalis-emailer')); ?>');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                var message = '<?php echo esc_js(__('Are you sure you want to send this email?', 'penalis-emailer')); ?>\n\n';
+                message += '<?php echo esc_js(__('Subject:', 'penalis-emailer')); ?> ' + subject + '\n';
+                message += '<?php echo esc_js(__('Recipients:', 'penalis-emailer')); ?> ' + selectedCount + ' <?php echo esc_js(__('users', 'penalis-emailer')); ?>';
+                
+                if (!confirm(message)) {
+                    e.preventDefault();
+                    return false;
+                }
             });
             
             // Preview email
@@ -543,6 +648,24 @@ class Penalis_Admin_Interface {
             <?php if (empty($log_entries)): ?>
                 <p><?php echo esc_html__('No emails sent yet.', 'penalis-emailer'); ?></p>
             <?php else: ?>
+                <!-- Search/Filter Box -->
+                <div style="margin-bottom: 15px; padding: 15px; background: #fff; border: 1px solid #ccd0d4; border-radius: 4px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" 
+                               id="history-search" 
+                               class="regular-text" 
+                               placeholder="<?php echo esc_attr__('Search by subject...', 'penalis-emailer'); ?>"
+                               style="flex: 1; min-width: 200px;">
+                        <input type="date" 
+                               id="history-date-filter" 
+                               class="regular-text"
+                               style="width: auto;">
+                        <button type="button" class="button" id="clear-history-filter">
+                            <?php echo esc_html__('Clear Filters', 'penalis-emailer'); ?>
+                        </button>
+                    </div>
+                </div>
+                
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
                         <tr>
@@ -553,7 +676,7 @@ class Penalis_Admin_Interface {
                             <th><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="history-table-body">
                         <?php foreach ($log_entries as $entry): ?>
                             <?php
                             // Handle both old and new log format
@@ -562,8 +685,12 @@ class Penalis_Admin_Interface {
                             $sent_by_id = isset($entry['sent_by']) ? $entry['sent_by'] : 0;
                             $sent_by_user = $sent_by_id ? get_userdata($sent_by_id) : null;
                             $body_preview = isset($entry['body_preview']) ? $entry['body_preview'] : '';
+                            $sent_date = date('Y-m-d', $sent_time);
                             ?>
-                            <tr>
+                            <tr class="history-row" 
+                                data-subject="<?php echo esc_attr(strtolower($entry['subject'])); ?>" 
+                                data-date="<?php echo esc_attr($sent_date); ?>"
+                                data-timestamp="<?php echo esc_attr($sent_time); ?>">
                                 <td>
                                     <strong><?php echo esc_html($entry['subject']); ?></strong>
                                     <?php if (!empty($body_preview)): ?>
@@ -599,6 +726,43 @@ class Penalis_Admin_Interface {
                 <p class="description">
                     <?php echo esc_html__('Showing last 50 emails. Older entries are automatically archived.', 'penalis-emailer'); ?>
                 </p>
+                
+                <script type="text/javascript">
+                jQuery(document).ready(function($) {
+                    // Filter history
+                    function filterHistory() {
+                        var searchTerm = $('#history-search').val().toLowerCase();
+                        var dateFilter = $('#history-date-filter').val();
+                        
+                        $('.history-row').each(function() {
+                            var subject = $(this).data('subject');
+                            var date = $(this).data('date');
+                            
+                            var matchesSearch = !searchTerm || subject.includes(searchTerm);
+                            var matchesDate = !dateFilter || date === dateFilter;
+                            
+                            if (matchesSearch && matchesDate) {
+                                $(this).show();
+                            } else {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                    
+                    // Search by subject
+                    $('#history-search').on('keyup', filterHistory);
+                    
+                    // Filter by date
+                    $('#history-date-filter').on('change', filterHistory);
+                    
+                    // Clear filters
+                    $('#clear-history-filter').on('click', function() {
+                        $('#history-search').val('');
+                        $('#history-date-filter').val('');
+                        $('.history-row').show();
+                    });
+                });
+                </script>
             <?php endif; ?>
         </div>
         <?php
@@ -833,7 +997,23 @@ class Penalis_Admin_Interface {
                 <?php echo esc_html__('Customize the template for automatic emails sent after post publish. Use plain text with markdown formatting.', 'penalis-emailer'); ?>
             </p>
             
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php
+            // Get last modified info
+            $last_modified_time = get_option('penalis_auto_email_body_modified_time', 0);
+            $last_modified_user_id = get_option('penalis_auto_email_body_modified_by', 0);
+            $last_modified_user = $last_modified_user_id ? get_userdata($last_modified_user_id) : null;
+            
+            if ($last_modified_time > 0): ?>
+                <div style="margin: 15px 0; padding: 10px 15px; background: #f0f0f1; border-left: 3px solid #72aee6; border-radius: 3px;">
+                    <strong><?php echo esc_html__('Last Modified:', 'penalis-emailer'); ?></strong>
+                    <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_modified_time)); ?>
+                    <?php if ($last_modified_user): ?>
+                        <?php echo esc_html__('by', 'penalis-emailer'); ?> <strong><?php echo esc_html($last_modified_user->display_name); ?></strong>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="template-settings-form">
                 <?php wp_nonce_field('penalis_save_template', 'penalis_template_nonce'); ?>
                 <input type="hidden" name="action" value="penalis_save_template">
                 
@@ -920,6 +1100,13 @@ class Penalis_Admin_Interface {
                             style="margin-left: 10px;">
                         <?php echo esc_html__('Preview Template', 'penalis-emailer'); ?>
                     </button>
+                    
+                    <button type="button" 
+                            class="button" 
+                            id="test-email-btn"
+                            style="margin-left: 10px; background: #00a32a; color: #fff; border-color: #00a32a;">
+                        <?php echo esc_html__('Send Test Email', 'penalis-emailer'); ?>
+                    </button>
                 </p>
             </form>
             
@@ -995,6 +1182,32 @@ class Penalis_Admin_Interface {
         
         <script type="text/javascript">
         jQuery(document).ready(function($) {
+            // Send Test Email
+            $('#test-email-btn').on('click', function() {
+                var body = $('#email_body').val();
+                var button = $(this);
+                
+                if (!confirm('<?php echo esc_js(__('Send a test email to your admin email address?', 'penalis-emailer')); ?>')) {
+                    return;
+                }
+                
+                button.prop('disabled', true).text('<?php echo esc_js(__('Sending...', 'penalis-emailer')); ?>');
+                
+                $.post(ajaxurl, {
+                    action: 'penalis_send_test_email',
+                    body: body,
+                    nonce: '<?php echo wp_create_nonce('penalis_send_test_email'); ?>'
+                }, function(response) {
+                    button.prop('disabled', false).text('<?php echo esc_js(__('Send Test Email', 'penalis-emailer')); ?>');
+                    
+                    if (response.success) {
+                        alert('<?php echo esc_js(__('Test email sent successfully! Check your inbox.', 'penalis-emailer')); ?>');
+                    } else {
+                        alert('<?php echo esc_js(__('Failed to send test email:', 'penalis-emailer')); ?> ' + (response.data.message || ''));
+                    }
+                });
+            });
+            
             // Preview template
             $('#preview-template').on('click', function() {
                 var body = $('#email_body').val();
@@ -1005,6 +1218,7 @@ class Penalis_Admin_Interface {
                     .replace(/{POST_TITLE}/g, 'Sample Post Title')
                     .replace(/{POST_URL}/g, '<?php echo esc_js(home_url('/sample-post')); ?>')
                     .replace(/{TANGGAL}/g, '<?php echo esc_js(date_i18n(get_option('date_format'))); ?>')
+                    .replace(/{DATE}/g, '<?php echo esc_js(date_i18n(get_option('date_format'))); ?>')
                     .replace(/{SITE_NAME}/g, '<?php echo esc_js(get_bloginfo('name')); ?>')
                     .replace(/{SITE_URL}/g, '<?php echo esc_js(home_url()); ?>');
                 
@@ -1071,6 +1285,10 @@ class Penalis_Admin_Interface {
         
         // Save to database
         update_option('penalis_auto_email_body', $template_body);
+        
+        // Save last modified info
+        update_option('penalis_auto_email_body_modified_time', current_time('timestamp'));
+        update_option('penalis_auto_email_body_modified_by', get_current_user_id());
         
         // Redirect with success message
         $redirect_url = add_query_arg(
@@ -1150,6 +1368,59 @@ class Penalis_Admin_Interface {
         $preview_html = $this->email_template->render_flexible_email($body, $sample_data);
         
         wp_send_json_success(['html' => $preview_html]);
+    }
+    
+    /**
+     * AJAX handler for sending test email
+     *
+     * @return void
+     */
+    public function ajax_send_test_email(): void {
+        // Check nonce
+        check_ajax_referer('penalis_send_test_email', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        
+        if (empty($body)) {
+            wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
+        }
+        
+        // Get current admin user
+        $current_user = wp_get_current_user();
+        $admin_email = $current_user->user_email;
+        
+        // Prepare sample data for test email
+        $sample_data = [
+            'display_name' => $current_user->display_name,
+            'author_name' => $current_user->display_name,
+            'post_title' => 'Sample Post Title - Test Email',
+            'post_url' => home_url('/sample-post')
+        ];
+        
+        // Generate email HTML
+        $email_html = $this->email_template->render_flexible_email($body, $sample_data);
+        
+        // Send test email
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Penalis - Test <no-reply@' . $site_domain . '>'
+        ];
+        
+        $subject = __('Test Email - Auto-Email Template', 'penalis-emailer');
+        
+        $sent = wp_mail($admin_email, $subject, $email_html, $headers);
+        
+        if ($sent) {
+            wp_send_json_success(['message' => __('Test email sent successfully!', 'penalis-emailer')]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to send test email. Please check your email configuration.', 'penalis-emailer')]);
+        }
     }
     
     /**
