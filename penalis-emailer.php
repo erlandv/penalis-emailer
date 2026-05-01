@@ -25,19 +25,50 @@ spl_autoload_register(function ($class) {
     }
     
     $class_file = strtolower(str_replace('_', '-', substr($class, strlen($prefix))));
-    $file = PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php';
     
-    if (file_exists($file)) {
-        require_once $file;
+    // Check in multiple directories
+    $possible_paths = [
+        PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/services/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/repositories/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/validators/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/exceptions/class-' . $class_file . '.php',
+    ];
+    
+    foreach ($possible_paths as $file) {
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
     }
 });
 
 // Initialize plugin
 function penalis_emailer_init() {
+    // Load config first
+    require_once PENALIS_EMAILER_PATH . 'includes/class-config.php';
+    
+    // Initialize core services
     $template = new Penalis_Email_Template();
     $logger = new Penalis_Email_Logger();
     $sender = new Penalis_Email_Sender($template, $logger);
-    $admin = new Penalis_Admin_Interface($sender, $template, $logger);
+    
+    // Initialize admin pages
+    $compose_page = new Penalis_Compose_Page($sender);
+    $history_page = new Penalis_History_Page($logger);
+    $settings_page = new Penalis_Settings_Page($template);
+    
+    // Initialize AJAX handler
+    $ajax_handler = new Penalis_Ajax_Handler($template);
+    
+    // Initialize main admin interface
+    $admin = new Penalis_Admin_Interface(
+        $compose_page,
+        $history_page,
+        $settings_page,
+        $ajax_handler
+    );
     
     // Register hooks
     add_action('transition_post_status', [$sender, 'handle_post_status_transition'], 10, 3);
