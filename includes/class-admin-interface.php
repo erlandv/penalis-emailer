@@ -362,71 +362,114 @@ class Penalis_Admin_Interface {
                                 <label><?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?></label>
                             </th>
                             <td>
-                            <!-- Search Box -->
-                            <div style="margin-bottom: 10px;">
-                                <input type="text" 
-                                       id="user-search" 
-                                       class="regular-text" 
-                                       placeholder="<?php echo esc_attr__('Search by name or email...', 'penalis-emailer'); ?>"
-                                       style="width: 100%; max-width: 400px;">
+                            <!-- Search and Bulk Actions -->
+                            <div style="margin-bottom: 15px; padding: 15px; background: #fff; border: 1px solid #ccd0d4; border-radius: 4px;">
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                                    <input type="text" 
+                                           id="user-search" 
+                                           class="regular-text" 
+                                           placeholder="<?php echo esc_attr__('Search by name or email...', 'penalis-emailer'); ?>"
+                                           style="flex: 1; min-width: 200px;">
+                                    <button type="button" class="button" id="select-all-users-btn">
+                                        <?php echo esc_html__('Select All', 'penalis-emailer'); ?>
+                                    </button>
+                                    <button type="button" class="button" id="deselect-all-users-btn">
+                                        <?php echo esc_html__('Deselect All', 'penalis-emailer'); ?>
+                                    </button>
+                                    <button type="button" class="button" id="select-authors-btn">
+                                        <?php echo esc_html__('Authors Only', 'penalis-emailer'); ?>
+                                    </button>
+                                    <button type="button" class="button" id="select-contributors-btn">
+                                        <?php echo esc_html__('Contributors Only', 'penalis-emailer'); ?>
+                                    </button>
+                                </div>
+                                
+                                <!-- User Count -->
+                                <div style="padding: 8px 12px; background: #e7f5ff; border-left: 3px solid #2271b1; border-radius: 3px;">
+                                    <strong id="selected-count">0</strong> of <strong id="total-count"><?php echo count($users); ?></strong> users selected
+                                </div>
                             </div>
                             
-                            <!-- User Count -->
-                            <div style="margin-bottom: 10px; padding: 8px 12px; background: #e7f5ff; border-left: 3px solid #2271b1; border-radius: 3px;">
-                                <strong id="selected-count">0</strong> of <strong id="total-count"><?php echo count($users); ?></strong> users selected
+                            <!-- Recipients Table -->
+                            <div style="border: 1px solid #ccd0d4; border-radius: 4px; overflow: hidden;">
+                                <table class="wp-list-table widefat fixed striped" style="margin: 0; border: none;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px; padding: 8px 10px;">
+                                                <input type="checkbox" id="select-all-checkbox" style="margin: 0;">
+                                            </th>
+                                            <th style="padding: 8px 10px;"><?php echo esc_html__('Name', 'penalis-emailer'); ?></th>
+                                            <th style="padding: 8px 10px;"><?php echo esc_html__('Email', 'penalis-emailer'); ?></th>
+                                            <th style="padding: 8px 10px; width: 120px;"><?php echo esc_html__('Role', 'penalis-emailer'); ?></th>
+                                            <th style="padding: 8px 10px; width: 80px; text-align: center;"><?php echo esc_html__('Posts', 'penalis-emailer'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recipients-table-body">
+                                        <?php if (empty($users)): ?>
+                                            <tr>
+                                                <td colspan="5" style="text-align: center; padding: 20px;">
+                                                    <?php echo esc_html__('No eligible users found.', 'penalis-emailer'); ?>
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($users as $user): ?>
+                                                <?php 
+                                                $user_roles = implode(', ', array_map('ucfirst', $user->roles));
+                                                $post_count = count_user_posts($user->ID, 'post', true);
+                                                ?>
+                                                <tr class="user-row" 
+                                                    data-name="<?php echo esc_attr(strtolower($user->display_name)); ?>" 
+                                                    data-email="<?php echo esc_attr(strtolower($user->user_email)); ?>" 
+                                                    data-role="<?php echo esc_attr(implode(',', $user->roles)); ?>">
+                                                    <td style="padding: 8px 10px;">
+                                                        <input type="checkbox" 
+                                                               name="user_ids[]" 
+                                                               value="<?php echo esc_attr($user->ID); ?>"
+                                                               class="user-checkbox"
+                                                               style="margin: 0;">
+                                                    </td>
+                                                    <td style="padding: 8px 10px;">
+                                                        <strong><?php echo esc_html($user->display_name); ?></strong>
+                                                    </td>
+                                                    <td style="padding: 8px 10px; color: #666;">
+                                                        <?php echo esc_html($user->user_email); ?>
+                                                    </td>
+                                                    <td style="padding: 8px 10px;">
+                                                        <span style="display: inline-block; padding: 3px 8px; background: #f0f0f1; border-radius: 3px; font-size: 12px;">
+                                                            <?php echo esc_html($user_roles); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td style="padding: 8px 10px; text-align: center; color: #666;">
+                                                        <?php echo esc_html($post_count); ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
                             
-                            <!-- Bulk Actions -->
-                            <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
-                                <button type="button" class="button" id="select-all-users-btn">
-                                    <?php echo esc_html__('Select All', 'penalis-emailer'); ?>
-                                </button>
-                                <button type="button" class="button" id="deselect-all-users-btn">
-                                    <?php echo esc_html__('Deselect All', 'penalis-emailer'); ?>
-                                </button>
-                                <button type="button" class="button" id="select-authors-btn">
-                                    <?php echo esc_html__('Select All Authors', 'penalis-emailer'); ?>
-                                </button>
-                                <button type="button" class="button" id="select-contributors-btn">
-                                    <?php echo esc_html__('Select All Contributors', 'penalis-emailer'); ?>
-                                </button>
-                            </div>
-                            
-                            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
-                                <?php if (empty($users)): ?>
-                                    <p><?php echo esc_html__('No eligible users found.', 'penalis-emailer'); ?></p>
-                                <?php else: ?>
-                                    <?php foreach ($users as $user): ?>
-                                        <?php 
-                                        $user_roles = implode(', ', $user->roles);
-                                        ?>
-                                        <label style="display: block; margin-bottom: 5px;" class="user-item" data-name="<?php echo esc_attr(strtolower($user->display_name)); ?>" data-email="<?php echo esc_attr(strtolower($user->user_email)); ?>" data-role="<?php echo esc_attr($user_roles); ?>">
-                                            <input type="checkbox" 
-                                                   name="user_ids[]" 
-                                                   value="<?php echo esc_attr($user->ID); ?>"
-                                                   class="user-checkbox">
-                                            <?php echo esc_html($user->display_name); ?> 
-                                            (<?php echo esc_html($user->user_email); ?>)
-                                            <span style="color: #666; font-size: 12px;"> - <?php echo esc_html(ucfirst($user_roles)); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </div>
-                            
+                            <!-- Pagination -->
                             <?php if ($total_pages > 1): ?>
-                                <div style="margin-top: 10px;">
-                                    <?php
-                                    $base_url = admin_url('admin.php?page=' . $this->page_slug . '&tab=compose');
+                                <div style="margin-top: 15px; padding: 10px; background: #f6f7f7; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <?php
+                                        $base_url = admin_url('admin.php?page=' . $this->page_slug . '&tab=compose');
+                                        
+                                        if ($current_page > 1):
+                                            $prev_url = add_query_arg('paged', $current_page - 1, $base_url);
+                                            ?>
+                                            <a href="<?php echo esc_url($prev_url); ?>" class="button">
+                                                <?php echo esc_html__('‹ Previous', 'penalis-emailer'); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <button type="button" class="button" disabled>
+                                                <?php echo esc_html__('‹ Previous', 'penalis-emailer'); ?>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                     
-                                    if ($current_page > 1):
-                                        $prev_url = add_query_arg('paged', $current_page - 1, $base_url);
-                                        ?>
-                                        <a href="<?php echo esc_url($prev_url); ?>" class="button">
-                                            <?php echo esc_html__('« Previous', 'penalis-emailer'); ?>
-                                        </a>
-                                    <?php endif; ?>
-                                    
-                                    <span style="margin: 0 10px;">
+                                    <div style="font-weight: 600;">
                                         <?php
                                         printf(
                                             esc_html__('Page %1$d of %2$d', 'penalis-emailer'),
@@ -434,15 +477,24 @@ class Penalis_Admin_Interface {
                                             $total_pages
                                         );
                                         ?>
-                                    </span>
+                                        <span style="color: #666; font-weight: normal; margin-left: 10px;">
+                                            (<?php echo esc_html($total_users); ?> total users)
+                                        </span>
+                                    </div>
                                     
-                                    <?php if ($current_page < $total_pages):
-                                        $next_url = add_query_arg('paged', $current_page + 1, $base_url);
-                                        ?>
-                                        <a href="<?php echo esc_url($next_url); ?>" class="button">
-                                            <?php echo esc_html__('Next »', 'penalis-emailer'); ?>
-                                        </a>
-                                    <?php endif; ?>
+                                    <div>
+                                        <?php if ($current_page < $total_pages):
+                                            $next_url = add_query_arg('paged', $current_page + 1, $base_url);
+                                            ?>
+                                            <a href="<?php echo esc_url($next_url); ?>" class="button">
+                                                <?php echo esc_html__('Next ›', 'penalis-emailer'); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <button type="button" class="button" disabled>
+                                                <?php echo esc_html__('Next ›', 'penalis-emailer'); ?>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -503,13 +555,19 @@ class Penalis_Admin_Interface {
                 var selectedCount = $('.user-checkbox:checked').length;
                 var totalCount = $('.user-checkbox').length;
                 $('#selected-count').text(selectedCount);
+                
+                // Update "select all" checkbox state
+                var allChecked = selectedCount > 0 && selectedCount === totalCount;
+                var someChecked = selectedCount > 0 && selectedCount < totalCount;
+                $('#select-all-checkbox').prop('checked', allChecked);
+                $('#select-all-checkbox').prop('indeterminate', someChecked);
             }
             
             // Search/filter users
             $('#user-search').on('keyup', function() {
                 var searchTerm = $(this).val().toLowerCase();
                 
-                $('.user-item').each(function() {
+                $('.user-row').each(function() {
                     var name = $(this).data('name');
                     var email = $(this).data('email');
                     
@@ -519,15 +577,24 @@ class Penalis_Admin_Interface {
                         $(this).hide();
                     }
                 });
+                
+                updateSelectedCount();
             });
             
-            // Select all users
+            // Select all checkbox in header
+            $('#select-all-checkbox').on('change', function() {
+                var isChecked = $(this).is(':checked');
+                $('.user-checkbox:visible').prop('checked', isChecked);
+                updateSelectedCount();
+            });
+            
+            // Select all users button
             $('#select-all-users-btn').on('click', function() {
                 $('.user-checkbox:visible').prop('checked', true);
                 updateSelectedCount();
             });
             
-            // Deselect all users
+            // Deselect all users button
             $('#deselect-all-users-btn').on('click', function() {
                 $('.user-checkbox').prop('checked', false);
                 updateSelectedCount();
@@ -535,7 +602,7 @@ class Penalis_Admin_Interface {
             
             // Select all authors
             $('#select-authors-btn').on('click', function() {
-                $('.user-item').each(function() {
+                $('.user-row').each(function() {
                     var role = $(this).data('role');
                     if (role.includes('author')) {
                         $(this).find('.user-checkbox').prop('checked', true);
@@ -546,7 +613,7 @@ class Penalis_Admin_Interface {
             
             // Select all contributors
             $('#select-contributors-btn').on('click', function() {
-                $('.user-item').each(function() {
+                $('.user-row').each(function() {
                     var role = $(this).data('role');
                     if (role.includes('contributor')) {
                         $(this).find('.user-checkbox').prop('checked', true);
@@ -562,6 +629,16 @@ class Penalis_Admin_Interface {
             
             // Initialize count
             updateSelectedCount();
+            
+            // Hover effect for table rows
+            $('.user-row').hover(
+                function() {
+                    $(this).css('background-color', '#f6f7f7');
+                },
+                function() {
+                    $(this).css('background-color', '');
+                }
+            );
             
             // Confirmation dialog before sending
             $('#penalis-email-form').on('submit', function(e) {
