@@ -354,12 +354,18 @@ Salam Literasi,
      */
     private function replace_user_placeholders(string $content, array $user_data): string {
         $placeholders = [
+            // New English placeholder names
+            '{USER_NAME}' => isset($user_data['display_name']) ? $user_data['display_name'] : '',
+            '{USER_EMAIL}' => isset($user_data['user_email']) ? $user_data['user_email'] : '',
+            '{USERNAME}' => isset($user_data['user_login']) ? $user_data['user_login'] : '',
+            '{DATE}' => date_i18n(get_option('date_format')),
+            '{SITE_NAME}' => get_bloginfo('name'),
+            '{SITE_URL}' => home_url(),
+            
+            // Backward compatibility: Old Indonesian placeholder names (deprecated)
             '{NAMA_USER}' => isset($user_data['display_name']) ? $user_data['display_name'] : '',
             '{EMAIL_USER}' => isset($user_data['user_email']) ? $user_data['user_email'] : '',
-            '{USERNAME}' => isset($user_data['user_login']) ? $user_data['user_login'] : '',
-            '{TANGGAL}' => date_i18n(get_option('date_format')),
-            '{SITE_NAME}' => get_bloginfo('name'),
-            '{SITE_URL}' => home_url()
+            '{TANGGAL}' => date_i18n(get_option('date_format'))
         ];
         
         // Add post-specific placeholders if available

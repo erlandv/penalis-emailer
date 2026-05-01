@@ -140,7 +140,7 @@ class Penalis_Admin_Interface {
         <div class="wrap">
             <h1><?php echo esc_html__('Penalis Email', 'penalis-emailer'); ?></h1>
             
-            <!-- Tabs -->
+            <!-- Tabs with Icons -->
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo esc_url(admin_url('admin.php?page=' . $this->page_slug . '&tab=compose')); ?>" 
                    class="nav-tab <?php echo $current_tab === 'compose' ? 'nav-tab-active' : ''; ?>">
@@ -185,85 +185,182 @@ class Penalis_Admin_Interface {
         
         ?>
         <div class="penalis-compose-form">
+            <style>
+                .penalis-form-card {
+                    background: #fff;
+                    border: 1px solid #ccd0d4;
+                    border-radius: 4px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+                }
+                .penalis-form-card h3 {
+                    margin-top: 0;
+                    margin-bottom: 15px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #e5e5e5;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    color: #555;
+                }
+                .penalis-required-field label::after {
+                    content: " *";
+                    color: #dc3232;
+                    font-weight: bold;
+                }
+                .penalis-btn-primary {
+                    background: #2271b1 !important;
+                    border-color: #2271b1 !important;
+                    color: #fff !important;
+                    font-weight: 600 !important;
+                    padding: 8px 20px !important;
+                    height: auto !important;
+                }
+                .penalis-btn-primary:hover {
+                    background: #135e96 !important;
+                    border-color: #135e96 !important;
+                }
+                .penalis-btn-secondary {
+                    background: #f6f7f7 !important;
+                    border-color: #c3c4c7 !important;
+                    color: #2c3338 !important;
+                    padding: 8px 16px !important;
+                    height: auto !important;
+                }
+                .penalis-btn-secondary:hover {
+                    background: #f0f0f1 !important;
+                    border-color: #8c8f94 !important;
+                }
+            </style>
+            
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
                 <?php wp_nonce_field('penalis_send_email', 'penalis_email_nonce'); ?>
                 <input type="hidden" name="action" value="penalis_send_email">
                 
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="from_name"><?php echo esc_html__('Email From', 'penalis-emailer'); ?> <span class="required">*</span></label>
-                        </th>
-                        <td>
-                            <input type="text" 
-                                   name="from_name" 
-                                   id="from_name" 
-                                   class="regular-text" 
-                                   required
-                                   value="Penalis"
-                                   placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
-                            <p class="description">
-                                <?php echo esc_html__('Nama pengirim yang akan muncul di email. Alamat email tetap menggunakan no-reply@domain.', 'penalis-emailer'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row">
-                            <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?> <span class="required">*</span></label>
-                        </th>
-                        <td>
-                            <input type="text" 
-                                   name="subject" 
-                                   id="subject" 
-                                   class="regular-text" 
-                                   required
-                                   placeholder="<?php echo esc_attr__('Enter email subject', 'penalis-emailer'); ?>">
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row">
-                            <label for="body"><?php echo esc_html__('Email Body', 'penalis-emailer'); ?> <span class="required">*</span></label>
-                        </th>
-                        <td>
-                            <textarea name="body" 
-                                      id="body" 
-                                      rows="15" 
-                                      class="large-text code"
-                                      required
-                                      style="font-family: monospace;"
-                                      placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"></textarea>
+                <!-- Email Details Card -->
+                <div class="penalis-form-card">
+                    <h3><?php echo esc_html__('Email Details', 'penalis-emailer'); ?></h3>
+                    <table class="form-table">
+                        <tr class="penalis-required-field">
+                            <th scope="row">
+                                <label for="from_name"><?php echo esc_html__('Email From', 'penalis-emailer'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       name="from_name" 
+                                       id="from_name" 
+                                       class="regular-text" 
+                                       required
+                                       value="Penalis"
+                                       placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
+                                <p class="description">
+                                    <?php echo esc_html__('Sender name that will appear in the email. Email address will always use no-reply@domain.', 'penalis-emailer'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <tr class="penalis-required-field">
+                            <th scope="row">
+                                <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       name="subject" 
+                                       id="subject" 
+                                       class="regular-text" 
+                                       required
+                                       placeholder="<?php echo esc_attr__('Enter email subject', 'penalis-emailer'); ?>">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Email Content Card -->
+                <div class="penalis-form-card">
+                    <h3><?php echo esc_html__('Email Content', 'penalis-emailer'); ?></h3>
+                    <table class="form-table">
+                        <tr class="penalis-required-field">
+                            <th scope="row">
+                                <label for="body"><?php echo esc_html__('Email Body', 'penalis-emailer'); ?></label>
+                            </th>
+                            <td>
+                                <textarea name="body" 
+                                          id="body" 
+                                          rows="15" 
+                                          class="large-text code"
+                                          required
+                                          style="font-family: monospace;"
+                                          placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"></textarea>
                             
                             <div class="description" style="margin-top: 10px;">
-                                <strong><?php echo esc_html__('Formatting Tips:', 'penalis-emailer'); ?></strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li><code>**bold**</code> atau <code>__bold__</code> → <strong>bold text</strong></li>
-                                    <li><code>*italic*</code> atau <code>_italic_</code> → <em>italic text</em></li>
-                                    <li><code>[link text](url)</code> → link</li>
-                                    <li><code>- item</code> → bullet list</li>
-                                    <li><code>1. item</code> → numbered list</li>
-                                    <li>Enter 1x untuk baris baru</li>
-                                    <li>Enter 2x untuk paragraf baru</li>
-                                </ul>
+                                <!-- Quick Tips Box -->
+                                <div style="margin-bottom: 15px; padding: 12px; background: #e7f5ff; border-left: 4px solid #2271b1; border-radius: 4px;">
+                                    <strong><?php echo esc_html__('Quick Tips:', 'penalis-emailer'); ?></strong>
+                                    <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                                        <li>Use placeholders like <code>{USER_NAME}</code> to personalize emails</li>
+                                        <li>Format text with markdown (e.g., <code>**bold**</code>, <code>*italic*</code>)</li>
+                                        <li>Press Enter twice to create new paragraphs</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Available Placeholders -->
                                 <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li><code>{NAMA_USER}</code> → Nama penerima</li>
-                                    <li><code>{EMAIL_USER}</code> → Email penerima</li>
-                                    <li><code>{USERNAME}</code> → Username penerima</li>
-                                    <li><code>{TANGGAL}</code> → Tanggal hari ini</li>
-                                    <li><code>{SITE_NAME}</code> → Nama website</li>
-                                    <li><code>{SITE_URL}</code> → URL website</li>
+                                <ul style="margin: 5px 0 15px 0; padding-left: 20px;">
+                                    <li><code>{USER_NAME}</code> → Recipient's full name <em style="color: #666;">(e.g., "John Doe")</em></li>
+                                    <li><code>{USER_EMAIL}</code> → Recipient's email address <em style="color: #666;">(e.g., "john@example.com")</em></li>
+                                    <li><code>{USERNAME}</code> → Recipient's username <em style="color: #666;">(e.g., "johndoe")</em></li>
+                                    <li><code>{DATE}</code> → Current date <em style="color: #666;">(e.g., "May 1, 2026")</em></li>
+                                    <li><code>{SITE_NAME}</code> → Website name <em style="color: #666;">(e.g., "Penalis")</em></li>
+                                    <li><code>{SITE_URL}</code> → Website URL <em style="color: #666;">(e.g., "https://penalis.com")</em></li>
                                 </ul>
+                                
+                                <!-- Collapsible Formatting Tips -->
+                                <details style="margin-top: 10px; padding: 10px; background: #f6f7f7; border-radius: 4px;">
+                                    <summary style="cursor: pointer; font-weight: 600; user-select: none;">
+                                        
+                                        <?php echo esc_html__('Formatting Guide (click to expand)', 'penalis-emailer'); ?>
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-left: 10px;">
+                                        <strong><?php echo esc_html__('Text Formatting:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>**bold**</code> or <code>__bold__</code> → <strong>bold text</strong></li>
+                                            <li><code>*italic*</code> or <code>_italic_</code> → <em>italic text</em></li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Links:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>[link text](https://example.com)</code> → Creates a clickable link</li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Lists:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>- item</code> → Bullet list item</li>
+                                            <li><code>1. item</code> → Numbered list item</li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Line Breaks:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li>Press Enter once for line break</li>
+                                            <li>Press Enter twice for new paragraph</li>
+                                        </ul>
+                                    </div>
+                                </details>
                             </div>
                         </td>
                     </tr>
-                    
-                    <tr>
-                        <th scope="row">
-                            <?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?> <span class="required">*</span>
-                        </th>
-                        <td>
+                </table>
+                </div>
+                
+                <!-- Recipients Card -->
+                <div class="penalis-form-card">
+                    <h3><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></h3>
+                    <table class="form-table">
+                        <tr class="penalis-required-field">
+                            <th scope="row">
+                                <label><?php echo esc_html__('Select Recipients', 'penalis-emailer'); ?></label>
+                            </th>
+                            <td>
                             <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
                                 <?php if (empty($users)): ?>
                                     <p><?php echo esc_html__('No eligible users found.', 'penalis-emailer'); ?></p>
@@ -321,30 +418,53 @@ class Penalis_Admin_Interface {
                         </td>
                     </tr>
                 </table>
+                </div>
                 
-                <p class="submit">
-                    <button type="button" id="preview-email-btn" class="button">
+                <!-- Action Buttons -->
+                <p class="submit" style="padding: 15px 20px; background: #f6f7f7; border-radius: 4px; margin-top: 0;">
+                    <button type="button" id="preview-email-btn" class="button penalis-btn-secondary">
                         <?php echo esc_html__('Preview Email', 'penalis-emailer'); ?>
                     </button>
                     
-                    <?php submit_button(__('Send Email', 'penalis-emailer'), 'primary', 'submit', false); ?>
+                    <button type="submit" class="button penalis-btn-primary" style="margin-left: 10px;">
+                        <?php echo esc_html__('Send Email', 'penalis-emailer'); ?>
+                    </button>
                 </p>
             </form>
         </div>
         
         <!-- Preview Modal -->
-        <div id="email-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000;">
-            <div style="position:relative; width:90%; max-width:800px; height:90%; margin:2% auto; background:#fff; border-radius:5px; overflow:hidden;">
-                <div style="padding:20px; background:#f1f1f1; border-bottom:1px solid #ddd;">
-                    <h2 style="margin:0; display:inline-block;"><?php echo esc_html__('Email Preview', 'penalis-emailer'); ?></h2>
-                    <button type="button" id="close-preview-modal" style="float:right; font-size:20px; background:none; border:none; cursor:pointer;">&times;</button>
+        <div id="email-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; backdrop-filter: blur(2px);">
+            <div style="position:relative; width:90%; max-width:900px; height:90%; max-height:800px; margin:2% auto; background:#fff; border-radius:8px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div style="padding:20px; background:#f6f7f7; border-bottom:1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin:0; font-size: 18px; font-weight: 600;">
+                        <?php echo esc_html__('Email Preview', 'penalis-emailer'); ?>
+                    </h2>
+                    <button type="button" id="close-preview-modal" style="background: #dc3232; color: #fff; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 14px;" onmouseover="this.style.background='#a00'" onmouseout="this.style.background='#dc3232'">
+                        Close
+                    </button>
                 </div>
-                <div id="preview-loading" style="padding:40px; text-align:center; display:none;">
-                    <p><?php echo esc_html__('Loading preview...', 'penalis-emailer'); ?></p>
+                <div id="preview-loading" style="padding:60px; text-align:center; display:none;">
+                    <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #2271b1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 20px; font-size: 16px; color: #666;"><?php echo esc_html__('Generating preview...', 'penalis-emailer'); ?></p>
                 </div>
-                <iframe id="email-preview-iframe" style="width:100%; height:calc(100% - 70px); border:none;"></iframe>
+                <iframe id="email-preview-iframe" style="width:100%; height:calc(100% - 70px); border:none; display:none;"></iframe>
             </div>
         </div>
+        
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            @media (max-width: 782px) {
+                #email-preview-modal > div {
+                    width: 95% !important;
+                    height: 95% !important;
+                    margin: 2.5% auto !important;
+                }
+            }
+        </style>
         
         <script type="text/javascript">
         jQuery(document).ready(function($) {
@@ -378,9 +498,9 @@ class Penalis_Admin_Interface {
                     nonce: '<?php echo wp_create_nonce('penalis_preview_email'); ?>'
                 }, function(response) {
                     $('#preview-loading').hide();
-                    $('#email-preview-iframe').show();
                     
                     if (response.success) {
+                        $('#email-preview-iframe').show();
                         var iframe = document.getElementById('email-preview-iframe');
                         iframe.contentWindow.document.open();
                         iframe.contentWindow.document.write(response.data.html);
@@ -393,9 +513,14 @@ class Penalis_Admin_Interface {
             });
             
             // Close preview modal
-            $('#close-preview-modal, #email-preview-modal').on('click', function(e) {
+            $('#close-preview-modal').on('click', function() {
+                $('#email-preview-modal').hide();
+            });
+            
+            // Close modal when clicking outside
+            $('#email-preview-modal').on('click', function(e) {
                 if (e.target === this) {
-                    $('#email-preview-modal').hide();
+                    $(this).hide();
                 }
             });
         });
@@ -705,7 +830,7 @@ class Penalis_Admin_Interface {
             <h1><?php echo esc_html__('Auto-Email Template Settings', 'penalis-emailer'); ?></h1>
             
             <p class="description">
-                <?php echo esc_html__('Customize template untuk email otomatis yang dikirim setelah post publish. Gunakan plain text dengan markdown formatting.', 'penalis-emailer'); ?>
+                <?php echo esc_html__('Customize the template for automatic emails sent after post publish. Use plain text with markdown formatting.', 'penalis-emailer'); ?>
             </p>
             
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -725,43 +850,72 @@ class Penalis_Admin_Interface {
                                       style="font-family: monospace; width: 100%;"><?php echo esc_textarea($current_body); ?></textarea>
                             
                             <div class="description" style="margin-top: 10px;">
+                                <!-- Quick Tips Box -->
+                                <div style="margin-bottom: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                    <strong><?php echo esc_html__('Quick Tips:', 'penalis-emailer'); ?></strong>
+                                    <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                                        <li>Use <code>{BUTTON_CTA}</code> for default "Baca Tulisanmu" button</li>
+                                        <li>Use <code>[button: Custom Text](url)</code> for additional custom buttons</li>
+                                        <li>Placeholders like <code>{AUTHOR_NAME}</code> are auto-replaced with actual data</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Available Placeholders -->
                                 <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li><code>{AUTHOR_NAME}</code> → Nama penulis</li>
-                                    <li><code>{POST_TITLE}</code> → Judul post</li>
-                                    <li><code>{POST_URL}</code> → URL post</li>
-                                    <li><code>{BUTTON_CTA}</code> → Button "Baca Tulisanmu" (otomatis link ke post)</li>
-                                    <li><code>{TANGGAL}</code> → Tanggal hari ini</li>
-                                    <li><code>{SITE_NAME}</code> → Nama website</li>
-                                    <li><code>{SITE_URL}</code> → URL website</li>
+                                <ul style="margin: 5px 0 15px 0; padding-left: 20px;">
+                                    <li><code>{AUTHOR_NAME}</code> → Author's full name <em style="color: #666;">(e.g., "John Doe")</em></li>
+                                    <li><code>{POST_TITLE}</code> → Post title <em style="color: #666;">(e.g., "My Amazing Article")</em></li>
+                                    <li><code>{POST_URL}</code> → Post URL <em style="color: #666;">(e.g., "https://penalis.com/post")</em></li>
+                                    <li><code>{BUTTON_CTA}</code> → Default button "Baca Tulisanmu" <em style="color: #666;">(auto-links to post)</em></li>
+                                    <li><code>{DATE}</code> → Current date <em style="color: #666;">(e.g., "May 1, 2026")</em></li>
+                                    <li><code>{SITE_NAME}</code> → Website name <em style="color: #666;">(e.g., "Penalis")</em></li>
+                                    <li><code>{SITE_URL}</code> → Website URL <em style="color: #666;">(e.g., "https://penalis.com")</em></li>
                                 </ul>
                                 
-                                <strong><?php echo esc_html__('Formatting Tips:', 'penalis-emailer'); ?></strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li><code>**bold**</code> atau <code>__bold__</code> → <strong>bold text</strong></li>
-                                    <li><code>*italic*</code> atau <code>_italic_</code> → <em>italic text</em></li>
-                                    <li><code>[link text](url)</code> → link biasa</li>
-                                    <li><code>[button: Button Text](url)</code> → button CTA custom</li>
-                                    <li><code>- item</code> → bullet list</li>
-                                    <li><code>1. item</code> → numbered list</li>
-                                    <li>Enter 1x untuk baris baru</li>
-                                    <li>Enter 2x untuk paragraf baru</li>
-                                </ul>
-                                
-                                <p style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107;">
-                                    <strong>💡 Tips:</strong> Gunakan <code>{BUTTON_CTA}</code> untuk button default "Baca Tulisanmu", 
-                                    atau <code>[button: Custom Text](url)</code> untuk button custom tambahan.
-                                </p>
+                                <!-- Collapsible Formatting Tips -->
+                                <details style="margin-top: 10px; padding: 10px; background: #f6f7f7; border-radius: 4px;">
+                                    <summary style="cursor: pointer; font-weight: 600; user-select: none;">
+                                        
+                                        <?php echo esc_html__('Formatting Guide (click to expand)', 'penalis-emailer'); ?>
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-left: 10px;">
+                                        <strong><?php echo esc_html__('Text Formatting:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>**bold**</code> or <code>__bold__</code> → <strong>bold text</strong></li>
+                                            <li><code>*italic*</code> or <code>_italic_</code> → <em>italic text</em></li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Links & Buttons:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>[link text](https://example.com)</code> → Regular clickable link</li>
+                                            <li><code>[button: Button Text](https://example.com)</code> → Custom CTA button</li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Lists:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li><code>- item</code> → Bullet list item</li>
+                                            <li><code>1. item</code> → Numbered list item</li>
+                                        </ul>
+                                        
+                                        <strong><?php echo esc_html__('Line Breaks:', 'penalis-emailer'); ?></strong>
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                            <li>Press Enter once for line break</li>
+                                            <li>Press Enter twice for new paragraph</li>
+                                        </ul>
+                                    </div>
+                                </details>
                             </div>
                         </td>
                     </tr>
                 </table>
                 
-                <p class="submit">
-                    <?php submit_button(__('Save Template', 'penalis-emailer'), 'primary', 'submit', false); ?>
+                <p class="submit" style="padding: 15px 20px; background: #f6f7f7; border-radius: 4px;">
+                    <button type="submit" class="button penalis-btn-primary">
+                        <?php echo esc_html__('Save Template', 'penalis-emailer'); ?>
+                    </button>
                     
                     <button type="button" 
-                            class="button" 
+                            class="button penalis-btn-secondary" 
                             id="preview-template"
                             style="margin-left: 10px;">
                         <?php echo esc_html__('Preview Template', 'penalis-emailer'); ?>
@@ -784,15 +938,60 @@ class Penalis_Admin_Interface {
         </div>
         
         <!-- Preview Modal -->
-        <div id="template-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000;">
-            <div style="position:relative; width:90%; max-width:800px; height:90%; margin:2% auto; background:#fff; border-radius:5px; overflow:hidden;">
-                <div style="padding:20px; background:#f1f1f1; border-bottom:1px solid #ddd;">
-                    <h2 style="margin:0; display:inline-block;"><?php echo esc_html__('Template Preview', 'penalis-emailer'); ?></h2>
-                    <button type="button" id="close-preview" style="float:right; font-size:20px; background:none; border:none; cursor:pointer;">&times;</button>
+        <div id="template-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; backdrop-filter: blur(2px);">
+            <div style="position:relative; width:90%; max-width:900px; height:90%; max-height:800px; margin:2% auto; background:#fff; border-radius:8px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div style="padding:20px; background:#f6f7f7; border-bottom:1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin:0; font-size: 18px; font-weight: 600;">
+                        <?php echo esc_html__('Template Preview', 'penalis-emailer'); ?>
+                    </h2>
+                    <button type="button" id="close-preview" style="background: #dc3232; color: #fff; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 14px;" onmouseover="this.style.background='#a00'" onmouseout="this.style.background='#dc3232'">
+                        Close
+                    </button>
+                </div>
+                <div id="template-preview-loading" style="padding:60px; text-align:center; display:none;">
+                    <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #2271b1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 20px; font-size: 16px; color: #666;"><?php echo esc_html__('Generating preview...', 'penalis-emailer'); ?></p>
                 </div>
                 <iframe id="preview-iframe" style="width:100%; height:calc(100% - 70px); border:none;"></iframe>
             </div>
         </div>
+        
+        <style>
+            .penalis-btn-primary {
+                background: #2271b1 !important;
+                border-color: #2271b1 !important;
+                color: #fff !important;
+                font-weight: 600 !important;
+                padding: 8px 20px !important;
+                height: auto !important;
+            }
+            .penalis-btn-primary:hover {
+                background: #135e96 !important;
+                border-color: #135e96 !important;
+            }
+            .penalis-btn-secondary {
+                background: #f6f7f7 !important;
+                border-color: #c3c4c7 !important;
+                color: #2c3338 !important;
+                padding: 8px 16px !important;
+                height: auto !important;
+            }
+            .penalis-btn-secondary:hover {
+                background: #f0f0f1 !important;
+                border-color: #8c8f94 !important;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            @media (max-width: 782px) {
+                #template-preview-modal > div {
+                    width: 95% !important;
+                    height: 95% !important;
+                    margin: 2.5% auto !important;
+                }
+            }
+        </style>
         
         <script type="text/javascript">
         jQuery(document).ready(function($) {
@@ -809,8 +1008,10 @@ class Penalis_Admin_Interface {
                     .replace(/{SITE_NAME}/g, '<?php echo esc_js(get_bloginfo('name')); ?>')
                     .replace(/{SITE_URL}/g, '<?php echo esc_js(home_url()); ?>');
                 
-                // Show modal
+                // Show modal with loading
                 $('#template-preview-modal').show();
+                $('#template-preview-loading').show();
+                $('#preview-iframe').hide();
                 
                 // Send AJAX request to render preview
                 $.post(ajaxurl, {
@@ -818,7 +1019,10 @@ class Penalis_Admin_Interface {
                     body: preview,
                     nonce: '<?php echo wp_create_nonce('penalis_preview_auto_email'); ?>'
                 }, function(response) {
+                    $('#template-preview-loading').hide();
+                    
                     if (response.success) {
+                        $('#preview-iframe').show();
                         var iframe = document.getElementById('preview-iframe');
                         iframe.contentWindow.document.open();
                         iframe.contentWindow.document.write(response.data.html);
@@ -831,9 +1035,14 @@ class Penalis_Admin_Interface {
             });
             
             // Close preview
-            $('#close-preview, #template-preview-modal').on('click', function(e) {
+            $('#close-preview').on('click', function() {
+                $('#template-preview-modal').hide();
+            });
+            
+            // Close modal when clicking outside
+            $('#template-preview-modal').on('click', function(e) {
                 if (e.target === this) {
-                    $('#template-preview-modal').hide();
+                    $(this).hide();
                 }
             });
         });
