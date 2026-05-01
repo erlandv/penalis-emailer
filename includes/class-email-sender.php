@@ -88,28 +88,36 @@ class Penalis_Email_Sender {
             'POST_URL' => $post_url
         ];
         
+        // Render auto-email with editable template
+        $email_body = $this->template->render_auto_email($placeholders);
+        
         // Compose email
         $email_data = [
             'to' => $author->user_email,
-            'author_name' => $author->display_name,
-            'post_title' => $post_title,
-            'post_url' => $post_url,
-            'placeholders' => $placeholders,
+            'subject' => 'Tulisanmu telah dipublikasikan di Penalis 🎉',
+            'message' => $email_body,
             'post_id' => $post->ID
         ];
         
-        $email = $this->compose_email($email_data, true);
-        
         // Apply filters
-        $filtered = $this->apply_email_filters($email['subject'], $email['message'], $post->ID);
-        $email['subject'] = $filtered['subject'];
-        $email['message'] = $filtered['message'];
+        $filtered_subject = apply_filters('penalis_email_subject', $email_data['subject'], $post->ID);
+        $filtered_body = apply_filters('penalis_email_message', $email_data['message'], $post->ID);
+        
+        // Prepare headers
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
+        ];
+        
+        // Apply headers filter
+        $headers = apply_filters('penalis_email_headers', $headers, $post->ID);
         
         // Set content type filter before sending
         add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
         
         // Send email
-        $sent = wp_mail($email['to'], $email['subject'], $email['message'], $email['headers']);
+        $sent = wp_mail($email_data['to'], $filtered_subject, $filtered_body, $headers);
         
         // Remove content type filter after sending
         remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);

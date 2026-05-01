@@ -92,6 +92,7 @@ class Penalis_Admin_Interface {
         add_action('admin_post_penalis_reset_template', [$this, 'handle_template_reset']);
         add_action('admin_notices', [$this, 'show_admin_notices']);
         add_action('wp_ajax_penalis_preview_email', [$this, 'ajax_preview_email']);
+        add_action('wp_ajax_penalis_preview_auto_email', [$this, 'ajax_preview_auto_email']);
     }
     
     /**
@@ -242,6 +243,7 @@ class Penalis_Admin_Interface {
                                     <li><code>[link text](url)</code> → link</li>
                                     <li><code>- item</code> → bullet list</li>
                                     <li><code>1. item</code> → numbered list</li>
+                                    <li>Enter 1x untuk baris baru</li>
                                     <li>Enter 2x untuk paragraf baru</li>
                                 </ul>
                                 <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
@@ -694,22 +696,16 @@ class Penalis_Admin_Interface {
             wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
         }
         
-        // Get current template (custom or default)
-        $custom_template = get_option('penalis_email_template', '');
-        $current_template = !empty($custom_template) ? $custom_template : $this->email_template->get_default_template_html();
+        // Get current template body (plain text/markdown)
+        $custom_body = get_option('penalis_auto_email_body', '');
+        $current_body = !empty($custom_body) ? $custom_body : $this->email_template->get_default_auto_email_body();
         
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Email Template Settings', 'penalis-emailer'); ?></h1>
+            <h1><?php echo esc_html__('Auto-Email Template Settings', 'penalis-emailer'); ?></h1>
             
             <p class="description">
-                <?php echo esc_html__('Customize the HTML email template used for notifications. Use the following placeholders:', 'penalis-emailer'); ?>
-                <br>
-                <code>AUTHOR_NAME</code> - <?php echo esc_html__('Recipient\'s display name', 'penalis-emailer'); ?>
-                <br>
-                <code>POST_TITLE</code> - <?php echo esc_html__('Post title or email subject', 'penalis-emailer'); ?>
-                <br>
-                <code>POST_URL</code> - <?php echo esc_html__('Post permalink or site URL', 'penalis-emailer'); ?>
+                <?php echo esc_html__('Customize template untuk email otomatis yang dikirim setelah post publish. Gunakan plain text dengan markdown formatting.', 'penalis-emailer'); ?>
             </p>
             
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -719,17 +715,44 @@ class Penalis_Admin_Interface {
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="email_template"><?php echo esc_html__('Email Template HTML', 'penalis-emailer'); ?></label>
+                            <label for="email_body"><?php echo esc_html__('Email Body Template', 'penalis-emailer'); ?></label>
                         </th>
                         <td>
-                            <textarea name="email_template" 
-                                      id="email_template" 
-                                      rows="25" 
+                            <textarea name="email_body" 
+                                      id="email_body" 
+                                      rows="20" 
                                       class="large-text code"
-                                      style="font-family: monospace; width: 100%;"><?php echo esc_textarea($current_template); ?></textarea>
-                            <p class="description">
-                                <?php echo esc_html__('Full HTML email template. Make sure to include proper HTML structure.', 'penalis-emailer'); ?>
-                            </p>
+                                      style="font-family: monospace; width: 100%;"><?php echo esc_textarea($current_body); ?></textarea>
+                            
+                            <div class="description" style="margin-top: 10px;">
+                                <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    <li><code>{AUTHOR_NAME}</code> → Nama penulis</li>
+                                    <li><code>{POST_TITLE}</code> → Judul post</li>
+                                    <li><code>{POST_URL}</code> → URL post</li>
+                                    <li><code>{BUTTON_CTA}</code> → Button "Baca Tulisanmu" (otomatis link ke post)</li>
+                                    <li><code>{TANGGAL}</code> → Tanggal hari ini</li>
+                                    <li><code>{SITE_NAME}</code> → Nama website</li>
+                                    <li><code>{SITE_URL}</code> → URL website</li>
+                                </ul>
+                                
+                                <strong><?php echo esc_html__('Formatting Tips:', 'penalis-emailer'); ?></strong>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    <li><code>**bold**</code> atau <code>__bold__</code> → <strong>bold text</strong></li>
+                                    <li><code>*italic*</code> atau <code>_italic_</code> → <em>italic text</em></li>
+                                    <li><code>[link text](url)</code> → link biasa</li>
+                                    <li><code>[button: Button Text](url)</code> → button CTA custom</li>
+                                    <li><code>- item</code> → bullet list</li>
+                                    <li><code>1. item</code> → numbered list</li>
+                                    <li>Enter 1x untuk baris baru</li>
+                                    <li>Enter 2x untuk paragraf baru</li>
+                                </ul>
+                                
+                                <p style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107;">
+                                    <strong>💡 Tips:</strong> Gunakan <code>{BUTTON_CTA}</code> untuk button default "Baca Tulisanmu", 
+                                    atau <code>[button: Custom Text](url)</code> untuk button custom tambahan.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -775,22 +798,36 @@ class Penalis_Admin_Interface {
         jQuery(document).ready(function($) {
             // Preview template
             $('#preview-template').on('click', function() {
-                var template = $('#email_template').val();
+                var body = $('#email_body').val();
                 
-                // Replace placeholders with sample data
-                var preview = template
-                    .replace(/AUTHOR_NAME/g, 'John Doe')
-                    .replace(/POST_TITLE/g, 'Sample Post Title')
-                    .replace(/POST_URL/g, '<?php echo esc_js(home_url('/sample-post')); ?>');
+                // Replace placeholders with sample data for preview
+                var preview = body
+                    .replace(/{AUTHOR_NAME}/g, 'John Doe')
+                    .replace(/{POST_TITLE}/g, 'Sample Post Title')
+                    .replace(/{POST_URL}/g, '<?php echo esc_js(home_url('/sample-post')); ?>')
+                    .replace(/{TANGGAL}/g, '<?php echo esc_js(date_i18n(get_option('date_format'))); ?>')
+                    .replace(/{SITE_NAME}/g, '<?php echo esc_js(get_bloginfo('name')); ?>')
+                    .replace(/{SITE_URL}/g, '<?php echo esc_js(home_url()); ?>');
                 
                 // Show modal
                 $('#template-preview-modal').show();
                 
-                // Load preview in iframe
-                var iframe = document.getElementById('preview-iframe');
-                iframe.contentWindow.document.open();
-                iframe.contentWindow.document.write(preview);
-                iframe.contentWindow.document.close();
+                // Send AJAX request to render preview
+                $.post(ajaxurl, {
+                    action: 'penalis_preview_auto_email',
+                    body: preview,
+                    nonce: '<?php echo wp_create_nonce('penalis_preview_auto_email'); ?>'
+                }, function(response) {
+                    if (response.success) {
+                        var iframe = document.getElementById('preview-iframe');
+                        iframe.contentWindow.document.open();
+                        iframe.contentWindow.document.write(response.data.html);
+                        iframe.contentWindow.document.close();
+                    } else {
+                        alert('<?php echo esc_js(__('Failed to generate preview.', 'penalis-emailer')); ?>');
+                        $('#template-preview-modal').hide();
+                    }
+                });
             });
             
             // Close preview
@@ -820,17 +857,17 @@ class Penalis_Admin_Interface {
             wp_die(__('You do not have permission to perform this action.', 'penalis-emailer'));
         }
         
-        // Sanitize template (allow HTML but sanitize)
-        $template = isset($_POST['email_template']) ? wp_kses_post($_POST['email_template']) : '';
+        // Sanitize template body (plain text/markdown)
+        $template_body = isset($_POST['email_body']) ? wp_kses_post($_POST['email_body']) : '';
         
         // Save to database
-        update_option('penalis_email_template', $template);
+        update_option('penalis_auto_email_body', $template_body);
         
         // Redirect with success message
         $redirect_url = add_query_arg(
             [
                 'page' => $this->settings_page_slug,
-                'penalis_notice' => urlencode(__('Email template saved successfully.', 'penalis-emailer')),
+                'penalis_notice' => urlencode(__('Auto-email template saved successfully.', 'penalis-emailer')),
                 'penalis_type' => 'success'
             ],
             admin_url('admin.php')
@@ -857,13 +894,13 @@ class Penalis_Admin_Interface {
         }
         
         // Delete custom template (will fallback to default)
-        delete_option('penalis_email_template');
+        delete_option('penalis_auto_email_body');
         
         // Redirect with success message
         $redirect_url = add_query_arg(
             [
                 'page' => $this->settings_page_slug,
-                'penalis_notice' => urlencode(__('Email template reset to default successfully.', 'penalis-emailer')),
+                'penalis_notice' => urlencode(__('Auto-email template reset to default successfully.', 'penalis-emailer')),
                 'penalis_type' => 'success'
             ],
             admin_url('admin.php')
@@ -871,6 +908,39 @@ class Penalis_Admin_Interface {
         
         wp_redirect($redirect_url);
         exit;
+    }
+    
+    /**
+     * AJAX handler for auto-email preview
+     *
+     * @return void
+     */
+    public function ajax_preview_auto_email(): void {
+        // Check nonce
+        check_ajax_referer('penalis_preview_auto_email', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        
+        if (empty($body)) {
+            wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
+        }
+        
+        // Generate preview with sample data
+        $sample_data = [
+            'display_name' => 'John Doe',
+            'author_name' => 'John Doe',
+            'post_title' => 'Sample Post Title',
+            'post_url' => home_url('/sample-post')
+        ];
+        
+        $preview_html = $this->email_template->render_flexible_email($body, $sample_data);
+        
+        wp_send_json_success(['html' => $preview_html]);
     }
     
     /**
