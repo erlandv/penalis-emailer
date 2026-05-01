@@ -1,0 +1,86 @@
+<?php
+/**
+ * Configuration Class
+ *
+ * Centralized configuration constants and settings for the plugin.
+ * Eliminates magic strings and numbers throughout the codebase.
+ *
+ * @package Penalis_Emailer
+ * @since 1.1.0
+ */
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Class Penalis_Config
+ *
+ * Provides centralized configuration management.
+ */
+class Penalis_Config {
+    
+    // Admin Page Settings
+    const PAGE_SLUG = 'penalis-email';
+    const SETTINGS_PAGE_SLUG = 'penalis-email-settings';
+    const USERS_PER_PAGE = 50;
+    
+    // Database Keys
+    const META_KEY_EMAIL_SENT = '_penalis_email_sent';
+    const OPTION_KEY_MANUAL_LOG = 'penalis_manual_emails_log';
+    const OPTION_KEY_AUTO_BODY = 'penalis_auto_email_body';
+    const OPTION_KEY_AUTO_BODY_MODIFIED_TIME = 'penalis_auto_email_body_modified_time';
+    const OPTION_KEY_AUTO_BODY_MODIFIED_BY = 'penalis_auto_email_body_modified_by';
+    
+    // Email Settings
+    const DEFAULT_FROM_NAME = 'Penalis';
+    const DEFAULT_SUBJECT = 'Tulisanmu telah dipublikasikan di Penalis 🎉';
+    const DEFAULT_LOGO_URL = 'https://penalis.com/wp-content/uploads/2021/01/logo-penalis.png';
+    
+    // User Roles
+    const ELIGIBLE_ROLES = ['author', 'contributor'];
+    
+    // Log Settings
+    const DEFAULT_LOG_LIMIT = 50;
+    const LOG_CLEANUP_KEEP_COUNT = 100;
+    
+    /**
+     * Get logo URL with filter support
+     *
+     * @return string Logo URL
+     */
+    public static function get_logo_url(): string {
+        return apply_filters('penalis_logo_url', self::DEFAULT_LOGO_URL);
+    }
+    
+    /**
+     * Get from email address based on site domain
+     *
+     * @param string $from_name From name
+     * @return string From email header
+     */
+    public static function get_from_email(string $from_name = ''): string {
+        $from_name = $from_name ?: self::DEFAULT_FROM_NAME;
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        return $from_name . ' <no-reply@' . $site_domain . '>';
+    }
+    
+    /**
+     * Get eligible user roles
+     *
+     * @return array Array of role names
+     */
+    public static function get_eligible_roles(): array {
+        return apply_filters('penalis_eligible_roles', self::ELIGIBLE_ROLES);
+    }
+    
+    /**
+     * Get users per page for admin interface
+     *
+     * @return int Number of users per page
+     */
+    public static function get_users_per_page(): int {
+        return apply_filters('penalis_users_per_page', self::USERS_PER_PAGE);
+    }
+}
