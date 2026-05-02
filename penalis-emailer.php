@@ -59,8 +59,39 @@ function penalis_emailer_init() {
     // Load config first
     require_once PENALIS_EMAILER_PATH . 'includes/class-config.php';
     
-    // Load interfaces (must be loaded before implementations)
+    // Load all interfaces first (must be loaded before implementations)
     require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-log-repository.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-sender.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-template.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-validator.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-logger.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-markdown-parser.php';
+    
+    // Load core classes
+    require_once PENALIS_EMAILER_PATH . 'includes/class-service-container.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/class-markdown-parser.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/class-email-template.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/repositories/class-email-log-options-repository.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/repositories/class-post-meta-repository.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/class-email-logger.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/class-email-sender.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/validators/class-email-validator.php';
+    
+    // Load exception classes
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-penalis-exception.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-validation-exception.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-container-exception.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-template-exception.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-repository-exception.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-email-send-exception.php';
+    
+    // Load admin classes
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-admin-page.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-compose-page.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-history-page.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-settings-page.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-ajax-handler.php';
+    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-admin-interface.php';
     
     // Initialize core services
     $template = new Penalis_Email_Template();
