@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  *
  * Converts markdown text to HTML with email-safe formatting.
  */
-class Penalis_Markdown_Parser {
+class Penalis_Markdown_Parser implements Penalis_Markdown_Parser_Interface {
     
     /**
      * Parse markdown text to HTML

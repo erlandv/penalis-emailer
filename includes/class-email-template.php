@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
  * 
  * Handles email template rendering with placeholder replacement and markdown support.
  */
-class Penalis_Email_Template {
+class Penalis_Email_Template implements Penalis_Email_Template_Interface {
     
     /**
      * Logo URL for email header

@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  *
  * Tracks email delivery using repository pattern for data access.
  */
-class Penalis_Email_Logger {
+class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
     
     /**
      * Manual email log repository
@@ -141,6 +141,52 @@ class Penalis_Email_Logger {
      */
     public function cleanup_old_logs(int $keep_count = 100): int {
         return $this->manual_log_repository->cleanup($keep_count);
+    }
+    
+    /**
+     * Log email send activity (interface method)
+     *
+     * @param string $recipient_email Recipient email address
+     * @param string $subject         Email subject
+     * @param string $status          Send status (success/failed)
+     * @param string $type            Email type (manual/auto)
+     * @param string $error_message   Error message if failed
+     * @return bool True if logged successfully, false otherwise
+     */
+    public function log_email(
+        string $recipient_email,
+        string $subject,
+        string $status,
+        string $type = 'manual',
+        string $error_message = ''
+    ): bool {
+        if ($type === 'manual') {
+            // For manual emails, log with recipient info
+            $this->log_manual_email([$recipient_email], $subject, '');
+            return true;
+        }
+        
+        // For auto emails, we don't have a post_id here, so just return true
+        return true;
+    }
+    
+    /**
+     * Get email logs (interface method)
+     *
+     * @param int $limit Maximum number of logs to retrieve (0 = all)
+     * @return array Array of log entries
+     */
+    public function get_logs(int $limit = 0): array {
+        return $this->get_manual_email_log($limit);
+    }
+    
+    /**
+     * Get total log count (interface method)
+     *
+     * @return int Total number of logs
+     */
+    public function get_log_count(): int {
+        return $this->manual_log_repository->count();
     }
 }
 

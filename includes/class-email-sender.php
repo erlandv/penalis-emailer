@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
  * Composes and sends emails using wp_mail, integrates with Email_Template
  * and Email_Logger for rendering and tracking.
  */
-class Penalis_Email_Sender {
+class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
     
     /**
      * Email template instance

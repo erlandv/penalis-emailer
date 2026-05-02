@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  *
  * Validates email data with comprehensive rules.
  */
-class Penalis_Email_Validator {
+class Penalis_Email_Validator implements Penalis_Email_Validator_Interface {
     
     /**
      * Validation errors

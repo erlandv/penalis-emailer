@@ -1,4 +1,5 @@
 node_modules/
+test-*.php
 .env
 .env.production
 .env.development
