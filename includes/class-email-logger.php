@@ -17,23 +17,41 @@ if (!defined('ABSPATH')) {
 /**
  * Class Penalis_Email_Logger
  *
- * Tracks email delivery using WordPress post meta and options API.
+ * Tracks email delivery using repository pattern for data access.
  */
 class Penalis_Email_Logger {
     
     /**
-     * Post meta key for automatic email logging
+     * Manual email log repository
      *
-     * @var string
+     * @var Penalis_Email_Log_Repository_Interface
      */
-    private $meta_key = '_penalis_email_sent';
+    private $manual_log_repository;
     
     /**
-     * Options key for manual email logging
+     * Post meta repository for automatic emails
      *
-     * @var string
+     * @var Penalis_Post_Meta_Repository
      */
-    private $option_key = 'penalis_manual_emails_log';
+    private $post_meta_repository;
+    
+    /**
+     * Constructor
+     *
+     * @param Penalis_Email_Log_Repository_Interface|null $manual_log_repository Manual email repository
+     * @param Penalis_Post_Meta_Repository|null           $post_meta_repository  Post meta repository
+     */
+    public function __construct(
+        Penalis_Email_Log_Repository_Interface $manual_log_repository = null,
+        Penalis_Post_Meta_Repository $post_meta_repository = null
+    ) {
+        // Use default implementations if not provided
+        $this->manual_log_repository = $manual_log_repository ?? 
+            new Penalis_Email_Log_Options_Repository(Penalis_Config::OPTION_KEY_MANUAL_LOG);
+        
+        $this->post_meta_repository = $post_meta_repository ?? 
+            new Penalis_Post_Meta_Repository(Penalis_Config::META_KEY_EMAIL_SENT);
+    }
     
     /**
      * Log automatic email send for a post
@@ -44,7 +62,7 @@ class Penalis_Email_Logger {
      * @return void
      */
     public function log_automatic_email(int $post_id): void {
-        update_post_meta($post_id, $this->meta_key, time());
+        $this->post_meta_repository->save($post_id, time());
     }
     
     /**
@@ -54,14 +72,13 @@ class Penalis_Email_Logger {
      * @return bool True if email was sent, false otherwise
      */
     public function has_automatic_email_been_sent(int $post_id): bool {
-        $sent = get_post_meta($post_id, $this->meta_key, true);
-        return !empty($sent);
+        return $this->post_meta_repository->exists($post_id);
     }
     
     /**
      * Log manual email send
      *
-     * Appends log entry to options array with enhanced details.
+     * Appends log entry to repository with enhanced details.
      * Receives sanitized data as parameters - NO direct $_POST access.
      *
      * @param array  $recipients Array of user IDs who received the email
@@ -70,8 +87,6 @@ class Penalis_Email_Logger {
      * @return void
      */
     public function log_manual_email(array $recipients, string $subject, string $body = ''): void {
-        $log = get_option($this->option_key, []);
-        
         // Get current user
         $current_user = wp_get_current_user();
         
@@ -84,7 +99,7 @@ class Penalis_Email_Logger {
             $body_preview .= '...';
         }
         
-        $log[] = [
+        $log_entry = [
             'id' => $log_id,
             'subject' => $subject,
             'body_preview' => $body_preview,
@@ -95,7 +110,7 @@ class Penalis_Email_Logger {
             'status' => 'sent'
         ];
         
-        update_option($this->option_key, $log);
+        $this->manual_log_repository->save($log_entry);
     }
     
     /**
@@ -105,21 +120,7 @@ class Penalis_Email_Logger {
      * @return array Array of log entries with enhanced details
      */
     public function get_manual_email_log(int $limit = 0): array {
-        $log = get_option($this->option_key, []);
-        
-        // Sort by sent_at descending (newest first)
-        usort($log, function($a, $b) {
-            $time_a = isset($a['sent_at']) ? $a['sent_at'] : (isset($a['timestamp']) ? $a['timestamp'] : 0);
-            $time_b = isset($b['sent_at']) ? $b['sent_at'] : (isset($b['timestamp']) ? $b['timestamp'] : 0);
-            return $time_b - $time_a;
-        });
-        
-        // Apply limit if specified
-        if ($limit > 0) {
-            $log = array_slice($log, 0, $limit);
-        }
-        
-        return $log;
+        return $this->manual_log_repository->get_all($limit);
     }
     
     /**
@@ -129,15 +130,7 @@ class Penalis_Email_Logger {
      * @return array|null Log entry or null if not found
      */
     public function get_log_entry(string $log_id): ?array {
-        $log = get_option($this->option_key, []);
-        
-        foreach ($log as $entry) {
-            if (isset($entry['id']) && $entry['id'] === $log_id) {
-                return $entry;
-            }
-        }
-        
-        return null;
+        return $this->manual_log_repository->find_by_id($log_id);
     }
     
     /**
@@ -147,18 +140,7 @@ class Penalis_Email_Logger {
      * @return int Number of entries deleted
      */
     public function cleanup_old_logs(int $keep_count = 100): int {
-        $log = $this->get_manual_email_log();
-        
-        if (count($log) <= $keep_count) {
-            return 0;
-        }
-        
-        $deleted_count = count($log) - $keep_count;
-        $log = array_slice($log, 0, $keep_count);
-        
-        update_option($this->option_key, $log);
-        
-        return $deleted_count;
+        return $this->manual_log_repository->cleanup($keep_count);
     }
 }
 

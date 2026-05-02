@@ -28,6 +28,7 @@ spl_autoload_register(function ($class) {
     
     // Check in multiple directories
     $possible_paths = [
+        PENALIS_EMAILER_PATH . 'includes/interfaces/interface-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/services/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/repositories/class-' . $class_file . '.php',
@@ -53,6 +54,9 @@ spl_autoload_register(function ($class) {
 function penalis_emailer_init() {
     // Load config first
     require_once PENALIS_EMAILER_PATH . 'includes/class-config.php';
+    
+    // Load interfaces (must be loaded before implementations)
+    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-log-repository.php';
     
     // Initialize core services
     $template = new Penalis_Email_Template();
