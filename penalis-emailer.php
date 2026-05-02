@@ -28,15 +28,20 @@ spl_autoload_register(function ($class) {
     
     // Check in multiple directories
     $possible_paths = [
-        PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/services/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/repositories/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/validators/class-' . $class_file . '.php',
         PENALIS_EMAILER_PATH . 'includes/exceptions/class-' . $class_file . '.php',
+        PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php',
     ];
     
     foreach ($possible_paths as $file) {
+        // Skip backup files
+        if (strpos($file, '.old') !== false) {
+            continue;
+        }
+        
         if (file_exists($file)) {
             require_once $file;
             return;
