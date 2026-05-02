@@ -29,12 +29,21 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
     private $email_template;
     
     /**
+     * Email validator instance
+     *
+     * @var Penalis_Email_Validator
+     */
+    private $validator;
+    
+    /**
      * Constructor
      *
-     * @param Penalis_Email_Template $email_template Email template instance
+     * @param Penalis_Email_Template  $email_template Email template instance
+     * @param Penalis_Email_Validator $validator      Email validator instance
      */
-    public function __construct(Penalis_Email_Template $email_template) {
+    public function __construct(Penalis_Email_Template $email_template, Penalis_Email_Validator $validator = null) {
         $this->email_template = $email_template;
+        $this->validator = $validator ?? new Penalis_Email_Validator();
         $this->page_slug = Penalis_Config::SETTINGS_PAGE_SLUG;
     }
     
@@ -271,6 +280,13 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
         
         // Sanitize template body
         $template_body = isset($_POST['email_body']) ? wp_kses_post($_POST['email_body']) : '';
+        
+        // Validate template body
+        if (!$this->validator->validate_template(['email_body' => $template_body])) {
+            $error_message = $this->validator->get_first_error();
+            $this->redirect_with_notice($this->page_slug, 'error', $error_message);
+            return;
+        }
         
         // Save to database
         update_option(Penalis_Config::OPTION_KEY_AUTO_BODY, $template_body);

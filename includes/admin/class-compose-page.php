@@ -29,12 +29,21 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     private $email_sender;
     
     /**
+     * Email validator instance
+     *
+     * @var Penalis_Email_Validator
+     */
+    private $validator;
+    
+    /**
      * Constructor
      *
-     * @param Penalis_Email_Sender $email_sender Email sender instance
+     * @param Penalis_Email_Sender    $email_sender Email sender instance
+     * @param Penalis_Email_Validator $validator    Email validator instance
      */
-    public function __construct(Penalis_Email_Sender $email_sender) {
+    public function __construct(Penalis_Email_Sender $email_sender, Penalis_Email_Validator $validator = null) {
         $this->email_sender = $email_sender;
+        $this->validator = $validator ?? new Penalis_Email_Validator();
         $this->page_slug = Penalis_Config::PAGE_SLUG;
     }
     
@@ -75,10 +84,10 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         // Sanitize inputs
         $sanitized = $this->sanitize_inputs($_POST);
         
-        // Validate required fields
-        $validation_error = $this->validate_inputs($sanitized);
-        if ($validation_error) {
-            $this->redirect_with_notice($this->page_slug, 'error', $validation_error);
+        // Validate using validator class
+        if (!$this->validator->validate_manual_email($sanitized)) {
+            $error_message = $this->validator->get_first_error();
+            $this->redirect_with_notice($this->page_slug, 'error', $error_message);
             return;
         }
         
@@ -111,31 +120,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         ];
     }
     
-    /**
-     * Validate inputs
-     *
-     * @param array $data Sanitized data
-     * @return string|null Error message or null if valid
-     */
-    private function validate_inputs(array $data): ?string {
-        if (empty($data['from_name'])) {
-            return __('Email from name is required.', 'penalis-emailer');
-        }
-        
-        if (empty($data['subject'])) {
-            return __('Email subject is required.', 'penalis-emailer');
-        }
-        
-        if (empty($data['body'])) {
-            return __('Email body is required.', 'penalis-emailer');
-        }
-        
-        if (empty($data['user_ids'])) {
-            return __('Please select at least one recipient.', 'penalis-emailer');
-        }
-        
-        return null;
-    }
+
     
     /**
      * Handle send results and redirect with appropriate notice
