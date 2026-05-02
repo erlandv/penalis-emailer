@@ -31,7 +31,7 @@ class Penalis_Repository_Exception extends Penalis_Exception {
     public function __construct(
         string $message = 'Repository operation failed',
         array $context = [],
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct(
             $message,

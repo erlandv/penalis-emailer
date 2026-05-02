@@ -46,7 +46,7 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
      * 
      * @param Penalis_Markdown_Parser|null $markdown_parser Optional markdown parser instance
      */
-    public function __construct(Penalis_Markdown_Parser $markdown_parser = null) {
+    public function __construct(?Penalis_Markdown_Parser $markdown_parser = null) {
         $this->markdown_parser = $markdown_parser ?? new Penalis_Markdown_Parser();
     }
     
@@ -123,6 +123,58 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
         
         // Combine header + body + footer
         return $this->get_header_html() . $body_section . $this->get_footer_html();
+    }
+    
+    /**
+     * Generate HTML email from manual content (interface implementation)
+     *
+     * @param string $subject   Email subject
+     * @param string $body      Email body content
+     * @param string $from_name Sender name
+     * @return string Complete HTML email
+     */
+    public function generate_manual_email(string $subject, string $body, string $from_name): string {
+        // Use render_flexible_email for implementation
+        return $this->render_flexible_email($body, ['display_name' => $from_name]);
+    }
+    
+    /**
+     * Generate HTML email from auto template (interface implementation)
+     *
+     * @param int $post_id Post ID
+     * @return string Complete HTML email
+     */
+    public function generate_auto_email(int $post_id): string {
+        // Get post data
+        $post = get_post($post_id);
+        if (!$post) {
+            return '';
+        }
+        
+        $author = get_userdata($post->post_author);
+        if (!$author) {
+            return '';
+        }
+        
+        // Prepare placeholders
+        $placeholders = [
+            'AUTHOR_NAME' => $author->display_name,
+            'POST_TITLE' => $post->post_title,
+            'POST_URL' => get_permalink($post_id)
+        ];
+        
+        // Use render_auto_email for implementation
+        return $this->render_auto_email($placeholders);
+    }
+    
+    /**
+     * Get email wrapper HTML (interface implementation)
+     *
+     * @param string $content Email content
+     * @return string Complete HTML with wrapper
+     */
+    public function get_email_wrapper(string $content): string {
+        return $this->get_header_html() . $this->get_body_wrapper_html($content) . $this->get_footer_html();
     }
     
     /**

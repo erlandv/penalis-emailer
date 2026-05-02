@@ -35,7 +35,7 @@ class Penalis_Config {
     
     // Email Settings
     const DEFAULT_FROM_NAME = 'Penalis';
-    const DEFAULT_SUBJECT = 'Tulisanmu telah dipublikasikan di Penalis 🎉';
+    const DEFAULT_SUBJECT = 'Karya Tulismu Sudah Publish di Penalis 🎉';
     const DEFAULT_LOGO_URL = 'https://penalis.com/wp-content/uploads/2021/01/logo-penalis.png';
     
     // User Roles

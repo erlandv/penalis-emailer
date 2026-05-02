@@ -40,7 +40,7 @@ class Penalis_Validation_Exception extends Penalis_Exception {
         string $message = 'Validation failed',
         array $errors = [],
         array $context = [],
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         $this->errors = $errors;
         $context['errors'] = $errors;

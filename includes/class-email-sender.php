@@ -94,7 +94,7 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Compose email
         $email_data = [
             'to' => $author->user_email,
-            'subject' => 'Tulisanmu telah dipublikasikan di Penalis 🎉',
+            'subject' => 'Karya Tulismu Sudah Publish di Penalis 🎉',
             'message' => $email_body,
             'post_id' => $post->ID
         ];
@@ -275,7 +275,7 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      */
     private function compose_email(array $data, bool $use_template = true): array {
         // Set default subject
-        $subject = 'Tulisanmu telah dipublikasikan di Penalis 🎉';
+        $subject = 'Karya Tulismu Sudah Publish di Penalis 🎉';
         
         // Render message using template
         $custom_message = $data['custom_message'] ?? '';
@@ -316,6 +316,124 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
             'subject' => $subject,
             'message' => $message
         ];
+    }
+    
+    /**
+     * Send automatic email to post author (interface implementation)
+     *
+     * @param int $post_id Post ID
+     * @return bool True if sent successfully, false otherwise
+     */
+    public function send_auto_email(int $post_id): bool {
+        // Get post
+        $post = get_post($post_id);
+        if (!$post) {
+            return false;
+        }
+        
+        // Check if email already sent
+        if ($this->has_email_been_sent($post_id)) {
+            return true; // Already sent, not an error
+        }
+        
+        // Get author data
+        $author = get_userdata($post->post_author);
+        if (!$author || !is_email($author->user_email)) {
+            error_log('Penalis Emailer: Invalid author email for post ID ' . $post_id);
+            return false;
+        }
+        
+        // Get post data
+        $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
+        $post_title = stripslashes($post_title);
+        $post_url = get_permalink($post_id);
+        
+        // Prepare placeholders
+        $placeholders = [
+            'AUTHOR_NAME' => $author->display_name,
+            'POST_TITLE' => $post_title,
+            'POST_URL' => $post_url
+        ];
+        
+        // Render auto-email
+        $email_body = $this->template->render_auto_email($placeholders);
+        
+        // Prepare email
+        $subject = 'Karya Tulismu Sudah Publish di Penalis 🎉';
+        $filtered_subject = apply_filters('penalis_email_subject', $subject, $post_id);
+        $filtered_body = apply_filters('penalis_email_message', $email_body, $post_id);
+        
+        // Prepare headers
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
+        ];
+        $headers = apply_filters('penalis_email_headers', $headers, $post_id);
+        
+        // Set content type filter
+        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        
+        // Send email
+        $sent = wp_mail($author->user_email, $filtered_subject, $filtered_body, $headers);
+        
+        // Remove content type filter
+        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        
+        if ($sent) {
+            $this->mark_email_as_sent($post_id);
+            return true;
+        }
+        
+        error_log('Penalis Emailer: Failed to send email for post ID ' . $post_id);
+        return false;
+    }
+    
+    /**
+     * Send test email to current user (interface implementation)
+     *
+     * @param string $template_body Template body to test
+     * @return bool True if sent successfully, false otherwise
+     */
+    public function send_test_email(string $template_body): bool {
+        $current_user = wp_get_current_user();
+        
+        if (!$current_user || !is_email($current_user->user_email)) {
+            return false;
+        }
+        
+        // Prepare user data
+        $user_data = [
+            'display_name' => $current_user->display_name,
+            'user_email' => $current_user->user_email,
+            'user_login' => $current_user->user_login,
+            'post_title' => 'Contoh Judul Tulisan',
+            'post_url' => home_url('/contoh-tulisan/')
+        ];
+        
+        // Render email
+        $email_body = $this->template->render_flexible_email($template_body, $user_data);
+        
+        // Prepare email
+        $subject = 'Test Email - Penalis Emailer';
+        
+        // Prepare headers
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Penalis - Test <no-reply@' . $site_domain . '>'
+        ];
+        
+        // Set content type filter
+        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        
+        // Send email
+        $sent = wp_mail($current_user->user_email, $subject, $email_body, $headers);
+        
+        // Remove content type filter
+        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        
+        return $sent;
     }
     
     /**

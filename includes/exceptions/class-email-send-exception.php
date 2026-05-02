@@ -40,7 +40,7 @@ class Penalis_Email_Send_Exception extends Penalis_Exception {
         string $message = 'Email send failed',
         array $failed_recipients = [],
         array $context = [],
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         $this->failed_recipients = $failed_recipients;
         $context['failed_recipients'] = $failed_recipients;

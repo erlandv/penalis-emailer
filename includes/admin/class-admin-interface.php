@@ -86,9 +86,8 @@ class Penalis_Admin_Interface {
         add_action('admin_post_penalis_save_template', [$this->settings_page, 'handle_save']);
         add_action('admin_post_penalis_reset_template', [$this->settings_page, 'handle_reset']);
         
-        // Admin notices
-        add_action('admin_notices', [$this->compose_page, 'show_admin_notices']);
-        add_action('admin_notices', [$this->settings_page, 'show_admin_notices']);
+        // Admin notices - single handler for all pages
+        add_action('admin_notices', [$this, 'show_admin_notices']);
         
         // AJAX handlers
         $this->ajax_handler->register_hooks();
@@ -137,7 +136,11 @@ class Penalis_Admin_Interface {
         
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Penalis Email', 'penalis-emailer'); ?></h1>
+            <h1><?php echo esc_html__('Send Manual Email', 'penalis-emailer'); ?></h1>
+
+            <p class="description">
+                <?php echo esc_html__('Manually send emails to authors and contributors to provide information or notifications.', 'penalis-emailer'); ?>
+            </p>
             
             <!-- Tabs -->
             <h2 class="nav-tab-wrapper">
@@ -164,6 +167,44 @@ class Penalis_Admin_Interface {
                 }
                 ?>
             </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Show admin notices from URL parameters
+     *
+     * @return void
+     */
+    public function show_admin_notices(): void {
+        // Only show on our plugin pages
+        if (!isset($_GET['page'])) {
+            return;
+        }
+        
+        $our_pages = [
+            Penalis_Config::PAGE_SLUG,
+            Penalis_Config::SETTINGS_PAGE_SLUG
+        ];
+        
+        if (!in_array($_GET['page'], $our_pages)) {
+            return;
+        }
+        
+        // Check for notice parameters
+        if (!isset($_GET['penalis_notice']) || !isset($_GET['penalis_type'])) {
+            return;
+        }
+        
+        $message = sanitize_text_field($_GET['penalis_notice']);
+        $type = sanitize_text_field($_GET['penalis_type']);
+        
+        $allowed_types = ['success', 'error', 'warning', 'info'];
+        $type = in_array($type, $allowed_types) ? $type : 'info';
+        
+        ?>
+        <div class="notice notice-<?php echo esc_attr($type); ?> is-dismissible">
+            <p><?php echo esc_html($message); ?></p>
         </div>
         <?php
     }

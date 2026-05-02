@@ -42,8 +42,8 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      * @param Penalis_Post_Meta_Repository|null           $post_meta_repository  Post meta repository
      */
     public function __construct(
-        Penalis_Email_Log_Repository_Interface $manual_log_repository = null,
-        Penalis_Post_Meta_Repository $post_meta_repository = null
+        ?Penalis_Email_Log_Repository_Interface $manual_log_repository = null,
+        ?Penalis_Post_Meta_Repository $post_meta_repository = null
     ) {
         // Use default implementations if not provided
         $this->manual_log_repository = $manual_log_repository ?? 

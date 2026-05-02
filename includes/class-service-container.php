@@ -89,7 +89,7 @@ class Penalis_Service_Container {
      * @param callable $factory Factory function (optional)
      * @return void
      */
-    public static function singleton(string $class, callable $factory = null): void {
+    public static function singleton(string $class, ?callable $factory = null): void {
         self::$singletons[$class] = true;
         
         if ($factory !== null) {

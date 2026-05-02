@@ -55,7 +55,7 @@ class Penalis_Exception extends Exception {
         string $message = '',
         int $code = 0,
         array $context = [],
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
         $this->context = $context;

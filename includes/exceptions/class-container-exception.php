@@ -31,7 +31,7 @@ class Penalis_Container_Exception extends Penalis_Exception {
     public function __construct(
         string $message = 'Container operation failed',
         array $context = [],
-        \Throwable $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct(
             $message,

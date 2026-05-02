@@ -41,7 +41,7 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
      * @param Penalis_Email_Template  $email_template Email template instance
      * @param Penalis_Email_Validator $validator      Email validator instance
      */
-    public function __construct(Penalis_Email_Template $email_template, Penalis_Email_Validator $validator = null) {
+    public function __construct(Penalis_Email_Template $email_template, ?Penalis_Email_Validator $validator = null) {
         $this->email_template = $email_template;
         $this->validator = $validator ?? new Penalis_Email_Validator();
         $this->page_slug = Penalis_Config::SETTINGS_PAGE_SLUG;
