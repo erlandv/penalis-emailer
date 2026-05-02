@@ -35,6 +35,22 @@ class Penalis_Email_Template {
     private $template_option_key = 'penalis_email_template';
     
     /**
+     * Markdown parser instance
+     * 
+     * @var Penalis_Markdown_Parser
+     */
+    private $markdown_parser;
+    
+    /**
+     * Constructor
+     * 
+     * @param Penalis_Markdown_Parser|null $markdown_parser Optional markdown parser instance
+     */
+    public function __construct(Penalis_Markdown_Parser $markdown_parser = null) {
+        $this->markdown_parser = $markdown_parser ?? new Penalis_Markdown_Parser();
+    }
+    
+    /**
      * Render email template with placeholder replacement (legacy method for auto emails)
      * 
      * @param array  $placeholders   Associative array of placeholder values
@@ -63,8 +79,8 @@ class Penalis_Email_Template {
         // Replace user placeholders first
         $body_content = $this->replace_user_placeholders($body_content, $user_data);
         
-        // Convert markdown to HTML
-        $body_html = $this->format_markdown_to_html($body_content);
+        // Convert markdown to HTML using parser
+        $body_html = $this->markdown_parser->parse($body_content);
         
         // Wrap in body container
         $body_section = $this->get_body_wrapper_html($body_html);
@@ -99,8 +115,8 @@ class Penalis_Email_Template {
         // Replace placeholders
         $body_content = $this->replace_user_placeholders($template_body, $user_data);
         
-        // Convert markdown to HTML
-        $body_html = $this->format_markdown_to_html($body_content);
+        // Convert markdown to HTML using parser
+        $body_html = $this->markdown_parser->parse($body_content);
         
         // Wrap in body container
         $body_section = $this->get_body_wrapper_html($body_html);
@@ -387,205 +403,5 @@ Salam Literasi,
         return str_replace(array_keys($placeholders), array_values($placeholders), $content);
     }
     
-    /**
-     * Convert markdown-style text to HTML
-     * Supports: bold, italic, links, lists, paragraphs, line breaks
-     * 
-     * @param string $text Plain text with markdown formatting
-     * @return string HTML formatted content
-     */
-    private function format_markdown_to_html(string $text): string {
-        // Normalize line endings
-        $text = str_replace(["\r\n", "\r"], "\n", $text);
-        
-        // Split by double newline to get paragraphs
-        $paragraphs = explode("\n\n", $text);
-        $html = '';
-        
-        foreach ($paragraphs as $paragraph) {
-            $paragraph = trim($paragraph);
-            
-            if (empty($paragraph)) {
-                continue;
-            }
-            
-            // Split paragraph into lines
-            $lines = explode("\n", $paragraph);
-            $in_list = false;
-            $in_ordered_list = false;
-            $paragraph_content = '';
-            
-            foreach ($lines as $line) {
-                $trimmed = trim($line);
-                
-                if (empty($trimmed)) {
-                    continue;
-                }
-                
-                // Unordered list item (- item)
-                if (preg_match('/^[-*]\s+(.+)$/', $trimmed, $matches)) {
-                    // Close ordered list if open
-                    if ($in_ordered_list) {
-                        $paragraph_content .= '</ol>';
-                        $in_ordered_list = false;
-                    }
-                    
-                    // Open list if not already open
-                    if (!$in_list) {
-                        $paragraph_content .= '<ul style="margin:0 0 12px 0; padding-left:20px;">';
-                        $in_list = true;
-                    }
-                    
-                    $paragraph_content .= '<li>' . $this->format_inline_markdown($matches[1]) . '</li>';
-                    continue;
-                }
-                
-                // Ordered list item (1. item)
-                if (preg_match('/^\d+\.\s+(.+)$/', $trimmed, $matches)) {
-                    // Close unordered list if open
-                    if ($in_list) {
-                        $paragraph_content .= '</ul>';
-                        $in_list = false;
-                    }
-                    
-                    // Open list if not already open
-                    if (!$in_ordered_list) {
-                        $paragraph_content .= '<ol style="margin:0 0 12px 0; padding-left:20px;">';
-                        $in_ordered_list = true;
-                    }
-                    
-                    $paragraph_content .= '<li>' . $this->format_inline_markdown($matches[1]) . '</li>';
-                    continue;
-                }
-                
-                // Regular text line
-                // Close any open lists
-                if ($in_list) {
-                    $paragraph_content .= '</ul>';
-                    $in_list = false;
-                }
-                if ($in_ordered_list) {
-                    $paragraph_content .= '</ol>';
-                    $in_ordered_list = false;
-                }
-                
-                // Add line with <br> if not first line in paragraph
-                if (!empty($paragraph_content) && !$in_list && !$in_ordered_list) {
-                    $paragraph_content .= '<br>';
-                }
-                
-                $paragraph_content .= $this->format_inline_markdown($trimmed);
-            }
-            
-            // Close any remaining open lists
-            if ($in_list) {
-                $paragraph_content .= '</ul>';
-            }
-            if ($in_ordered_list) {
-                $paragraph_content .= '</ol>';
-            }
-            
-            // Wrap in paragraph if not a list
-            if (!empty($paragraph_content)) {
-                // Check if content is only lists (starts with <ul> or <ol>)
-                if (preg_match('/^<(ul|ol)/', $paragraph_content)) {
-                    $html .= $paragraph_content;
-                } else {
-                    $html .= '<p style="margin:0 0 12px 0;">' . $paragraph_content . '</p>';
-                }
-            }
-        }
-        
-        return $html;
-    }
-    
-    /**
-     * Format inline markdown (bold, italic, links, buttons)
-     * 
-     * @param string $text Text with inline markdown
-     * @return string HTML formatted text
-     */
-    private function format_inline_markdown(string $text): string {
-        $link_placeholders = [];
-        $autolink_placeholders = [];
-        $button_placeholders = [];
-        
-        // Process button markdown FIRST: [button: text](url)
-        $text = preg_replace_callback(
-            '/\[button:\s*([^\]]+)\]\(([^\)]+)\)/',
-            function($matches) use (&$button_placeholders) {
-                $button_text = trim($matches[1]);
-                $url = $matches[2];
-                $placeholder = '{{BUTTON' . count($button_placeholders) . '}}';
-                
-                // Generate button HTML with same styling as default template
-                $button_html = '<table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 16px 0;">';
-                $button_html .= '<tr>';
-                $button_html .= '<td align="center" bgcolor="#3D55EF" style="border-radius: 4px;">';
-                $button_html .= '<a href="' . esc_url($url) . '" target="_blank" style="font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; font-weight: 600; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 4px; display: inline-block;">';
-                $button_html .= esc_html($button_text);
-                $button_html .= '</a>';
-                $button_html .= '</td>';
-                $button_html .= '</tr>';
-                $button_html .= '</table>';
-                
-                $button_placeholders[$placeholder] = $button_html;
-                return $placeholder;
-            },
-            $text
-        );
-        
-        // Process markdown links: [text](url)
-        $text = preg_replace_callback(
-            '/\[([^\]]+)\]\(([^\)]+)\)/',
-            function($matches) use (&$link_placeholders) {
-                $link_text = $matches[1];
-                $url = $matches[2];
-                $placeholder = '{{MDLINK' . count($link_placeholders) . '}}';
-                $link_placeholders[$placeholder] = '<a href="' . esc_url($url) . '" style="color:#3D55EF; text-decoration:underline;" target="_blank">' . esc_html($link_text) . '</a>';
-                return $placeholder;
-            },
-            $text
-        );
-        
-        // Auto-link URLs (http:// or https://) - also before escaping
-        $text = preg_replace_callback(
-            '/(https?:\/\/[^\s<\[{]+)/',
-            function($matches) use (&$autolink_placeholders) {
-                $url = $matches[1];
-                $placeholder = '{{AUTOLINK' . count($autolink_placeholders) . '}}';
-                $autolink_placeholders[$placeholder] = '<a href="' . esc_url($url) . '" style="color:#3D55EF; text-decoration:underline;" target="_blank">' . esc_html($url) . '</a>';
-                return $placeholder;
-            },
-            $text
-        );
-        
-        // NOW escape HTML for the rest of the text
-        $text = esc_html($text);
-        
-        // Bold: **text** or __text__
-        $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
-        $text = preg_replace('/__(.+?)__/', '<strong>$1</strong>', $text);
-        
-        // Italic: *text* or _text_ (but not in URLs or already processed bold)
-        $text = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/', '<em>$1</em>', $text);
-        $text = preg_replace('/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/', '<em>$1</em>', $text);
-        
-        // Replace button placeholders with actual HTML (FIRST, before links)
-        foreach ($button_placeholders as $placeholder => $html) {
-            $text = str_replace($placeholder, $html, $text);
-        }
-        
-        // Replace link placeholders with actual HTML
-        foreach ($link_placeholders as $placeholder => $html) {
-            $text = str_replace($placeholder, $html, $text);
-        }
-        
-        // Replace autolink placeholders with actual HTML
-        foreach ($autolink_placeholders as $placeholder => $html) {
-            $text = str_replace($placeholder, $html, $text);
-        }
-        
-        return $text;
-    }
 }
+
