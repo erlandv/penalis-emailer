@@ -1,9 +1,13 @@
 <?php
 /**
  * Plugin Name: Penalis Emailer
+ * Plugin URI: https://github.com/erlandv/penalis-emailer
  * Description: Automatically notifies post authors via email when posts are published
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Penalis
+ * Author URI: https://penalis.com
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: penalis-emailer
  */
 
