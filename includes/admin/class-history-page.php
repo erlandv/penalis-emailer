@@ -48,7 +48,8 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
         }
         
-        $log_entries = $this->email_logger->get_manual_email_log(Penalis_Config::DEFAULT_LOG_LIMIT);
+        // Get all email logs (both manual and automatic)
+        $log_entries = $this->email_logger->get_all_email_log(Penalis_Config::DEFAULT_LOG_LIMIT);
         
         ?>
         <div class="penalis-history-list">
@@ -82,6 +83,11 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         ?>
         <div class="penalis-user-selection">
             <div class="penalis-user-actions">
+                <select id="email-type-filter" class="regular-text" style="width: auto;">
+                    <option value="all"><?php echo esc_html__('All Emails', 'penalis-emailer'); ?></option>
+                    <option value="manual"><?php echo esc_html__('Manual Only', 'penalis-emailer'); ?></option>
+                    <option value="automatic"><?php echo esc_html__('Automatic Only', 'penalis-emailer'); ?></option>
+                </select>
                 <input type="text" 
                        id="history-search" 
                        class="regular-text" 
@@ -139,25 +145,61 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         $sent_by_user = $sent_by_id ? get_userdata($sent_by_id) : null;
         $body_preview = isset($entry['body_preview']) ? $entry['body_preview'] : '';
         $sent_date = date('Y-m-d', $sent_time);
+        
+        // Determine email type
+        $email_type = isset($entry['type']) ? $entry['type'] : 'manual';
+        $is_automatic = ($email_type === 'automatic');
+        
+        // Get recipient info for automatic emails
+        $recipient_display = '';
+        if ($is_automatic && isset($entry['recipient_name'])) {
+            $recipient_display = $entry['recipient_name'];
+        } else {
+            $recipient_display = $recipient_count . ' ' . esc_html__('users', 'penalis-emailer');
+        }
         ?>
         <tr class="history-row" 
             data-subject="<?php echo esc_attr(strtolower($entry['subject'])); ?>" 
             data-date="<?php echo esc_attr($sent_date); ?>"
-            data-timestamp="<?php echo esc_attr($sent_time); ?>">
+            data-timestamp="<?php echo esc_attr($sent_time); ?>"
+            data-type="<?php echo esc_attr($email_type); ?>">
             <td>
                 <strong><?php echo esc_html($entry['subject']); ?></strong>
-                <?php if (!empty($body_preview)): ?>
+                <?php if ($is_automatic): ?>
+                    <span class="penalis-email-badge penalis-badge-automatic">
+                        <?php echo esc_html__('AUTO', 'penalis-emailer'); ?>
+                    </span>
+                <?php else: ?>
+                    <span class="penalis-email-badge penalis-badge-manual">
+                        <?php echo esc_html__('MANUAL', 'penalis-emailer'); ?>
+                    </span>
+                <?php endif; ?>
+                
+                <?php if ($is_automatic && isset($entry['post_title'])): ?>
+                    <br>
+                    <small style="color: #666;">
+                        <?php echo esc_html__('Post:', 'penalis-emailer'); ?> 
+                        <?php if (isset($entry['post_url'])): ?>
+                            <a href="<?php echo esc_url($entry['post_url']); ?>" target="_blank">
+                                <?php echo esc_html($entry['post_title']); ?>
+                            </a>
+                        <?php else: ?>
+                            <?php echo esc_html($entry['post_title']); ?>
+                        <?php endif; ?>
+                    </small>
+                <?php elseif (!empty($body_preview)): ?>
                     <br>
                     <small style="color: #666;"><?php echo esc_html($body_preview); ?></small>
                 <?php endif; ?>
             </td>
             <td>
-                <?php echo esc_html($recipient_count); ?> 
-                <?php echo esc_html__('users', 'penalis-emailer'); ?>
+                <?php echo esc_html($recipient_display); ?>
             </td>
             <td>
                 <?php 
-                if ($sent_by_user) {
+                if ($is_automatic) {
+                    echo '<em style="color: #666;">' . esc_html__('System', 'penalis-emailer') . '</em>';
+                } elseif ($sent_by_user) {
                     echo esc_html($sent_by_user->display_name);
                 } else {
                     echo esc_html__('Unknown', 'penalis-emailer');

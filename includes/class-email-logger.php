@@ -56,12 +56,52 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
     /**
      * Log automatic email send for a post
      *
-     * Stores timestamp in post meta to track when email was sent.
+     * Stores detailed log entry in repository and timestamp in post meta.
      *
      * @param int $post_id The post ID
      * @return void
      */
     public function log_automatic_email(int $post_id): void {
+        // Get post and author data
+        $post = get_post($post_id);
+        if (!$post) {
+            return;
+        }
+        
+        $author = get_userdata($post->post_author);
+        if (!$author) {
+            return;
+        }
+        
+        // Generate unique log ID
+        $log_id = 'auto_' . $post_id . '_' . time();
+        
+        // Get post title and URL
+        $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
+        $post_title = stripslashes($post_title);
+        $post_url = get_permalink($post_id);
+        
+        // Create log entry with detailed information
+        $log_entry = [
+            'id' => $log_id,
+            'type' => 'automatic',
+            'subject' => 'Karya Tulismu Sudah Publish di Penalis 🎉',
+            'post_id' => $post_id,
+            'post_title' => $post_title,
+            'post_url' => $post_url,
+            'recipient_count' => 1,
+            'recipients' => [$author->ID],
+            'recipient_email' => $author->user_email,
+            'recipient_name' => $author->display_name,
+            'sent_at' => time(),
+            'sent_by' => 0, // System-generated, no user
+            'status' => 'sent'
+        ];
+        
+        // Save to unified log repository
+        $this->manual_log_repository->save($log_entry);
+        
+        // Also save timestamp in post meta for backward compatibility and quick lookup
         $this->post_meta_repository->save($post_id, time());
     }
     
@@ -91,7 +131,7 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         $current_user = wp_get_current_user();
         
         // Generate unique log ID
-        $log_id = 'email_' . time() . '_' . wp_generate_password(8, false);
+        $log_id = 'manual_' . time() . '_' . wp_generate_password(8, false);
         
         // Create body preview (first 100 characters)
         $body_preview = mb_substr(strip_tags($body), 0, 100);
@@ -101,6 +141,7 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         
         $log_entry = [
             'id' => $log_id,
+            'type' => 'manual',
             'subject' => $subject,
             'body_preview' => $body_preview,
             'recipient_count' => count($recipients),
@@ -121,6 +162,38 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      */
     public function get_manual_email_log(int $limit = 0): array {
         return $this->manual_log_repository->get_all($limit);
+    }
+    
+    /**
+     * Get all email log entries (both manual and automatic)
+     *
+     * @param int    $limit Optional limit for number of entries
+     * @param string $type  Optional filter by type: 'all', 'manual', 'automatic'
+     * @return array Array of log entries sorted by sent_at descending
+     */
+    public function get_all_email_log(int $limit = 0, string $type = 'all'): array {
+        $all_logs = $this->manual_log_repository->get_all(0);
+        
+        // Filter by type if specified
+        if ($type === 'manual') {
+            $all_logs = array_filter($all_logs, function($log) {
+                return !isset($log['type']) || $log['type'] === 'manual';
+            });
+        } elseif ($type === 'automatic') {
+            $all_logs = array_filter($all_logs, function($log) {
+                return isset($log['type']) && $log['type'] === 'automatic';
+            });
+        }
+        
+        // Re-index array after filtering
+        $all_logs = array_values($all_logs);
+        
+        // Apply limit if specified
+        if ($limit > 0) {
+            $all_logs = array_slice($all_logs, 0, $limit);
+        }
+        
+        return $all_logs;
     }
     
     /**
