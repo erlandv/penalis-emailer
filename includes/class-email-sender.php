@@ -59,53 +59,77 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      * @return bool True on success, false on failure
      */
     public function handle_post_status_transition(string $new_status, string $old_status, WP_Post $post): bool {
-        // Validate post
-        if (!$this->validate_post($post, $old_status, $new_status)) {
-            return false;
-        }
-        
-        // Check if email already sent
-        if ($this->has_email_been_sent($post->ID)) {
-            return true; // Already sent, not an error
-        }
-        
-        // Get author data
-        $author = get_userdata($post->post_author);
-        if (!$author || !is_email($author->user_email)) {
-            error_log('Penalis Emailer: Invalid author email for post ID ' . $post->ID);
-            return false;
-        }
-        
-        // Get post data - decode any HTML entities and remove slashes
-        $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
-        $post_title = stripslashes($post_title);
-        $post_url = get_permalink($post->ID);
-        
-        // Prepare placeholders
-        $placeholders = [
-            'AUTHOR_NAME' => $author->display_name,
-            'POST_TITLE' => $post_title,
-            'POST_URL' => $post_url
-        ];
-        
-        // Render auto-email with editable template
-        $email_body = $this->template->render_auto_email($placeholders);
-        
-        // Send email using common method
-        $sent = $this->send_email(
-            $author->user_email,
-            Penalis_Config::get_auto_email_subject(),
-            $email_body,
-            Penalis_Config::get_auto_email_from(),
-            $post->ID
-        );
-        
-        if ($sent) {
-            // Mark as sent and log only on success
-            $this->mark_email_as_sent($post->ID);
-            return true;
-        } else {
-            error_log('Penalis Emailer: Failed to send email for post ID ' . $post->ID);
+        try {
+            // Validate post
+            if (!$this->validate_post($post, $old_status, $new_status)) {
+                return false;
+            }
+            
+            // Check if email already sent
+            if ($this->has_email_been_sent($post->ID)) {
+                return true; // Already sent, not an error
+            }
+            
+            // Get author data
+            $author = get_userdata($post->post_author);
+            if (!$author || !is_email($author->user_email)) {
+                throw new Penalis_Email_Send_Exception(
+                    'Invalid author email for post',
+                    [],
+                    ['post_id' => $post->ID, 'author_id' => $post->post_author]
+                );
+            }
+            
+            // Get post data - decode any HTML entities and remove slashes
+            $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
+            $post_title = stripslashes($post_title);
+            $post_url = get_permalink($post->ID);
+            
+            // Prepare placeholders
+            $placeholders = [
+                'AUTHOR_NAME' => $author->display_name,
+                'POST_TITLE' => $post_title,
+                'POST_URL' => $post_url
+            ];
+            
+            // Render auto-email with editable template
+            $email_body = $this->template->render_auto_email($placeholders);
+            
+            // Send email using common method
+            $sent = $this->send_email(
+                $author->user_email,
+                Penalis_Config::get_auto_email_subject(),
+                $email_body,
+                Penalis_Config::get_auto_email_from(),
+                $post->ID
+            );
+            
+            if ($sent) {
+                // Mark as sent and log only on success
+                $this->mark_email_as_sent($post->ID);
+                
+                // Fire success action
+                do_action('penalis_email_sent_success', [
+                    'type' => 'automatic',
+                    'post_id' => $post->ID,
+                    'recipient' => $author->user_email
+                ]);
+                
+                return true;
+            } else {
+                throw new Penalis_Email_Send_Exception(
+                    'Failed to send email via wp_mail',
+                    [$author->user_email],
+                    ['post_id' => $post->ID]
+                );
+            }
+        } catch (Penalis_Exception $e) {
+            // Log exception with context
+            $e->log('error');
+            
+            // Fire error action
+            do_action('penalis_email_send_failed', $e);
+            
             return false;
         }
     }
@@ -129,51 +153,81 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         
         $results = [
             'success' => 0,
-            'failed' => []
+            'failed' => [],
+            'errors' => []
         ];
         
         $successful_recipients = [];
         
         // Loop through each user
         foreach ($user_ids as $user_id) {
-            $user = get_userdata($user_id);
-            
-            // Validate user and email
-            if (!$user || !is_email($user->user_email)) {
+            try {
+                $user = get_userdata($user_id);
+                
+                // Validate user and email
+                if (!$user || !is_email($user->user_email)) {
+                    throw new Penalis_Validation_Exception(
+                        'Invalid user or email',
+                        ['user_id' => 'User not found or invalid email'],
+                        ['user_id' => $user_id]
+                    );
+                }
+                
+                // Prepare user data for personalization
+                $user_data = [
+                    'display_name' => $user->display_name,
+                    'user_email' => $user->user_email,
+                    'user_login' => $user->user_login
+                ];
+                
+                // Render flexible email with markdown support
+                $email_body = $this->template->render_flexible_email($message, $user_data);
+                
+                // Send email using common method (post_id = 0 for manual emails)
+                $sent = $this->send_email(
+                    $user->user_email,
+                    $subject,
+                    $email_body,
+                    $from_name,
+                    0
+                );
+                
+                if ($sent) {
+                    $results['success']++;
+                    $successful_recipients[] = $user_id;
+                } else {
+                    throw new Penalis_Email_Send_Exception(
+                        'Failed to send email via wp_mail',
+                        [$user->user_email],
+                        ['user_id' => $user_id]
+                    );
+                }
+            } catch (Penalis_Exception $e) {
+                // Log exception
+                $e->log('warning');
+                
+                // Track failed recipient
                 $results['failed'][] = $user_id;
-                continue;
-            }
-            
-            // Prepare user data for personalization
-            $user_data = [
-                'display_name' => $user->display_name,
-                'user_email' => $user->user_email,
-                'user_login' => $user->user_login
-            ];
-            
-            // Render flexible email with markdown support
-            $email_body = $this->template->render_flexible_email($message, $user_data);
-            
-            // Send email using common method (post_id = 0 for manual emails)
-            $sent = $this->send_email(
-                $user->user_email,
-                $subject,
-                $email_body,
-                $from_name,
-                0
-            );
-            
-            if ($sent) {
-                $results['success']++;
-                $successful_recipients[] = $user_id;
-            } else {
-                $results['failed'][] = $user_id;
+                $results['errors'][$user_id] = $e->getMessage();
             }
         }
         
         // Log successful sends
         if ($results['success'] > 0) {
             $this->logger->log_manual_email($successful_recipients, $subject, $message);
+            
+            // Fire success action
+            do_action('penalis_email_sent_success', [
+                'type' => 'manual',
+                'subject' => $subject,
+                'success_count' => $results['success'],
+                'recipients' => $successful_recipients
+            ]);
+        }
+        
+        // Fire partial failure action if some failed
+        if (!empty($results['failed'])) {
+            do_action('penalis_email_send_partial_failure', $results);
         }
         
         return $results;
@@ -277,55 +331,83 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      * @return bool True if sent successfully, false otherwise
      */
     public function send_auto_email(int $post_id): bool {
-        // Get post
-        $post = get_post($post_id);
-        if (!$post) {
+        try {
+            // Get post
+            $post = get_post($post_id);
+            if (!$post) {
+                throw new Penalis_Email_Send_Exception(
+                    'Post not found',
+                    [],
+                    ['post_id' => $post_id]
+                );
+            }
+            
+            // Check if email already sent
+            if ($this->has_email_been_sent($post_id)) {
+                return true; // Already sent, not an error
+            }
+            
+            // Get author data
+            $author = get_userdata($post->post_author);
+            if (!$author || !is_email($author->user_email)) {
+                throw new Penalis_Email_Send_Exception(
+                    'Invalid author email',
+                    [],
+                    ['post_id' => $post_id, 'author_id' => $post->post_author]
+                );
+            }
+            
+            // Get post data
+            $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
+            $post_title = stripslashes($post_title);
+            $post_url = get_permalink($post_id);
+            
+            // Prepare placeholders
+            $placeholders = [
+                'AUTHOR_NAME' => $author->display_name,
+                'POST_TITLE' => $post_title,
+                'POST_URL' => $post_url
+            ];
+            
+            // Render auto-email
+            $email_body = $this->template->render_auto_email($placeholders);
+            
+            // Send email using common method
+            $sent = $this->send_email(
+                $author->user_email,
+                Penalis_Config::get_auto_email_subject(),
+                $email_body,
+                Penalis_Config::get_auto_email_from(),
+                $post_id
+            );
+            
+            if ($sent) {
+                $this->mark_email_as_sent($post_id);
+                
+                // Fire success action
+                do_action('penalis_email_sent_success', [
+                    'type' => 'automatic',
+                    'post_id' => $post_id,
+                    'recipient' => $author->user_email
+                ]);
+                
+                return true;
+            }
+            
+            throw new Penalis_Email_Send_Exception(
+                'Failed to send email via wp_mail',
+                [$author->user_email],
+                ['post_id' => $post_id]
+            );
+        } catch (Penalis_Exception $e) {
+            // Log exception with context
+            $e->log('error');
+            
+            // Fire error action
+            do_action('penalis_email_send_failed', $e);
+            
             return false;
         }
-        
-        // Check if email already sent
-        if ($this->has_email_been_sent($post_id)) {
-            return true; // Already sent, not an error
-        }
-        
-        // Get author data
-        $author = get_userdata($post->post_author);
-        if (!$author || !is_email($author->user_email)) {
-            error_log('Penalis Emailer: Invalid author email for post ID ' . $post_id);
-            return false;
-        }
-        
-        // Get post data
-        $post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
-        $post_title = stripslashes($post_title);
-        $post_url = get_permalink($post_id);
-        
-        // Prepare placeholders
-        $placeholders = [
-            'AUTHOR_NAME' => $author->display_name,
-            'POST_TITLE' => $post_title,
-            'POST_URL' => $post_url
-        ];
-        
-        // Render auto-email
-        $email_body = $this->template->render_auto_email($placeholders);
-        
-        // Send email using common method
-        $sent = $this->send_email(
-            $author->user_email,
-            Penalis_Config::get_auto_email_subject(),
-            $email_body,
-            Penalis_Config::get_auto_email_from(),
-            $post_id
-        );
-        
-        if ($sent) {
-            $this->mark_email_as_sent($post_id);
-            return true;
-        }
-        
-        error_log('Penalis Emailer: Failed to send email for post ID ' . $post_id);
-        return false;
     }
     
     /**
@@ -335,32 +417,63 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      * @return bool True if sent successfully, false otherwise
      */
     public function send_test_email(string $template_body): bool {
-        $current_user = wp_get_current_user();
-        
-        if (!$current_user || !is_email($current_user->user_email)) {
+        try {
+            $current_user = wp_get_current_user();
+            
+            // Validate current user
+            if (!$current_user || !is_email($current_user->user_email)) {
+                throw new Penalis_Validation_Exception(
+                    'Invalid current user or email',
+                    ['user' => 'Current user not found or invalid email'],
+                    ['user_id' => $current_user ? $current_user->ID : 0]
+                );
+            }
+            
+            // Prepare user data
+            $user_data = [
+                'display_name' => $current_user->display_name,
+                'user_email' => $current_user->user_email,
+                'user_login' => $current_user->user_login,
+                'post_title' => 'Contoh Judul Tulisan',
+                'post_url' => home_url('/contoh-tulisan/')
+            ];
+            
+            // Render email
+            $email_body = $this->template->render_flexible_email($template_body, $user_data);
+            
+            // Send email using common method
+            $sent = $this->send_email(
+                $current_user->user_email,
+                'Test Email - Penalis Emailer',
+                $email_body,
+                'Penalis - Test',
+                0
+            );
+            
+            if ($sent) {
+                // Fire success action
+                do_action('penalis_email_sent_success', [
+                    'type' => 'test',
+                    'recipient' => $current_user->user_email
+                ]);
+                
+                return true;
+            }
+            
+            throw new Penalis_Email_Send_Exception(
+                'Failed to send test email via wp_mail',
+                [$current_user->user_email],
+                ['user_id' => $current_user->ID]
+            );
+        } catch (Penalis_Exception $e) {
+            // Log exception
+            $e->log('warning');
+            
+            // Fire error action
+            do_action('penalis_email_send_failed', $e);
+            
             return false;
         }
-        
-        // Prepare user data
-        $user_data = [
-            'display_name' => $current_user->display_name,
-            'user_email' => $current_user->user_email,
-            'user_login' => $current_user->user_login,
-            'post_title' => 'Contoh Judul Tulisan',
-            'post_url' => home_url('/contoh-tulisan/')
-        ];
-        
-        // Render email
-        $email_body = $this->template->render_flexible_email($template_body, $user_data);
-        
-        // Send email using common method
-        return $this->send_email(
-            $current_user->user_email,
-            'Test Email - Penalis Emailer',
-            $email_body,
-            'Penalis - Test',
-            0
-        );
     }
     
     /**
