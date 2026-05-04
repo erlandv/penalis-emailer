@@ -91,36 +91,14 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Render auto-email with editable template
         $email_body = $this->template->render_auto_email($placeholders);
         
-        // Compose email
-        $email_data = [
-            'to' => $author->user_email,
-            'subject' => 'Karya Tulismu Sudah Publish di Penalis 🎉',
-            'message' => $email_body,
-            'post_id' => $post->ID
-        ];
-        
-        // Apply filters
-        $filtered_subject = apply_filters('penalis_email_subject', $email_data['subject'], $post->ID);
-        $filtered_body = apply_filters('penalis_email_message', $email_data['message'], $post->ID);
-        
-        // Prepare headers
-        $site_domain = parse_url(home_url(), PHP_URL_HOST);
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
-        ];
-        
-        // Apply headers filter
-        $headers = apply_filters('penalis_email_headers', $headers, $post->ID);
-        
-        // Set content type filter before sending
-        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
-        
-        // Send email
-        $sent = wp_mail($email_data['to'], $filtered_subject, $filtered_body, $headers);
-        
-        // Remove content type filter after sending
-        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        // Send email using common method
+        $sent = $this->send_email(
+            $author->user_email,
+            'Karya Tulismu Sudah Publish di Penalis 🎉',
+            $email_body,
+            'Penalis - Publikasi',
+            $post->ID
+        );
         
         if ($sent) {
             // Mark as sent and log only on success
@@ -176,28 +154,14 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
             // Render flexible email with markdown support
             $email_body = $this->template->render_flexible_email($message, $user_data);
             
-            // Apply filters (post_id = 0 for manual emails)
-            $filtered_subject = apply_filters('penalis_email_subject', $subject, 0);
-            $filtered_body = apply_filters('penalis_email_message', $email_body, 0);
-            
-            // Prepare headers with custom from name
-            $site_domain = parse_url(home_url(), PHP_URL_HOST);
-            $headers = [
-                'Content-Type: text/html; charset=UTF-8',
-                'From: ' . $from_name . ' <no-reply@' . $site_domain . '>'
-            ];
-            
-            // Apply headers filter
-            $headers = apply_filters('penalis_email_headers', $headers, 0);
-            
-            // Set content type filter before sending
-            add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
-            
-            // Send email
-            $sent = wp_mail($user->user_email, $filtered_subject, $filtered_body, $headers);
-            
-            // Remove content type filter after sending
-            remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+            // Send email using common method (post_id = 0 for manual emails)
+            $sent = $this->send_email(
+                $user->user_email,
+                $subject,
+                $email_body,
+                $from_name,
+                0
+            );
             
             if ($sent) {
                 $results['success']++;
@@ -267,55 +231,43 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
     }
     
     /**
-     * Compose email with headers and content
+     * Send email with common logic
+     * 
+     * Centralized email sending logic to avoid duplication.
+     * Handles filters, headers, and wp_mail execution.
      *
-     * @param array $data         Email data including to, subject, placeholders
-     * @param bool  $use_template Whether to use template or custom message
-     * @return array Email array with 'to', 'subject', 'message', 'headers'
+     * @param string $to        Recipient email address
+     * @param string $subject   Email subject
+     * @param string $body      Email body (already rendered HTML)
+     * @param string $from_name From name for email header
+     * @param int    $post_id   Post ID (0 for manual emails)
+     * @return bool True if sent successfully, false otherwise
      */
-    private function compose_email(array $data, bool $use_template = true): array {
-        // Set default subject
-        $subject = 'Karya Tulismu Sudah Publish di Penalis 🎉';
+    private function send_email(string $to, string $subject, string $body, string $from_name, int $post_id = 0): bool {
+        // Apply filters
+        $filtered_subject = apply_filters('penalis_email_subject', $subject, $post_id);
+        $filtered_body = apply_filters('penalis_email_message', $body, $post_id);
         
-        // Render message using template
-        $custom_message = $data['custom_message'] ?? '';
-        $message = $this->template->render($data['placeholders'], $use_template, $custom_message);
-        
-        // Set headers - CRITICAL: Always include Content-Type for HTML emails
+        // Prepare headers
         $site_domain = parse_url(home_url(), PHP_URL_HOST);
-        
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
-            'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
+            'From: ' . $from_name . ' <no-reply@' . $site_domain . '>'
         ];
         
-        // Apply headers filter to allow customization
-        $headers = apply_filters('penalis_email_headers', $headers, $data['post_id'] ?? 0);
+        // Apply headers filter
+        $headers = apply_filters('penalis_email_headers', $headers, $post_id);
         
-        return [
-            'to' => $data['to'],
-            'subject' => $subject,
-            'message' => $message,
-            'headers' => $headers
-        ];
-    }
-    
-    /**
-     * Apply WordPress filters for email customization
-     *
-     * @param string $subject Email subject
-     * @param string $message Email message content
-     * @param int    $post_id Post ID (0 for manual emails)
-     * @return array Filtered subject and message
-     */
-    private function apply_email_filters(string $subject, string $message, int $post_id = 0): array {
-        $subject = apply_filters('penalis_email_subject', $subject, $post_id);
-        $message = apply_filters('penalis_email_message', $message, $post_id);
+        // Set content type filter before sending
+        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
         
-        return [
-            'subject' => $subject,
-            'message' => $message
-        ];
+        // Send email
+        $sent = wp_mail($to, $filtered_subject, $filtered_body, $headers);
+        
+        // Remove content type filter after sending
+        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        
+        return $sent;
     }
     
     /**
@@ -358,27 +310,14 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Render auto-email
         $email_body = $this->template->render_auto_email($placeholders);
         
-        // Prepare email
-        $subject = 'Karya Tulismu Sudah Publish di Penalis 🎉';
-        $filtered_subject = apply_filters('penalis_email_subject', $subject, $post_id);
-        $filtered_body = apply_filters('penalis_email_message', $email_body, $post_id);
-        
-        // Prepare headers
-        $site_domain = parse_url(home_url(), PHP_URL_HOST);
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: Penalis - Publikasi <no-reply@' . $site_domain . '>'
-        ];
-        $headers = apply_filters('penalis_email_headers', $headers, $post_id);
-        
-        // Set content type filter
-        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
-        
-        // Send email
-        $sent = wp_mail($author->user_email, $filtered_subject, $filtered_body, $headers);
-        
-        // Remove content type filter
-        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
+        // Send email using common method
+        $sent = $this->send_email(
+            $author->user_email,
+            'Karya Tulismu Sudah Publish di Penalis 🎉',
+            $email_body,
+            'Penalis - Publikasi',
+            $post_id
+        );
         
         if ($sent) {
             $this->mark_email_as_sent($post_id);
@@ -414,26 +353,14 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Render email
         $email_body = $this->template->render_flexible_email($template_body, $user_data);
         
-        // Prepare email
-        $subject = 'Test Email - Penalis Emailer';
-        
-        // Prepare headers
-        $site_domain = parse_url(home_url(), PHP_URL_HOST);
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: Penalis - Test <no-reply@' . $site_domain . '>'
-        ];
-        
-        // Set content type filter
-        add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
-        
-        // Send email
-        $sent = wp_mail($current_user->user_email, $subject, $email_body, $headers);
-        
-        // Remove content type filter
-        remove_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
-        
-        return $sent;
+        // Send email using common method
+        return $this->send_email(
+            $current_user->user_email,
+            'Test Email - Penalis Emailer',
+            $email_body,
+            'Penalis - Test',
+            0
+        );
     }
     
     /**
