@@ -39,15 +39,58 @@ class Penalis_History_Page extends Penalis_Admin_Page {
     }
     
     /**
-     * Render email history page
+     * Render email history page with tabs
+     *
+     * @param string $tab Current tab (manual or automatic), optional
+     * @return void
+     */
+    public function render(string $tab = ''): void {
+        if (!$this->can_access()) {
+            wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
+        }
+        
+        // Get current tab from parameter or URL
+        if (empty($tab)) {
+            $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'manual';
+        }
+        
+        // Validate tab
+        $tab = in_array($tab, ['manual', 'automatic']) ? $tab : 'manual';
+        
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Email History', 'penalis-emailer'); ?></h1>
+
+            <p class="description">
+                <?php echo esc_html__('View history of sent emails, both manual and automatic.', 'penalis-emailer'); ?>
+            </p>
+            
+            <!-- Tabs -->
+            <h2 class="nav-tab-wrapper">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=manual')); ?>" 
+                   class="nav-tab <?php echo $tab === 'manual' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Manual Emails', 'penalis-emailer'); ?>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=automatic')); ?>" 
+                   class="nav-tab <?php echo $tab === 'automatic' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Automatic Emails', 'penalis-emailer'); ?>
+                </a>
+            </h2>
+            
+            <div class="tab-content" style="margin-top: 20px;">
+                <?php $this->render_tab_content($tab); ?>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render tab content
      *
      * @param string $tab Current tab (manual or automatic)
      * @return void
      */
-    public function render(string $tab = 'manual'): void {
-        if (!$this->can_access()) {
-            wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
-        }
+    private function render_tab_content(string $tab): void {
         
         // Get email logs filtered by type
         $log_entries = $this->email_logger->get_all_email_log(Penalis_Config::DEFAULT_LOG_LIMIT, $tab);
