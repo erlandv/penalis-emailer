@@ -4,7 +4,7 @@ Tags: email, notification, post, author, smtp, markdown, admin
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ Penalis Emailer is a professional WordPress plugin that streamlines communicatio
 * **Markdown Support** - Write emails in markdown with automatic HTML conversion
 * **HTML Email Templates** - Professional, responsive email templates with dynamic placeholders
 * **Email Preview** - Preview emails before sending
-* **Email History** - Track all sent emails with comprehensive logging
+* **Email History & Management** - Dedicated history page with separate tabs for manual and automatic emails, bulk delete, and clear all functionality
 * **Duplicate Prevention** - Prevents sending multiple emails for the same post
 * **SMTP Compatible** - Works seamlessly with any SMTP plugin
 * **Highly Extensible** - Rich filter and action hooks for customization
@@ -64,7 +64,23 @@ The admin interface allows you to:
 * Select recipients from authors and contributors
 * Preview emails before sending
 * Use dynamic placeholders
-* Track email history
+* Track email history in dedicated history page
+
+= Email History & Management =
+
+View and manage all sent emails in a dedicated history page:
+
+* **Separate Tabs** - Manual and automatic emails in dedicated tabs for better organization
+* **Comprehensive Tracking** - All emails logged with timestamp, recipients, sender, and status
+* **Bulk Delete** - Select multiple emails and delete them at once using WordPress-style bulk actions
+* **Clear All History** - Remove all emails from a specific tab (manual or automatic) with double confirmation
+* **Optimized Views** - Manual tab shows subject, recipients, sent by, and timestamp; Automatic tab shows post title, recipient, and timestamp
+* **Legacy Support** - Seamlessly handles old email entries from previous versions
+
+Delete operations:
+* Check one or more email entries and use bulk delete action
+* Clear all history for manual or automatic emails separately
+* Double confirmation required for clear all operations for safety
 
 = Email Template Customization =
 
@@ -140,7 +156,7 @@ Yes! The compose page includes a preview button that shows exactly how your emai
 
 = Are emails logged? =
 
-Yes! All sent emails are logged for auditing. View the history in **Penalis Email → History**.
+Yes! All sent emails are logged for auditing. View the history in **Penalis Email → Email History**. The history page has separate tabs for manual and automatic emails, with bulk delete and clear all functionality.
 
 = Will it send duplicate emails? =
 
@@ -183,43 +199,6 @@ Yes! The plugin uses WordPress translation functions and is ready for translatio
 4. Email preview modal showing how the email will look
 5. Automatic email notification received by post author
 
-== Changelog ==
-
-= 1.1.0 - 2026-05-02 =
-* Major architecture refactoring with clean architecture principles
-* Added service container with automatic dependency injection
-* Implemented repository pattern for data access
-* Added comprehensive validation system with custom rules
-* Created 6 interfaces for loose coupling
-* Added 6 custom exception classes for better error handling
-* Separated CSS/JS from PHP for better maintainability
-* Added markdown parser for easy email formatting
-* Added 110+ unit tests with 100% pass rate
-* Improved code quality and maintainability
-* Enhanced security measures
-* Comprehensive documentation added
-* Performance optimizations
-* Better error handling and logging
-
-= 1.0.0 - 2026-01-15 =
-* Initial release
-* Automatic post publication notifications
-* Manual email interface
-* HTML email templates
-* Email logging
-* SMTP plugin compatibility
-* Security features (nonces, capability checks, sanitization)
-* Extensibility (filters and actions)
-
-== Upgrade Notice ==
-
-= 1.1.0 =
-Major update with architecture improvements, better error handling, and enhanced features. Fully backward compatible - no breaking changes.
-
-= 1.0.0 =
-Initial release of Penalis Emailer.
-
-== Developer Documentation ==
 
 = Filters =
 

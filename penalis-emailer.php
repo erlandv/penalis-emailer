@@ -3,7 +3,7 @@
  * Plugin Name: Penalis Emailer
  * Plugin URI: https://github.com/erlandv/penalis-emailer
  * Description: Automatically notifies post authors via email when posts are published
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Penalis
  * Author URI: https://penalis.com
  * License: GPL v2 or later

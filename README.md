@@ -2,7 +2,7 @@
 
 A WordPress plugin that automatically notifies post authors via HTML email when their posts are published, with a comprehensive administrative interface for manual email management.
 
-**Note:** This plugin was originally developed for internal use at Penalis to manage post author notifications on our website. However, we've made it publicly available so others can use it in their projects if they find it useful.
+**Note:** This plugin was originally developed for internal use at [Penalis](https://penalis.com) to manage post author notifications on our website. However, we've made it publicly available so others can use it in their projects if they find it useful.
 
 ## Features
 
@@ -11,7 +11,7 @@ A WordPress plugin that automatically notifies post authors via HTML email when 
 - **Manual Email Interface** - Admin interface for sending emails to selected users with markdown support
 - **HTML Email Templates** - Professional, responsive templates with dynamic placeholder replacement
 - **Duplicate Prevention** - Prevents sending multiple emails for the same post publication
-- **Email Logging** - Comprehensive tracking of all sent emails for auditing
+- **Email History & Management** - Comprehensive email tracking with separate tabs for manual and automatic emails, bulk delete operations, and clear all functionality
 - **Markdown Support** - Write emails in markdown with automatic HTML conversion
 
 ### Technical Features
@@ -73,12 +73,28 @@ Navigate to **Penalis Email** → **Template Settings**:
 
 ### Email History
 
-Navigate to **Penalis Email** → **History**:
+Navigate to **Penalis Email** → **Email History**:
 
-- View all sent emails
-- Filter by date and recipient
-- See delivery status
-- Export logs for auditing
+**Features:**
+- **Separate Tabs** - View manual and automatic emails in dedicated tabs
+- **Comprehensive Tracking** - All sent emails logged with timestamp, recipients, and status
+- **Bulk Delete** - Select multiple emails and delete them at once
+- **Clear All History** - Remove all emails from a specific tab (manual or automatic)
+- **Legacy Support** - Handles old email entries without IDs seamlessly
+- **WordPress-Style Interface** - Familiar bulk actions interface matching WordPress Posts
+
+**Manual Email Tab:**
+- Subject, Recipients count, Sent By, Sent At, Status
+- Track who sent the email and when
+
+**Automatic Email Tab:**
+- Post title with link, Recipient name, Sent At, Status
+- Optimized columns for automatic notifications
+
+**Delete Operations:**
+- Check one or more emails and use bulk delete
+- Clear all history for manual or automatic emails separately
+- Double confirmation for safety on clear all operations
 
 ## Architecture
 
