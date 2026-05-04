@@ -36,6 +36,7 @@ class Penalis_Config {
     // Email Settings
     const DEFAULT_FROM_NAME = 'Penalis';
     const DEFAULT_SUBJECT = 'Karya Tulismu Sudah Publish di Penalis 🎉';
+    const DEFAULT_AUTO_EMAIL_FROM = 'Penalis - Publikasi';
     const DEFAULT_LOGO_URL = 'https://penalis.com/wp-content/uploads/2021/01/logo-penalis.png';
     
     // User Roles
@@ -52,6 +53,24 @@ class Penalis_Config {
      */
     public static function get_logo_url(): string {
         return apply_filters('penalis_logo_url', self::DEFAULT_LOGO_URL);
+    }
+    
+    /**
+     * Get automatic email subject with filter support
+     *
+     * @return string Email subject
+     */
+    public static function get_auto_email_subject(): string {
+        return apply_filters('penalis_auto_email_subject', self::DEFAULT_SUBJECT);
+    }
+    
+    /**
+     * Get automatic email from name with filter support
+     *
+     * @return string From name
+     */
+    public static function get_auto_email_from(): string {
+        return apply_filters('penalis_auto_email_from', self::DEFAULT_AUTO_EMAIL_FROM);
     }
     
     /**

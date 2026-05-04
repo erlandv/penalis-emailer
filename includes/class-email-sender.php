@@ -94,9 +94,9 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Send email using common method
         $sent = $this->send_email(
             $author->user_email,
-            'Karya Tulismu Sudah Publish di Penalis 🎉',
+            Penalis_Config::get_auto_email_subject(),
             $email_body,
-            'Penalis - Publikasi',
+            Penalis_Config::get_auto_email_from(),
             $post->ID
         );
         
@@ -313,9 +313,9 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // Send email using common method
         $sent = $this->send_email(
             $author->user_email,
-            'Karya Tulismu Sudah Publish di Penalis 🎉',
+            Penalis_Config::get_auto_email_subject(),
             $email_body,
-            'Penalis - Publikasi',
+            Penalis_Config::get_auto_email_from(),
             $post_id
         );
         

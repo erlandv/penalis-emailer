@@ -90,7 +90,7 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         $log_entry = [
             'id' => $log_id,
             'type' => 'automatic',
-            'subject' => 'Karya Tulismu Sudah Publish di Penalis 🎉',
+            'subject' => Penalis_Config::get_auto_email_subject(),
             'post_id' => $post_id,
             'post_title' => $post_title,
             'post_url' => $post_url,
