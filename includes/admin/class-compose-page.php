@@ -65,9 +65,21 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         $total_users = $this->get_total_users();
         $total_pages = ceil($total_users / Penalis_Config::get_users_per_page());
         
-        // Render form
-        $this->render_form($users, $current_page, $total_pages, $total_users);
-        $this->render_preview_modal();
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Compose Email', 'penalis-emailer'); ?></h1>
+
+            <p class="description">
+                <?php echo esc_html__('Manually send emails to authors and contributors to provide information or notifications.', 'penalis-emailer'); ?>
+            </p>
+            
+            <?php
+            // Render form
+            $this->render_form($users, $current_page, $total_pages, $total_users);
+            $this->render_preview_modal();
+            ?>
+        </div>
+        <?php
     }
     
     /**

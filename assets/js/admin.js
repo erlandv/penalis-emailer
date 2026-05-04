@@ -162,52 +162,6 @@
     };
     
     /**
-     * History Page Handler
-     */
-    const HistoryHandler = {
-        
-        init: function() {
-            this.bindEvents();
-        },
-        
-        bindEvents: function() {
-            $('#email-type-filter').on('change', this.filterHistory.bind(this));
-            $('#history-search').on('keyup', this.filterHistory.bind(this));
-            $('#history-date-filter').on('change', this.filterHistory.bind(this));
-            $('#clear-history-filter').on('click', this.clearFilters.bind(this));
-        },
-        
-        filterHistory: function() {
-            const searchTerm = $('#history-search').val().toLowerCase();
-            const dateFilter = $('#history-date-filter').val();
-            const typeFilter = $('#email-type-filter').val();
-            
-            $('.history-row').each(function() {
-                const subject = $(this).data('subject');
-                const date = $(this).data('date');
-                const type = $(this).data('type') || 'manual';
-                
-                const matchesSearch = !searchTerm || subject.includes(searchTerm);
-                const matchesDate = !dateFilter || date === dateFilter;
-                const matchesType = typeFilter === 'all' || type === typeFilter;
-                
-                if (matchesSearch && matchesDate && matchesType) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
-        },
-        
-        clearFilters: function() {
-            $('#email-type-filter').val('all');
-            $('#history-search').val('');
-            $('#history-date-filter').val('');
-            $('.history-row').show();
-        }
-    };
-    
-    /**
      * Template Settings Page Handler
      */
     const TemplateSettingsHandler = {
@@ -305,10 +259,6 @@
         // Initialize based on current page
         if ($('#penalis-email-form').length) {
             ComposeEmailHandler.init();
-        }
-        
-        if ($('.penalis-history-list').length) {
-            HistoryHandler.init();
         }
         
         if ($('#template-settings-form').length) {

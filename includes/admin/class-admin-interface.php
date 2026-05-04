@@ -99,15 +99,35 @@ class Penalis_Admin_Interface {
      * @return void
      */
     public function add_admin_menu(): void {
-        // Main menu page
+        // Main menu page - Compose Email
         add_menu_page(
             __('Penalis Email', 'penalis-emailer'),
             __('Penalis Email', 'penalis-emailer'),
             'manage_options',
             Penalis_Config::PAGE_SLUG,
-            [$this, 'render_main_page'],
+            [$this->compose_page, 'render'],
             'dashicons-email',
             30
+        );
+        
+        // Rename first submenu to "Compose Email"
+        add_submenu_page(
+            Penalis_Config::PAGE_SLUG,
+            __('Compose Email', 'penalis-emailer'),
+            __('Compose Email', 'penalis-emailer'),
+            'manage_options',
+            Penalis_Config::PAGE_SLUG,
+            [$this->compose_page, 'render']
+        );
+        
+        // Email History submenu
+        add_submenu_page(
+            Penalis_Config::PAGE_SLUG,
+            __('Email History', 'penalis-emailer'),
+            __('Email History', 'penalis-emailer'),
+            'manage_options',
+            'penalis-email-history',
+            [$this, 'render_history_page']
         );
         
         // Settings submenu
@@ -125,46 +145,49 @@ class Penalis_Admin_Interface {
      * Render main admin page with tabs
      *
      * @return void
+     * @deprecated No longer used - Compose page renders directly
      */
     public function render_main_page(): void {
+        // Redirect to compose page
+        $this->compose_page->render();
+    }
+    
+    /**
+     * Render history page with tabs
+     *
+     * @return void
+     */
+    public function render_history_page(): void {
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
         }
         
         // Get current tab
-        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'compose';
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'manual';
         
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Send Manual Email', 'penalis-emailer'); ?></h1>
+            <h1><?php echo esc_html__('Email History', 'penalis-emailer'); ?></h1>
 
             <p class="description">
-                <?php echo esc_html__('Manually send emails to authors and contributors to provide information or notifications.', 'penalis-emailer'); ?>
+                <?php echo esc_html__('View history of sent emails, both manual and automatic.', 'penalis-emailer'); ?>
             </p>
             
             <!-- Tabs -->
             <h2 class="nav-tab-wrapper">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=compose')); ?>" 
-                   class="nav-tab <?php echo $current_tab === 'compose' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=manual')); ?>" 
+                   class="nav-tab <?php echo $current_tab === 'manual' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Manual Emails', 'penalis-emailer'); ?>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=history')); ?>" 
-                   class="nav-tab <?php echo $current_tab === 'history' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Email History', 'penalis-emailer'); ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=automatic')); ?>" 
+                   class="nav-tab <?php echo $current_tab === 'automatic' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Automatic Emails', 'penalis-emailer'); ?>
                 </a>
             </h2>
             
             <div class="tab-content" style="margin-top: 20px;">
                 <?php
-                switch ($current_tab) {
-                    case 'history':
-                        $this->history_page->render();
-                        break;
-                    case 'compose':
-                    default:
-                        $this->compose_page->render();
-                        break;
-                }
+                $this->history_page->render($current_tab);
                 ?>
             </div>
         </div>
@@ -184,6 +207,7 @@ class Penalis_Admin_Interface {
         
         $our_pages = [
             Penalis_Config::PAGE_SLUG,
+            'penalis-email-history',
             Penalis_Config::SETTINGS_PAGE_SLUG
         ];
         
@@ -219,6 +243,7 @@ class Penalis_Admin_Interface {
         // Only load on our admin pages
         $our_pages = [
             'toplevel_page_' . Penalis_Config::PAGE_SLUG,
+            'penalis-email_page_penalis-email-history',
             'penalis-email_page_' . Penalis_Config::SETTINGS_PAGE_SLUG
         ];
         

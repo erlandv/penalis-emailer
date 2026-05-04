@@ -348,48 +348,6 @@
     background-color: #f6f7f7;
 }
 
-/* Email Type Badges */
-.penalis-email-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    margin-left: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.penalis-badge-manual {
-    background: #e7f5ff;
-    color: #0073aa;
-    border: 1px solid #b3d7ff;
-}
-
-.penalis-badge-automatic {
-    background: #f0f6fc;
-    color: #2c5282;
-    border: 1px solid #c3dafe;
-}
-
-/* Automatic email rows - subtle background */
-.history-row[data-type="automatic"] {
-    background-color: #fafbfc;
-}
-
-.history-row[data-type="automatic"]:hover {
-    background-color: #f0f6fc;
-}
-
-/* Manual email rows - default background */
-.history-row[data-type="manual"] {
-    background-color: #fff;
-}
-
-.history-row[data-type="manual"]:hover {
-    background-color: #f6f7f7;
-}
-
 /* ========================================
    Submit Actions
    ======================================== */
