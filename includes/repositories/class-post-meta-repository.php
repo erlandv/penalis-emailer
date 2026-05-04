@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  *
  * Manages post meta data for email tracking.
  */
-class Penalis_Post_Meta_Repository {
+class Penalis_Post_Meta_Repository implements Penalis_Post_Meta_Repository_Interface {
     
     /**
      * Meta key for storing data

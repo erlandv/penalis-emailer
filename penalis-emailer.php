@@ -99,7 +99,7 @@ function penalis_emailer_init() {
     );
     
     $container::bind(
-        Penalis_Post_Meta_Repository::class,
+        Penalis_Post_Meta_Repository_Interface::class,
         function() {
             return new Penalis_Post_Meta_Repository(Penalis_Config::META_KEY_EMAIL_SENT);
         },
