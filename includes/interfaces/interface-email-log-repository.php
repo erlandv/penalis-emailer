@@ -46,6 +46,30 @@ interface Penalis_Email_Log_Repository_Interface {
     public function find_by_id(string $id): ?array;
     
     /**
+     * Delete a single log entry by ID
+     *
+     * @param string $id Log entry ID
+     * @return bool True on success, false on failure
+     */
+    public function delete(string $id): bool;
+    
+    /**
+     * Delete multiple log entries by IDs
+     *
+     * @param array $ids Array of log entry IDs
+     * @return int Number of entries deleted
+     */
+    public function delete_multiple(array $ids): int;
+    
+    /**
+     * Delete all log entries of a specific type
+     *
+     * @param string $type Type filter: 'all', 'manual', 'automatic'
+     * @return int Number of entries deleted
+     */
+    public function delete_by_type(string $type = 'all'): int;
+    
+    /**
      * Delete old log entries, keeping only the most recent ones
      *
      * @param int $keep_count Number of entries to keep

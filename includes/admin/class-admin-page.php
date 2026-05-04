@@ -151,6 +151,8 @@ abstract class Penalis_Admin_Page {
                 'preview' => wp_create_nonce('penalis_preview_email'),
                 'previewAuto' => wp_create_nonce('penalis_preview_auto_email'),
                 'testEmail' => wp_create_nonce('penalis_send_test_email'),
+                'bulkDeleteLogs' => wp_create_nonce('penalis_bulk_delete_logs'),
+                'clearAllLogs' => wp_create_nonce('penalis_clear_all_logs'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -165,6 +167,11 @@ abstract class Penalis_Admin_Page {
                 'sendTestEmail' => __('Send Test Email', 'penalis-emailer'),
                 'testEmailSent' => __('Test email sent successfully! Check your inbox.', 'penalis-emailer'),
                 'testEmailFailed' => __('Failed to send test email:', 'penalis-emailer'),
+                // Delete history i18n
+                'selectLogs' => __('Please select at least one email log to delete.', 'penalis-emailer'),
+                'confirmBulkDelete' => __('Are you sure you want to delete %d email logs?', 'penalis-emailer'),
+                'confirmClearAll' => __('Are you sure you want to clear all %s email history? This action cannot be undone.', 'penalis-emailer'),
+                'confirmClearAllFinal' => __('This will permanently delete all emails in this tab. Are you absolutely sure?', 'penalis-emailer'),
             ]
         ];
     }

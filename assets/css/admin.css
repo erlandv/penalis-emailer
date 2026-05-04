@@ -348,6 +348,60 @@
     background-color: #f6f7f7;
 }
 
+/* Bulk Actions Bar */
+.tablenav {
+    margin: 10px 0;
+    padding: 8px 0;
+}
+
+.tablenav .alignleft {
+    float: left;
+}
+
+.tablenav .alignright {
+    float: right;
+}
+
+.tablenav .bulkactions {
+    display: inline-block;
+}
+
+.tablenav .bulkactions select {
+    margin-right: 5px;
+}
+
+#clear-all-logs {
+    color: #dc3232;
+    border-color: #dc3232;
+}
+
+#clear-all-logs:hover {
+    background: #dc3232;
+    border-color: #dc3232;
+    color: #fff;
+}
+
+/* Checkbox column - WordPress standard styling */
+.check-column {
+    width: 2.2em;
+    padding: 6px 0 25px;
+    vertical-align: top;
+}
+
+.check-column input[type="checkbox"] {
+    margin: 0 0 0 8px;
+}
+
+th.check-column {
+    padding: 11px 0 11px 3px;
+    vertical-align: middle;
+}
+
+th.check-column input[type="checkbox"] {
+    margin: 0 0 0 5px;
+    vertical-align: middle;
+}
+
 /* ========================================
    Submit Actions
    ======================================== */

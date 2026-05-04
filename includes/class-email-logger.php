@@ -54,6 +54,15 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
     }
     
     /**
+     * Get the manual log repository instance
+     *
+     * @return Penalis_Email_Log_Repository_Interface
+     */
+    public function get_repository(): Penalis_Email_Log_Repository_Interface {
+        return $this->manual_log_repository;
+    }
+    
+    /**
      * Log automatic email send for a post
      *
      * Stores detailed log entry in repository and timestamp in post meta.

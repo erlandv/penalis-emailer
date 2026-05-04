@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('PENALIS_EMAILER_VERSION', '1.0.0');
+define('PENALIS_EMAILER_VERSION', '1.2.0');
 define('PENALIS_EMAILER_PATH', plugin_dir_path(__FILE__));
 define('PENALIS_EMAILER_URL', plugin_dir_url(__FILE__));
 
@@ -103,8 +103,8 @@ function penalis_emailer_init() {
     $history_page = new Penalis_History_Page($logger);
     $settings_page = new Penalis_Settings_Page($template);
     
-    // Initialize AJAX handler
-    $ajax_handler = new Penalis_Ajax_Handler($template);
+    // Initialize AJAX handler with template and logger
+    $ajax_handler = new Penalis_Ajax_Handler($template, $logger);
     
     // Initialize main admin interface
     $admin = new Penalis_Admin_Interface(

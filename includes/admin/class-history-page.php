@@ -57,6 +57,7 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             <?php if (empty($log_entries)): ?>
                 <p><?php echo esc_html__('No emails sent yet.', 'penalis-emailer'); ?></p>
             <?php else: ?>
+                <?php $this->render_bulk_actions_bar($tab); ?>
                 <?php $this->render_history_table($log_entries, $tab); ?>
                 
                 <p class="description">
@@ -73,6 +74,40 @@ class Penalis_History_Page extends Penalis_Admin_Page {
     }
     
     /**
+     * Render bulk actions bar
+     *
+     * @param string $tab Current tab
+     * @return void
+     */
+    private function render_bulk_actions_bar(string $tab): void {
+        $tab_label = $tab === 'manual' ? __('Manual', 'penalis-emailer') : __('Automatic', 'penalis-emailer');
+        ?>
+        <div class="tablenav top">
+            <div class="alignleft actions bulkactions">
+                <select id="bulk-action-selector" class="regular-text" style="width: auto;">
+                    <option value="-1"><?php echo esc_html__('Bulk Actions', 'penalis-emailer'); ?></option>
+                    <option value="delete"><?php echo esc_html__('Delete', 'penalis-emailer'); ?></option>
+                </select>
+                <button type="button" class="button action" id="doaction">
+                    <?php echo esc_html__('Apply', 'penalis-emailer'); ?>
+                </button>
+            </div>
+            <div class="alignright actions">
+                <button type="button" class="button button-secondary" id="clear-all-logs" data-type="<?php echo esc_attr($tab); ?>">
+                    <?php 
+                    printf(
+                        esc_html__('Clear All %s History', 'penalis-emailer'),
+                        $tab_label
+                    ); 
+                    ?>
+                </button>
+            </div>
+            <br class="clear">
+        </div>
+        <?php
+    }
+    
+    /**
      * Render history table
      *
      * @param array  $log_entries Array of log entries
@@ -84,17 +119,20 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
+                    <th scope="col" id="cb" class="manage-column column-cb check-column">
+                        <input type="checkbox" id="select-all-logs">
+                    </th>
                     <?php if ($tab === 'manual'): ?>
-                        <th><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Sent By', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Sent By', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
                     <?php else: ?>
-                        <th><?php echo esc_html__('Post', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Recipient', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
-                        <th><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Post', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Recipient', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
                     <?php endif; ?>
                 </tr>
             </thead>
@@ -118,8 +156,20 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         // Handle both old and new log format
         $sent_time = isset($entry['sent_at']) ? $entry['sent_at'] : (isset($entry['timestamp']) ? $entry['timestamp'] : 0);
         
+        // Generate ID if not exists (for old log entries)
+        if (isset($entry['id'])) {
+            $log_id = $entry['id'];
+        } else {
+            // Generate ID from timestamp and subject for old entries
+            $subject_hash = substr(md5($entry['subject'] ?? ''), 0, 8);
+            $log_id = 'legacy_' . $sent_time . '_' . $subject_hash;
+        }
+        
         ?>
         <tr class="history-row">
+            <th scope="row" class="check-column">
+                <input type="checkbox" class="log-checkbox" value="<?php echo esc_attr($log_id); ?>">
+            </th>
             
             <?php if ($tab === 'manual'): ?>
                 <!-- Manual Email Columns -->

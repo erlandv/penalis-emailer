@@ -253,12 +253,128 @@
     };
     
     /**
+     * History Delete Handler
+     */
+    const HistoryDeleteHandler = {
+        
+        init: function() {
+            this.bindEvents();
+        },
+        
+        bindEvents: function() {
+            // Select all checkbox
+            $('#select-all-logs').on('change', this.toggleSelectAll.bind(this));
+            
+            // Bulk delete
+            $('#doaction').on('click', this.bulkDelete.bind(this));
+            
+            // Clear all
+            $('#clear-all-logs').on('click', this.clearAll.bind(this));
+        },
+        
+        toggleSelectAll: function() {
+            const isChecked = $('#select-all-logs').is(':checked');
+            $('.log-checkbox').prop('checked', isChecked);
+        },
+        
+        bulkDelete: function() {
+            const action = $('#bulk-action-selector').val();
+            
+            if (action !== 'delete') {
+                return;
+            }
+            
+            const selectedIds = $('.log-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+            
+            if (selectedIds.length === 0) {
+                alert(penalisAdmin.i18n.selectLogs);
+                return;
+            }
+            
+            const confirmMessage = penalisAdmin.i18n.confirmBulkDelete.replace('%d', selectedIds.length);
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Disable button
+            $('#doaction').prop('disabled', true).text('Deleting...');
+            
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_bulk_delete_logs',
+                nonce: penalisAdmin.nonces.bulkDeleteLogs,
+                log_ids: selectedIds
+            }, function(response) {
+                if (response.success) {
+                    $('.log-checkbox:checked').closest('tr').fadeOut(300, function() {
+                        $(this).remove();
+                        
+                        // Check if table is empty
+                        if ($('#history-table-body tr').length === 0) {
+                            window.location.reload();
+                        }
+                    });
+                    $('#select-all-logs').prop('checked', false);
+                    alert(response.data.message);
+                } else {
+                    alert(response.data.message);
+                }
+                $('#doaction').prop('disabled', false).text('Apply');
+            }).fail(function(xhr, status, error) {
+                alert('An error occurred. Please try again.');
+                $('#doaction').prop('disabled', false).text('Apply');
+            });
+        },
+        
+        clearAll: function(e) {
+            const button = $(e.currentTarget);
+            const type = button.data('type');
+            const typeName = type === 'manual' ? 'Manual' : 'Automatic';
+            
+            const confirmMessage = penalisAdmin.i18n.confirmClearAll.replace('%s', typeName);
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Double confirmation for safety
+            if (!confirm(penalisAdmin.i18n.confirmClearAllFinal)) {
+                return;
+            }
+            
+            // Disable button
+            button.prop('disabled', true).text('Clearing...');
+            
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_clear_all_logs',
+                nonce: penalisAdmin.nonces.clearAllLogs,
+                type: type
+            }, function(response) {
+                if (response.success) {
+                    // Reload page to show empty state
+                    window.location.reload();
+                } else {
+                    alert(response.data.message);
+                    button.prop('disabled', false).text('Clear All ' + typeName + ' History');
+                }
+            }).fail(function(xhr, status, error) {
+                alert('An error occurred. Please try again.');
+                button.prop('disabled', false).text('Clear All ' + typeName + ' History');
+            });
+        }
+    };
+    
+    /**
      * Initialize on document ready
      */
     $(document).ready(function() {
         // Initialize based on current page
         if ($('#penalis-email-form').length) {
             ComposeEmailHandler.init();
+        }
+        
+        if ($('.penalis-history-list').length) {
+            HistoryDeleteHandler.init();
         }
         
         if ($('#template-settings-form').length) {
