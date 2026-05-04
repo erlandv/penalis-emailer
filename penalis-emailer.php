@@ -93,29 +93,58 @@ function penalis_emailer_init() {
     require_once PENALIS_EMAILER_PATH . 'includes/admin/class-ajax-handler.php';
     require_once PENALIS_EMAILER_PATH . 'includes/admin/class-admin-interface.php';
     
-    // Initialize core services
-    $template = new Penalis_Email_Template();
-    $logger = new Penalis_Email_Logger();
-    $sender = new Penalis_Email_Sender($template, $logger);
+    // Initialize Service Container and register singletons
+    $container = Penalis_Service_Container::class;
     
-    // Initialize admin pages
-    $compose_page = new Penalis_Compose_Page($sender);
-    $history_page = new Penalis_History_Page($logger);
-    $settings_page = new Penalis_Settings_Page($template);
+    // Register core services as singletons
+    $container::singleton(Penalis_Markdown_Parser::class);
+    $container::singleton(Penalis_Email_Template::class);
+    $container::singleton(Penalis_Email_Logger::class);
+    $container::singleton(Penalis_Email_Sender::class);
+    $container::singleton(Penalis_Email_Validator::class);
     
-    // Initialize AJAX handler with template and logger
-    $ajax_handler = new Penalis_Ajax_Handler($template, $logger);
-    
-    // Initialize main admin interface
-    $admin = new Penalis_Admin_Interface(
-        $compose_page,
-        $history_page,
-        $settings_page,
-        $ajax_handler
+    // Register repositories as singletons
+    $container::bind(
+        Penalis_Email_Log_Repository_Interface::class,
+        function() {
+            return new Penalis_Email_Log_Options_Repository(Penalis_Config::OPTION_KEY_MANUAL_LOG);
+        },
+        true
     );
+    
+    $container::bind(
+        Penalis_Post_Meta_Repository::class,
+        function() {
+            return new Penalis_Post_Meta_Repository(Penalis_Config::META_KEY_EMAIL_SENT);
+        },
+        true
+    );
+    
+    // Register admin pages as singletons
+    $container::singleton(Penalis_Compose_Page::class);
+    $container::singleton(Penalis_History_Page::class);
+    $container::singleton(Penalis_Settings_Page::class);
+    $container::singleton(Penalis_Ajax_Handler::class);
+    $container::singleton(Penalis_Admin_Interface::class);
+    
+    // Get instances through container (with automatic dependency injection)
+    $sender = $container::get(Penalis_Email_Sender::class);
+    $admin = $container::get(Penalis_Admin_Interface::class);
     
     // Register hooks
     add_action('transition_post_status', [$sender, 'handle_post_status_transition'], 10, 3);
     $admin->register_hooks();
 }
 add_action('plugins_loaded', 'penalis_emailer_init');
+
+/**
+ * Get service instance from container
+ * 
+ * Helper function to retrieve services from the container.
+ * 
+ * @param string $class Class name to retrieve
+ * @return object Instance of the requested class
+ */
+function penalis_get_service(string $class) {
+    return Penalis_Service_Container::get($class);
+}

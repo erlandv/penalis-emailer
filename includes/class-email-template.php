@@ -44,10 +44,10 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
     /**
      * Constructor
      * 
-     * @param Penalis_Markdown_Parser|null $markdown_parser Optional markdown parser instance
+     * @param Penalis_Markdown_Parser $markdown_parser Markdown parser instance
      */
-    public function __construct(?Penalis_Markdown_Parser $markdown_parser = null) {
-        $this->markdown_parser = $markdown_parser ?? new Penalis_Markdown_Parser();
+    public function __construct(Penalis_Markdown_Parser $markdown_parser) {
+        $this->markdown_parser = $markdown_parser;
     }
     
     /**

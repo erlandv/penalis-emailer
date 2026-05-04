@@ -38,19 +38,15 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
     /**
      * Constructor
      *
-     * @param Penalis_Email_Log_Repository_Interface|null $manual_log_repository Manual email repository
-     * @param Penalis_Post_Meta_Repository|null           $post_meta_repository  Post meta repository
+     * @param Penalis_Email_Log_Repository_Interface $manual_log_repository Manual email repository
+     * @param Penalis_Post_Meta_Repository           $post_meta_repository  Post meta repository
      */
     public function __construct(
-        ?Penalis_Email_Log_Repository_Interface $manual_log_repository = null,
-        ?Penalis_Post_Meta_Repository $post_meta_repository = null
+        Penalis_Email_Log_Repository_Interface $manual_log_repository,
+        Penalis_Post_Meta_Repository $post_meta_repository
     ) {
-        // Use default implementations if not provided
-        $this->manual_log_repository = $manual_log_repository ?? 
-            new Penalis_Email_Log_Options_Repository(Penalis_Config::OPTION_KEY_MANUAL_LOG);
-        
-        $this->post_meta_repository = $post_meta_repository ?? 
-            new Penalis_Post_Meta_Repository(Penalis_Config::META_KEY_EMAIL_SENT);
+        $this->manual_log_repository = $manual_log_repository;
+        $this->post_meta_repository = $post_meta_repository;
     }
     
     /**

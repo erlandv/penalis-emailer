@@ -41,9 +41,9 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
      * @param Penalis_Email_Sender    $email_sender Email sender instance
      * @param Penalis_Email_Validator $validator    Email validator instance
      */
-    public function __construct(Penalis_Email_Sender $email_sender, ?Penalis_Email_Validator $validator = null) {
+    public function __construct(Penalis_Email_Sender $email_sender, Penalis_Email_Validator $validator) {
         $this->email_sender = $email_sender;
-        $this->validator = $validator ?? new Penalis_Email_Validator();
+        $this->validator = $validator;
         $this->page_slug = Penalis_Config::PAGE_SLUG;
     }
     
