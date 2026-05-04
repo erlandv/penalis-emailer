@@ -23,76 +23,62 @@ define('PENALIS_EMAILER_URL', plugin_dir_url(__FILE__));
 
 // Autoload classes
 spl_autoload_register(function ($class) {
+    // Only handle classes with Penalis_ prefix
     $prefix = 'Penalis_';
     if (strpos($class, $prefix) !== 0) {
         return;
     }
     
-    $class_file = strtolower(str_replace('_', '-', substr($class, strlen($prefix))));
+    // Remove prefix and convert to lowercase with dashes
+    $class_name = substr($class, strlen($prefix));
+    $class_file = strtolower(str_replace('_', '-', $class_name));
     
-    // Check in multiple directories
-    $possible_paths = [
-        PENALIS_EMAILER_PATH . 'includes/interfaces/interface-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/services/class-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/repositories/class-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/validators/class-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/exceptions/class-' . $class_file . '.php',
-        PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php',
-    ];
+    // Determine file type and path based on class name patterns
+    $file_path = null;
     
-    foreach ($possible_paths as $file) {
-        // Skip backup files
-        if (strpos($file, '.old') !== false) {
-            continue;
-        }
-        
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+    // Special case: Base Penalis_Exception class
+    if ($class_name === 'Exception') {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/exceptions/class-penalis-exception.php';
+    }
+    // Check if it's an admin class (starts with Admin or Compose or History or Settings or Ajax)
+    // Must be checked BEFORE interface check because Admin_Interface would match both
+    elseif (preg_match('/^(Admin|Compose|History|Settings|Ajax)/', $class_name)) {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php';
+    }
+    // Check if it's an interface (ends with _Interface)
+    elseif (substr($class_name, -10) === '_Interface') {
+        $interface_file = str_replace('-interface', '', $class_file);
+        $file_path = PENALIS_EMAILER_PATH . 'includes/interfaces/interface-' . $interface_file . '.php';
+    }
+    // Check if it's an exception (ends with _Exception)
+    elseif (substr($class_name, -10) === '_Exception') {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/exceptions/class-' . $class_file . '.php';
+    }
+    // Check if it's a repository (ends with _Repository)
+    elseif (substr($class_name, -11) === '_Repository') {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/repositories/class-' . $class_file . '.php';
+    }
+    // Check if it's a validator (ends with _Validator)
+    elseif (substr($class_name, -10) === '_Validator') {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/validators/class-' . $class_file . '.php';
+    }
+    // Default to includes directory
+    else {
+        $file_path = PENALIS_EMAILER_PATH . 'includes/class-' . $class_file . '.php';
+    }
+    
+    // Load the file if it exists
+    if ($file_path && file_exists($file_path)) {
+        require_once $file_path;
     }
 });
 
 // Initialize plugin
 function penalis_emailer_init() {
-    // Load config first
+    // Load config first (needed for constants used in container setup)
     require_once PENALIS_EMAILER_PATH . 'includes/class-config.php';
     
-    // Load all interfaces first (must be loaded before implementations)
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-log-repository.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-sender.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-template.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-validator.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-email-logger.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/interfaces/interface-markdown-parser.php';
-    
-    // Load core classes
-    require_once PENALIS_EMAILER_PATH . 'includes/class-service-container.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/class-markdown-parser.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/class-email-template.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/repositories/class-email-log-options-repository.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/repositories/class-post-meta-repository.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/class-email-logger.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/class-email-sender.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/validators/class-email-validator.php';
-    
-    // Load exception classes
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-penalis-exception.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-validation-exception.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-container-exception.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-template-exception.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-repository-exception.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/exceptions/class-email-send-exception.php';
-    
-    // Load admin classes
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-admin-page.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-compose-page.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-history-page.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-settings-page.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-ajax-handler.php';
-    require_once PENALIS_EMAILER_PATH . 'includes/admin/class-admin-interface.php';
-    
+    // All other classes will be autoloaded on-demand
     // Initialize Service Container and register singletons
     $container = Penalis_Service_Container::class;
     
@@ -128,6 +114,7 @@ function penalis_emailer_init() {
     $container::singleton(Penalis_Admin_Interface::class);
     
     // Get instances through container (with automatic dependency injection)
+    // This will trigger autoloading of all required classes
     $sender = $container::get(Penalis_Email_Sender::class);
     $admin = $container::get(Penalis_Admin_Interface::class);
     
