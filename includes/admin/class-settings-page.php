@@ -146,7 +146,7 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
                 </button>
                 
                 <button type="button" 
-                        class="button" 
+                        class="button penalis-btn-secondary" 
                         id="test-email-btn"
                         style="margin-left: 10px; background: #00a32a; color: #fff; border-color: #00a32a;">
                     <?php echo esc_html__('Send Test Email', 'penalis-emailer'); ?>
