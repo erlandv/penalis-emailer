@@ -121,7 +121,7 @@ if (!defined('ABSPATH')) {
                     <div class="penalis-pagination">
                         <div>
                             <?php
-                            $base_url = admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=compose');
+                            $base_url = admin_url('admin.php?page=penalis-email-compose');
                             
                             if ($current_page > 1):
                                 $prev_url = add_query_arg('paged', $current_page - 1, $base_url);

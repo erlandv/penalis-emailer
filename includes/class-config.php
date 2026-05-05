@@ -24,7 +24,7 @@ class Penalis_Config {
     // Admin Page Settings
     const PAGE_SLUG = 'penalis-email';
     const SETTINGS_PAGE_SLUG = 'penalis-email-settings';
-    const USERS_PER_PAGE = 50;
+    const USERS_PER_PAGE = 20;
     
     // Database Keys
     const META_KEY_EMAIL_SENT = '_penalis_email_sent';

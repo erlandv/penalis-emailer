@@ -159,7 +159,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         <div class="penalis-quick-actions">
             <h2><?php echo esc_html__('Quick Actions', 'penalis-emailer'); ?></h2>
             <div class="penalis-action-buttons">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=compose')); ?>" 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-compose')); ?>" 
                    class="penalis-action-btn penalis-action-btn-primary">
                     <span class="dashicons dashicons-email-alt"></span>
                     <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
@@ -171,7 +171,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
                     <?php echo esc_html__('View History', 'penalis-emailer'); ?>
                 </a>
                 
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=settings')); ?>" 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::SETTINGS_PAGE_SLUG)); ?>" 
                    class="penalis-action-btn penalis-action-btn-secondary">
                     <span class="dashicons dashicons-admin-settings"></span>
                     <?php echo esc_html__('Settings', 'penalis-emailer'); ?>
@@ -195,7 +195,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
             <?php if (empty($recent_emails)): ?>
                 <div class="penalis-empty-state">
                     <p><?php echo esc_html__('No emails sent yet. Start by composing your first email!', 'penalis-emailer'); ?></p>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=compose')); ?>" 
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-compose')); ?>" 
                        class="button button-primary">
                         <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
                     </a>
