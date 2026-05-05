@@ -47,7 +47,7 @@ class Penalis_Service_Container {
      *
      * @param string $class Class name to instantiate
      * @return object Instance of the class
-     * @throws Exception If class cannot be instantiated
+     * @throws Penalis_Container_Exception If class cannot be instantiated
      */
     public static function get(string $class) {
         // Check if singleton instance exists
@@ -124,7 +124,7 @@ class Penalis_Service_Container {
      *
      * @param string $class Class name
      * @return object Instance of the class
-     * @throws Exception If class cannot be instantiated
+     * @throws Penalis_Container_Exception If class cannot be instantiated
      */
     private static function create(string $class) {
         // Check if custom factory exists
@@ -134,7 +134,10 @@ class Penalis_Service_Container {
         
         // Check if class exists
         if (!class_exists($class)) {
-            throw new Exception("Class {$class} does not exist");
+            throw new Penalis_Container_Exception(
+                "Class does not exist",
+                ['class' => $class, 'operation' => 'create']
+            );
         }
         
         // Get reflection class
@@ -142,7 +145,10 @@ class Penalis_Service_Container {
         
         // Check if class is instantiable
         if (!$reflection->isInstantiable()) {
-            throw new Exception("Class {$class} is not instantiable");
+            throw new Penalis_Container_Exception(
+                "Class is not instantiable",
+                ['class' => $class, 'operation' => 'create', 'reason' => 'abstract or interface']
+            );
         }
         
         // Get constructor
@@ -173,7 +179,7 @@ class Penalis_Service_Container {
      *
      * @param array $parameters ReflectionParameter array
      * @return array Resolved dependencies
-     * @throws Exception If dependency cannot be resolved
+     * @throws Penalis_Container_Exception If dependency cannot be resolved
      */
     private static function resolve_dependencies(array $parameters): array {
         $dependencies = [];
@@ -186,8 +192,12 @@ class Penalis_Service_Container {
                 if ($parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->getDefaultValue();
                 } else {
-                    throw new Exception(
-                        "Cannot resolve parameter {$parameter->getName()} without type hint or default value"
+                    throw new Penalis_Container_Exception(
+                        "Cannot resolve parameter without type hint or default value",
+                        [
+                            'parameter' => $parameter->getName(),
+                            'operation' => 'resolve_dependencies'
+                        ]
                     );
                 }
                 continue;
@@ -203,8 +213,13 @@ class Penalis_Service_Container {
                 if ($parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->getDefaultValue();
                 } else {
-                    throw new Exception(
-                        "Cannot resolve primitive parameter {$parameter->getName()}"
+                    throw new Penalis_Container_Exception(
+                        "Cannot resolve primitive parameter",
+                        [
+                            'parameter' => $parameter->getName(),
+                            'type' => $dependency_name,
+                            'operation' => 'resolve_dependencies'
+                        ]
                     );
                 }
                 continue;
@@ -213,14 +228,24 @@ class Penalis_Service_Container {
             // Resolve class dependency recursively
             try {
                 $dependencies[] = self::get($dependency_name);
-            } catch (Exception $e) {
+            } catch (Penalis_Container_Exception $e) {
                 // If optional (nullable or has default), use null or default
                 if ($parameter->allowsNull() || $parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->isDefaultValueAvailable() 
                         ? $parameter->getDefaultValue() 
                         : null;
                 } else {
-                    throw $e;
+                    // Re-throw with additional context
+                    throw new Penalis_Container_Exception(
+                        "Cannot resolve class dependency: " . $e->getMessage(),
+                        [
+                            'parameter' => $parameter->getName(),
+                            'dependency_class' => $dependency_name,
+                            'operation' => 'resolve_dependencies',
+                            'missing_dependencies' => [$dependency_name]
+                        ],
+                        $e
+                    );
                 }
             }
         }
@@ -286,7 +311,7 @@ class Penalis_Service_Container {
      * @param string        $method          Method name
      * @param array         $parameters      Additional parameters (indexed by parameter name or position)
      * @return mixed Method return value
-     * @throws Exception If method cannot be called
+     * @throws Penalis_Container_Exception If method cannot be called
      */
     public static function call($class_or_object, string $method, array $parameters = []) {
         // Get object instance
@@ -327,8 +352,13 @@ class Penalis_Service_Container {
                 if ($parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->getDefaultValue();
                 } else {
-                    throw new Exception(
-                        "Cannot resolve parameter {$parameter->getName()} without type hint or default value"
+                    throw new Penalis_Container_Exception(
+                        "Cannot resolve method parameter without type hint or default value",
+                        [
+                            'method' => $method,
+                            'parameter' => $parameter->getName(),
+                            'operation' => 'call'
+                        ]
                     );
                 }
                 continue;
@@ -344,8 +374,14 @@ class Penalis_Service_Container {
                 if ($parameter->isDefaultValueAvailable()) {
                     $dependencies[] = $parameter->getDefaultValue();
                 } else {
-                    throw new Exception(
-                        "Cannot resolve primitive parameter {$parameter->getName()}"
+                    throw new Penalis_Container_Exception(
+                        "Cannot resolve primitive method parameter",
+                        [
+                            'method' => $method,
+                            'parameter' => $parameter->getName(),
+                            'type' => $dependency_name,
+                            'operation' => 'call'
+                        ]
                     );
                 }
                 continue;
