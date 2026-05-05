@@ -2,6 +2,9 @@
 /**
  * Email Content Card View
  *
+ * Displays the email body textarea with markdown formatting guide
+ * and placeholder documentation.
+ *
  * @package Penalis_Emailer
  * @since 1.1.0
  */

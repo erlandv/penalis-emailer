@@ -241,44 +241,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
      * @return void
      */
     private function render_email_details_card(): void {
-        ?>
-        <div class="penalis-form-card">
-            <h3><?php echo esc_html__('Email Details', 'penalis-emailer'); ?></h3>
-            <table class="form-table">
-                <tr class="penalis-required-field">
-                    <th scope="row">
-                        <label for="from_name"><?php echo esc_html__('Email From', 'penalis-emailer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" 
-                               name="from_name" 
-                               id="from_name" 
-                               class="regular-text" 
-                               required
-                               value="<?php echo esc_attr(Penalis_Config::DEFAULT_FROM_NAME); ?>"
-                               placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
-                        <p class="description">
-                            <?php echo esc_html__('Sender name that will appear in the email. Email address will always use no-reply@domain.', 'penalis-emailer'); ?>
-                        </p>
-                    </td>
-                </tr>
-                
-                <tr class="penalis-required-field">
-                    <th scope="row">
-                        <label for="subject"><?php echo esc_html__('Email Subject', 'penalis-emailer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" 
-                               name="subject" 
-                               id="subject" 
-                               class="regular-text" 
-                               required
-                               placeholder="<?php echo esc_attr__('Enter email subject', 'penalis-emailer'); ?>">
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <?php
+        require PENALIS_EMAILER_PATH . 'includes/admin/views/email-details-card.php';
     }
     
     /**
@@ -287,7 +250,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
      * @return void
      */
     private function render_email_content_card(): void {
-        require_once PENALIS_EMAILER_PATH . 'includes/admin/views/email-content-card.php';
+        require PENALIS_EMAILER_PATH . 'includes/admin/views/email-content-card.php';
     }
     
     /**
@@ -309,23 +272,6 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
      * @return void
      */
     private function render_preview_modal(): void {
-        ?>
-        <!-- Preview Modal -->
-        <div id="email-preview-modal">
-            <div>
-                <div class="penalis-modal-header">
-                    <h2><?php echo esc_html__('Email Preview', 'penalis-emailer'); ?></h2>
-                    <button type="button" id="close-preview-modal" class="penalis-modal-close">
-                        <?php echo esc_html__('Close', 'penalis-emailer'); ?>
-                    </button>
-                </div>
-                <div id="preview-loading">
-                    <div class="penalis-spinner"></div>
-                    <p class="penalis-spinner-text"><?php echo esc_html__('Generating preview...', 'penalis-emailer'); ?></p>
-                </div>
-                <iframe id="email-preview-iframe"></iframe>
-            </div>
-        </div>
-        <?php
+        require PENALIS_EMAILER_PATH . 'includes/admin/views/preview-modal.php';
     }
 }

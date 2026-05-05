@@ -2,6 +2,9 @@
 /**
  * Recipients Card View
  *
+ * Displays the user selection table with search, filtering,
+ * and pagination functionality.
+ *
  * @package Penalis_Emailer
  * @since 1.1.0
  * 
