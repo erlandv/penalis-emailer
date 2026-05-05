@@ -27,7 +27,8 @@
             $('#deselect-all-users-btn').on('click', this.deselectAll.bind(this));
             $('#select-authors-btn').on('click', this.selectByRole.bind(this, 'author'));
             $('#select-contributors-btn').on('click', this.selectByRole.bind(this, 'contributor'));
-            $('.user-checkbox').on('change', this.updateSelectedCount.bind(this));
+            // Only listen to checkboxes in the table (not hidden ones)
+            $(document).on('change', '.user-row .user-checkbox', this.updateSelectedCount.bind(this));
             
             // Form submission
             $('#penalis-email-form').on('submit', this.confirmSubmit.bind(this));
@@ -45,13 +46,17 @@
         },
         
         updateSelectedCount: function() {
-            const selectedCount = $('.user-checkbox:checked').length;
-            const totalAvailable = $('#total-available-count').text();
+            // Count visible checkboxes in table
+            const visibleChecked = $('.user-row .user-checkbox:checked').length;
+            // Count hidden checkboxes
+            const hiddenChecked = $('#hidden-user-checkboxes input:checked').length;
+            // Total selected
+            const selectedCount = visibleChecked + hiddenChecked;
+            
             $('#selected-count').text(selectedCount);
             
-            // Update "select all" checkbox state (only for visible checkboxes)
-            const visibleCheckboxes = $('.user-checkbox:visible');
-            const visibleChecked = visibleCheckboxes.filter(':checked').length;
+            // Update "select all" checkbox state (only for visible checkboxes in table)
+            const visibleCheckboxes = $('.user-row .user-checkbox');
             const allVisibleChecked = visibleCheckboxes.length > 0 && visibleChecked === visibleCheckboxes.length;
             const someVisibleChecked = visibleChecked > 0 && visibleChecked < visibleCheckboxes.length;
             
@@ -78,12 +83,14 @@
         
         toggleSelectAll: function() {
             const isChecked = $('#select-all-checkbox').is(':checked');
-            $('.user-checkbox:visible').prop('checked', isChecked);
+            // Only toggle visible checkboxes in the table (not hidden ones)
+            $('.user-row .user-checkbox').prop('checked', isChecked);
             this.updateSelectedCount();
         },
         
         selectAllVisible: function() {
-            $('.user-checkbox:visible').prop('checked', true);
+            // Only select visible checkboxes in the table (not hidden ones)
+            $('.user-row .user-checkbox').prop('checked', true);
             this.updateSelectedCount();
         },
         
@@ -100,20 +107,24 @@
                 nonce: penalisAdmin.nonces.getAllUserIds
             }, function(response) {
                 if (response.success) {
-                    const allUserIds = response.data.user_ids;
+                    // Convert all user IDs to integers (AJAX returns strings)
+                    const allUserIds = response.data.user_ids.map(function(id) {
+                        return parseInt(id);
+                    });
                     const hiddenContainer = $('#hidden-user-checkboxes');
                     
                     // Clear existing hidden checkboxes
                     hiddenContainer.empty();
                     
-                    // First, check all visible checkboxes
-                    $('.user-checkbox').prop('checked', true);
+                    // First, check all visible checkboxes in the table
+                    $('.user-row .user-checkbox').prop('checked', true);
                     
-                    // Then, add hidden checkboxes for users not on current page
-                    const visibleUserIds = $('.user-checkbox').map(function() {
+                    // Get IDs of visible users
+                    const visibleUserIds = $('.user-row .user-checkbox').map(function() {
                         return parseInt($(this).val());
                     }).get();
                     
+                    // Then, add hidden checkboxes for users not on current page
                     allUserIds.forEach(function(userId) {
                         if (!visibleUserIds.includes(userId)) {
                             // Create hidden checkbox for users not on current page
@@ -121,7 +132,7 @@
                                 type: 'checkbox',
                                 name: 'user_ids[]',
                                 value: userId,
-                                class: 'user-checkbox user-checkbox-hidden',
+                                class: 'hidden-user-checkbox',
                                 checked: true
                             });
                             hiddenContainer.append(hiddenCheckbox);
@@ -143,14 +154,20 @@
         },
         
         deselectAll: function() {
-            // Deselect all visible checkboxes
-            $('.user-checkbox').prop('checked', false);
+            // Deselect all visible checkboxes in table
+            $('.user-row .user-checkbox').prop('checked', false);
             // Clear hidden checkboxes
             $('#hidden-user-checkboxes').empty();
             this.updateSelectedCount();
         },
         
         selectByRole: function(role) {
+            // Clear hidden checkboxes first (role selection only works on current page)
+            $('#hidden-user-checkboxes').empty();
+            
+            // Deselect all first
+            $('.user-row .user-checkbox').prop('checked', false);
+            
             // Select visible users by role
             $('.user-row').each(function() {
                 const userRole = $(this).data('role');
@@ -159,8 +176,6 @@
                 }
             });
             
-            // Note: This only selects visible users on current page
-            // Hidden checkboxes from "Select All Users" are preserved
             this.updateSelectedCount();
         },
         
