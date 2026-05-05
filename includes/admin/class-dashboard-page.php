@@ -115,7 +115,9 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         <div class="penalis-stats-cards">
             <!-- Total Emails Card -->
             <div class="penalis-stat-card penalis-stat-card-primary">
-                <div class="penalis-stat-icon">📧</div>
+                <div class="penalis-stat-icon">
+                    <span class="dashicons dashicons-email-alt"></span>
+                </div>
                 <div class="penalis-stat-content">
                     <div class="penalis-stat-label"><?php echo esc_html__('Total Emails Sent', 'penalis-emailer'); ?></div>
                     <div class="penalis-stat-value"><?php echo esc_html(number_format_i18n($stats['total'])); ?></div>
@@ -124,7 +126,9 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
             
             <!-- Manual Emails Card -->
             <div class="penalis-stat-card penalis-stat-card-info">
-                <div class="penalis-stat-icon">📨</div>
+                <div class="penalis-stat-icon">
+                    <span class="dashicons dashicons-edit"></span>
+                </div>
                 <div class="penalis-stat-content">
                     <div class="penalis-stat-label"><?php echo esc_html__('Manual Emails', 'penalis-emailer'); ?></div>
                     <div class="penalis-stat-value"><?php echo esc_html(number_format_i18n($stats['manual'])); ?></div>
@@ -133,7 +137,9 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
             
             <!-- Automatic Emails Card -->
             <div class="penalis-stat-card penalis-stat-card-success">
-                <div class="penalis-stat-icon">🤖</div>
+                <div class="penalis-stat-icon">
+                    <span class="dashicons dashicons-admin-plugins"></span>
+                </div>
                 <div class="penalis-stat-content">
                     <div class="penalis-stat-label"><?php echo esc_html__('Automatic Emails', 'penalis-emailer'); ?></div>
                     <div class="penalis-stat-value"><?php echo esc_html(number_format_i18n($stats['automatic'])); ?></div>
@@ -151,7 +157,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
     private function render_quick_actions(): void {
         ?>
         <div class="penalis-quick-actions">
-            <h2><?php echo esc_html__('Quick Actions', 'penalis-emailer'); ?> 🚀</h2>
+            <h2><?php echo esc_html__('Quick Actions', 'penalis-emailer'); ?></h2>
             <div class="penalis-action-buttons">
                 <a href="<?php echo esc_url(admin_url('admin.php?page=' . Penalis_Config::PAGE_SLUG . '&tab=compose')); ?>" 
                    class="penalis-action-btn penalis-action-btn-primary">
@@ -184,7 +190,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
     private function render_recent_activity(array $recent_emails): void {
         ?>
         <div class="penalis-recent-activity">
-            <h2><?php echo esc_html__('Recent Activity', 'penalis-emailer'); ?> 📊</h2>
+            <h2><?php echo esc_html__('Recent Activity', 'penalis-emailer'); ?></h2>
             
             <?php if (empty($recent_emails)): ?>
                 <div class="penalis-empty-state">
@@ -204,7 +210,7 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
                 <div class="penalis-view-all">
                     <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history')); ?>" 
                        class="button">
-                        <?php echo esc_html__('View All History →', 'penalis-emailer'); ?>
+                        <?php echo esc_html__('View All History', 'penalis-emailer'); ?> →
                     </a>
                 </div>
             <?php endif; ?>
@@ -293,10 +299,13 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         
         ?>
         <div class="penalis-tips-section">
-            <h2><?php echo esc_html__('Tips & Best Practices', 'penalis-emailer'); ?> 💡</h2>
+            <h2><?php echo esc_html__('Tips & Best Practices', 'penalis-emailer'); ?></h2>
             <ul class="penalis-tips-list">
                 <?php foreach ($tips as $tip): ?>
-                    <li><?php echo esc_html($tip); ?></li>
+                    <li>
+                        <span class="dashicons dashicons-lightbulb"></span>
+                        <?php echo esc_html($tip); ?>
+                    </li>
                 <?php endforeach; ?>
             </ul>
         </div>
