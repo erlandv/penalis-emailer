@@ -58,6 +58,7 @@ class Penalis_Ajax_Handler {
         
         // User selection
         add_action('wp_ajax_penalis_get_all_user_ids', [$this, 'get_all_user_ids']);
+        add_action('wp_ajax_penalis_get_users_by_role', [$this, 'get_users_by_role']);
         
         // Delete actions
         add_action('wp_ajax_penalis_bulk_delete_logs', [$this, 'bulk_delete_logs']);
@@ -209,6 +210,45 @@ class Penalis_Ajax_Handler {
         wp_send_json_success([
             'user_ids' => $user_ids,
             'total' => count($user_ids)
+        ]);
+    }
+    
+    /**
+     * AJAX handler for getting user IDs by role
+     *
+     * @return void
+     */
+    public function get_users_by_role(): void {
+        // Check nonce
+        check_ajax_referer('penalis_get_users_by_role', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        // Get and validate role
+        $role = isset($_POST['role']) ? sanitize_text_field($_POST['role']) : '';
+        
+        $eligible_roles = Penalis_Config::get_eligible_roles();
+        if (empty($role) || !in_array($role, $eligible_roles)) {
+            wp_send_json_error(['message' => __('Invalid role', 'penalis-emailer')]);
+        }
+        
+        // Get users by role
+        $args = [
+            'role' => $role,
+            'fields' => 'ID',
+            'orderby' => 'display_name',
+            'order' => 'ASC'
+        ];
+        
+        $user_ids = get_users($args);
+        
+        wp_send_json_success([
+            'user_ids' => $user_ids,
+            'total' => count($user_ids),
+            'role' => $role
         ]);
     }
     

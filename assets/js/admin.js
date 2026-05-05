@@ -162,21 +162,71 @@
         },
         
         selectByRole: function(role) {
-            // Clear hidden checkboxes first (role selection only works on current page)
-            $('#hidden-user-checkboxes').empty();
+            const button = role === 'author' ? $('#select-authors-btn') : $('#select-contributors-btn');
+            const originalText = button.text();
             
-            // Deselect all first
-            $('.user-row .user-checkbox').prop('checked', false);
+            // Disable button and show loading state
+            button.prop('disabled', true).text(penalisAdmin.i18n.selectingByRole);
             
-            // Select visible users by role
-            $('.user-row').each(function() {
-                const userRole = $(this).data('role');
-                if (userRole.includes(role)) {
-                    $(this).find('.user-checkbox').prop('checked', true);
+            // Make AJAX request to get users by role
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_get_users_by_role',
+                role: role,
+                nonce: penalisAdmin.nonces.getUsersByRole
+            }, function(response) {
+                if (response.success) {
+                    // Convert all user IDs to integers
+                    const roleUserIds = response.data.user_ids.map(function(id) {
+                        return parseInt(id);
+                    });
+                    const hiddenContainer = $('#hidden-user-checkboxes');
+                    
+                    // Clear existing hidden checkboxes
+                    hiddenContainer.empty();
+                    
+                    // Deselect all visible checkboxes first
+                    $('.user-row .user-checkbox').prop('checked', false);
+                    
+                    // Get IDs of visible users
+                    const visibleUserIds = $('.user-row .user-checkbox').map(function() {
+                        return parseInt($(this).val());
+                    }).get();
+                    
+                    // Check visible users that match the role
+                    $('.user-row').each(function() {
+                        const userId = parseInt($(this).find('.user-checkbox').val());
+                        if (roleUserIds.includes(userId)) {
+                            $(this).find('.user-checkbox').prop('checked', true);
+                        }
+                    });
+                    
+                    // Add hidden checkboxes for users with this role not on current page
+                    roleUserIds.forEach(function(userId) {
+                        if (!visibleUserIds.includes(userId)) {
+                            // Create hidden checkbox for users not on current page
+                            const hiddenCheckbox = $('<input>', {
+                                type: 'checkbox',
+                                name: 'user_ids[]',
+                                value: userId,
+                                class: 'hidden-user-checkbox',
+                                checked: true
+                            });
+                            hiddenContainer.append(hiddenCheckbox);
+                        }
+                    });
+                    
+                    // Update count
+                    ComposeEmailHandler.updateSelectedCount();
+                } else {
+                    alert(penalisAdmin.i18n.failedToLoadUsers);
                 }
+                
+                // Re-enable button
+                button.prop('disabled', false).text(originalText);
+            }).fail(function() {
+                alert(penalisAdmin.i18n.failedToLoadUsers);
+                button.prop('disabled', false).text(originalText);
             });
-            
-            this.updateSelectedCount();
         },
         
         confirmSubmit: function(e) {

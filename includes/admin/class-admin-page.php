@@ -152,6 +152,7 @@ abstract class Penalis_Admin_Page {
                 'previewAuto' => wp_create_nonce('penalis_preview_auto_email'),
                 'testEmail' => wp_create_nonce('penalis_send_test_email'),
                 'getAllUserIds' => wp_create_nonce('penalis_get_all_user_ids'),
+                'getUsersByRole' => wp_create_nonce('penalis_get_users_by_role'),
                 'bulkDeleteLogs' => wp_create_nonce('penalis_bulk_delete_logs'),
                 'clearAllLogs' => wp_create_nonce('penalis_clear_all_logs'),
             ],
@@ -170,6 +171,7 @@ abstract class Penalis_Admin_Page {
                 'testEmailFailed' => __('Failed to send test email:', 'penalis-emailer'),
                 // User selection i18n
                 'selectingAllUsers' => __('Selecting all users...', 'penalis-emailer'),
+                'selectingByRole' => __('Selecting users...', 'penalis-emailer'),
                 'failedToLoadUsers' => __('Failed to load all users. Please try again.', 'penalis-emailer'),
                 // Delete history i18n
                 'selectLogs' => __('Please select at least one email log to delete.', 'penalis-emailer'),
