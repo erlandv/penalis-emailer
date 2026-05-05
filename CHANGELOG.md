@@ -1,6 +1,93 @@
 # Changelog
 
-### Version 1.3.1 (Current)
+### Version 1.3.2 (Current)
+
+#### **New Features**
+- **Select All Users Across Pages**
+  - Added "Select All [Total] Users" button to select all eligible users at once
+  - Separate "Select All (on this page)" button for current page only
+  - AJAX-powered selection without page reload
+  - Visual loading state during selection process
+  - Gmail-style bulk selection UX pattern
+
+- **Smart Role-Based Selection**
+  - "Authors Only" and "Contributors Only" now select ALL users with that role across all pages
+  - Server-side role filtering via AJAX for accurate selection
+  - Automatic creation of hidden checkboxes for users not on current page
+  - Loading state feedback during role selection
+
+#### **Improvements**
+- **Enhanced User Selection Counter**
+  - Shows total available users (e.g., "52 of 52 users selected")
+  - Accurately counts both visible and hidden selected users
+  - Separate tracking for visible table checkboxes and hidden checkboxes
+
+- **Better Button Labeling**
+  - Clear distinction between "Select All (on this page)" and "Select All X Users"
+  - Primary button styling for "Select All Users" for better visual hierarchy
+  - Consistent loading states across all selection buttons
+
+- **Improved Pagination Handling**
+  - Hidden checkboxes persist across page navigation
+  - Selection state maintained when switching between pages
+  - Deselect All properly clears both visible and hidden selections
+
+#### **Bug Fixes**
+- **Fixed Active Menu State**
+  - Fixed Compose Email menu not showing as active when on compose page
+  - Changed Compose Email from tab-based routing to dedicated page slug (`penalis-email-compose`)
+  - Updated all internal links to use new slug format
+  - Fixed pagination links in Recipients table to maintain correct page context
+
+- **Fixed User Selection Counting**
+  - Fixed "72 of 52 users selected" bug caused by string/integer type mismatch
+  - Convert AJAX-returned user IDs from strings to integers for consistent comparison
+  - Properly scope checkbox selectors to avoid counting unintended DOM elements
+  - Fixed role selection showing incorrect counts (e.g., "19 of 52" for Contributors)
+
+- **Fixed Pagination Issues**
+  - Reduced recipients per page from 50 to 20 for better usability
+  - Fixed pagination navigation to properly maintain page state
+  - Updated pagination URLs to use correct page slug
+
+#### **Code Quality**
+- **Improved JavaScript Architecture**
+  - Event delegation for better DOM handling with dynamic checkboxes
+  - Separate class names for hidden checkboxes (`hidden-user-checkbox`) to avoid conflicts
+  - Clear separation between visible table checkboxes and hidden checkboxes
+  - Consistent integer conversion for all user ID comparisons
+
+- **Enhanced AJAX Endpoints**
+  - Added `penalis_get_all_user_ids` endpoint for fetching all eligible users
+  - Added `penalis_get_users_by_role` endpoint for role-based filtering
+  - Proper nonce verification and capability checks for all endpoints
+  - Efficient queries using `fields => 'ID'` for performance
+
+- **Better Security**
+  - Added nonces for new AJAX endpoints (`getAllUserIds`, `getUsersByRole`)
+  - Role validation against eligible roles before processing
+  - Proper sanitization of role parameter
+
+#### **User Experience**
+- **Consistent Behavior**
+  - All selection buttons now work consistently across pagination
+  - Role filters select ALL users with that role, not just current page
+  - Clear visual feedback with loading states and disabled buttons
+
+- **Intuitive Interface**
+  - Button labels clearly indicate scope of selection
+  - Loading messages provide feedback during AJAX operations
+  - Error messages guide users when operations fail
+
+#### **Performance**
+- Efficient AJAX queries fetch only user IDs, not full user objects
+- Single AJAX call per selection operation
+- No page reloads required for any selection operation
+- Lazy loading of hidden checkboxes only when needed
+
+---
+
+### Version 1.3.1
 
 #### **Bug Fixes**
 - **Fixed Active Menu State**
