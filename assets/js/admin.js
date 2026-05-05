@@ -22,7 +22,8 @@
             // User selection
             $('#user-search').on('keyup', this.filterUsers.bind(this));
             $('#select-all-checkbox').on('change', this.toggleSelectAll.bind(this));
-            $('#select-all-users-btn').on('click', this.selectAllVisible.bind(this));
+            $('#select-all-visible-btn').on('click', this.selectAllVisible.bind(this));
+            $('#select-all-users-btn').on('click', this.selectAllUsers.bind(this));
             $('#deselect-all-users-btn').on('click', this.deselectAll.bind(this));
             $('#select-authors-btn').on('click', this.selectByRole.bind(this, 'author'));
             $('#select-contributors-btn').on('click', this.selectByRole.bind(this, 'contributor'));
@@ -45,14 +46,17 @@
         
         updateSelectedCount: function() {
             const selectedCount = $('.user-checkbox:checked').length;
-            const totalCount = $('.user-checkbox').length;
+            const totalAvailable = $('#total-available-count').text();
             $('#selected-count').text(selectedCount);
             
-            // Update "select all" checkbox state
-            const allChecked = selectedCount > 0 && selectedCount === totalCount;
-            const someChecked = selectedCount > 0 && selectedCount < totalCount;
-            $('#select-all-checkbox').prop('checked', allChecked);
-            $('#select-all-checkbox').prop('indeterminate', someChecked);
+            // Update "select all" checkbox state (only for visible checkboxes)
+            const visibleCheckboxes = $('.user-checkbox:visible');
+            const visibleChecked = visibleCheckboxes.filter(':checked').length;
+            const allVisibleChecked = visibleCheckboxes.length > 0 && visibleChecked === visibleCheckboxes.length;
+            const someVisibleChecked = visibleChecked > 0 && visibleChecked < visibleCheckboxes.length;
+            
+            $('#select-all-checkbox').prop('checked', allVisibleChecked);
+            $('#select-all-checkbox').prop('indeterminate', someVisibleChecked);
         },
         
         filterUsers: function() {
@@ -83,18 +87,80 @@
             this.updateSelectedCount();
         },
         
+        selectAllUsers: function() {
+            const button = $('#select-all-users-btn');
+            const originalText = button.text();
+            
+            // Disable button and show loading state
+            button.prop('disabled', true).text(penalisAdmin.i18n.selectingAllUsers);
+            
+            // Make AJAX request to get all user IDs
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_get_all_user_ids',
+                nonce: penalisAdmin.nonces.getAllUserIds
+            }, function(response) {
+                if (response.success) {
+                    const allUserIds = response.data.user_ids;
+                    const hiddenContainer = $('#hidden-user-checkboxes');
+                    
+                    // Clear existing hidden checkboxes
+                    hiddenContainer.empty();
+                    
+                    // First, check all visible checkboxes
+                    $('.user-checkbox').prop('checked', true);
+                    
+                    // Then, add hidden checkboxes for users not on current page
+                    const visibleUserIds = $('.user-checkbox').map(function() {
+                        return parseInt($(this).val());
+                    }).get();
+                    
+                    allUserIds.forEach(function(userId) {
+                        if (!visibleUserIds.includes(userId)) {
+                            // Create hidden checkbox for users not on current page
+                            const hiddenCheckbox = $('<input>', {
+                                type: 'checkbox',
+                                name: 'user_ids[]',
+                                value: userId,
+                                class: 'user-checkbox user-checkbox-hidden',
+                                checked: true
+                            });
+                            hiddenContainer.append(hiddenCheckbox);
+                        }
+                    });
+                    
+                    // Update count
+                    ComposeEmailHandler.updateSelectedCount();
+                } else {
+                    alert(penalisAdmin.i18n.failedToLoadUsers);
+                }
+                
+                // Re-enable button
+                button.prop('disabled', false).text(originalText);
+            }).fail(function() {
+                alert(penalisAdmin.i18n.failedToLoadUsers);
+                button.prop('disabled', false).text(originalText);
+            });
+        },
+        
         deselectAll: function() {
+            // Deselect all visible checkboxes
             $('.user-checkbox').prop('checked', false);
+            // Clear hidden checkboxes
+            $('#hidden-user-checkboxes').empty();
             this.updateSelectedCount();
         },
         
         selectByRole: function(role) {
+            // Select visible users by role
             $('.user-row').each(function() {
                 const userRole = $(this).data('role');
                 if (userRole.includes(role)) {
                     $(this).find('.user-checkbox').prop('checked', true);
                 }
             });
+            
+            // Note: This only selects visible users on current page
+            // Hidden checkboxes from "Select All Users" are preserved
             this.updateSelectedCount();
         },
         

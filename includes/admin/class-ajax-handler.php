@@ -56,6 +56,9 @@ class Penalis_Ajax_Handler {
         add_action('wp_ajax_penalis_preview_auto_email', [$this, 'preview_auto_email']);
         add_action('wp_ajax_penalis_send_test_email', [$this, 'send_test_email']);
         
+        // User selection
+        add_action('wp_ajax_penalis_get_all_user_ids', [$this, 'get_all_user_ids']);
+        
         // Delete actions
         add_action('wp_ajax_penalis_bulk_delete_logs', [$this, 'bulk_delete_logs']);
         add_action('wp_ajax_penalis_clear_all_logs', [$this, 'clear_all_logs']);
@@ -177,6 +180,36 @@ class Penalis_Ajax_Handler {
         } else {
             wp_send_json_error(['message' => __('Failed to send test email. Please check your email configuration.', 'penalis-emailer')]);
         }
+    }
+    
+    /**
+     * AJAX handler for getting all eligible user IDs
+     *
+     * @return void
+     */
+    public function get_all_user_ids(): void {
+        // Check nonce
+        check_ajax_referer('penalis_get_all_user_ids', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        // Get all eligible users
+        $args = [
+            'role__in' => Penalis_Config::get_eligible_roles(),
+            'fields' => 'ID',
+            'orderby' => 'display_name',
+            'order' => 'ASC'
+        ];
+        
+        $user_ids = get_users($args);
+        
+        wp_send_json_success([
+            'user_ids' => $user_ids,
+            'total' => count($user_ids)
+        ]);
     }
     
     /**

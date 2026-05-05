@@ -35,8 +35,11 @@ if (!defined('ABSPATH')) {
                                id="user-search" 
                                class="regular-text" 
                                placeholder="<?php echo esc_attr__('Search by name or email...', 'penalis-emailer'); ?>">
-                        <button type="button" class="button" id="select-all-users-btn">
-                            <?php echo esc_html__('Select All', 'penalis-emailer'); ?>
+                        <button type="button" class="button" id="select-all-visible-btn">
+                            <?php echo esc_html__('Select All (on this page)', 'penalis-emailer'); ?>
+                        </button>
+                        <button type="button" class="button button-primary" id="select-all-users-btn" data-total="<?php echo esc_attr($total_users); ?>">
+                            <?php printf(esc_html__('Select All %d Users', 'penalis-emailer'), $total_users); ?>
                         </button>
                         <button type="button" class="button" id="deselect-all-users-btn">
                             <?php echo esc_html__('Deselect All', 'penalis-emailer'); ?>
@@ -52,13 +55,16 @@ if (!defined('ABSPATH')) {
                     <!-- User Count -->
                     <div class="penalis-user-count">
                         <strong id="selected-count">0</strong> <?php echo esc_html__('of', 'penalis-emailer'); ?> 
-                        <strong id="total-count"><?php echo count($users); ?></strong> 
+                        <strong id="total-available-count"><?php echo esc_html($total_users); ?></strong> 
                         <?php echo esc_html__('users selected', 'penalis-emailer'); ?>
                     </div>
                 </div>
                 
                 <!-- Recipients Table -->
                 <div class="penalis-recipients-table">
+                    <!-- Hidden container for dynamically added checkboxes (for "Select All Users" feature) -->
+                    <div id="hidden-user-checkboxes" style="display: none;"></div>
+                    
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>

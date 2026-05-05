@@ -202,6 +202,11 @@
     min-width: 200px;
 }
 
+/* Highlight the "Select All X Users" button */
+#select-all-users-btn {
+    font-weight: 600;
+}
+
 .penalis-user-count {
     padding: 8px 12px;
     background: #fff;
