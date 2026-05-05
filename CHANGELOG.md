@@ -1,6 +1,28 @@
 # Changelog
 
-### Version 1.3.0 (Current)
+### Version 1.3.1 (Current)
+
+#### **Bug Fixes**
+- **Fixed Active Menu State**
+  - Fixed Compose Email menu not showing as active when on compose page
+  - Changed Compose Email from tab-based routing to dedicated page slug (`penalis-email-compose`)
+  - Updated all internal links to use new slug format
+  - Fixed pagination links in Recipients table to maintain correct page context
+
+- **Improved Pagination**
+  - Reduced recipients per page from 50 to 20 for better usability
+  - Fixed pagination navigation to properly maintain page state
+  - Updated pagination URLs to use correct page slug
+
+- **Code Cleanup**
+  - Removed legacy tab-based routing for compose and settings pages
+  - Audited and updated all references to old URL format (`&tab=compose`, `&tab=settings`)
+  - Updated Quick Actions links in Dashboard to use proper page slugs
+  - Improved consistency across admin navigation
+
+---
+
+### Version 1.3.0
 
 #### **New Features**
 - **Dashboard Page**
