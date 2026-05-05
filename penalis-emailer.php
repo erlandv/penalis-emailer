@@ -40,9 +40,9 @@ spl_autoload_register(function ($class) {
     if ($class_name === 'Exception') {
         $file_path = PENALIS_EMAILER_PATH . 'includes/exceptions/class-penalis-exception.php';
     }
-    // Check if it's an admin class (starts with Admin or Compose or History or Settings or Ajax)
+    // Check if it's an admin class (starts with Admin or Compose or History or Settings or Ajax or Dashboard)
     // Must be checked BEFORE interface check because Admin_Interface would match both
-    elseif (preg_match('/^(Admin|Compose|History|Settings|Ajax)/', $class_name)) {
+    elseif (preg_match('/^(Admin|Compose|History|Settings|Ajax|Dashboard)/', $class_name)) {
         $file_path = PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php';
     }
     // Check if it's an interface (ends with _Interface)
