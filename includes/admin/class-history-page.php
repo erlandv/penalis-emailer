@@ -288,11 +288,21 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             
             <!-- Sent At Column (both tabs) -->
             <td>
-                <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $sent_time)); ?>
+                <?php 
+                // Use wp_date() for proper timezone handling (WordPress 5.3+)
+                // Falls back to date_i18n() for older versions
+                if (function_exists('wp_date')) {
+                    echo esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $sent_time));
+                } else {
+                    // Fallback: convert UTC to local timezone manually
+                    echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $sent_time + (get_option('gmt_offset') * HOUR_IN_SECONDS)));
+                }
+                ?>
                 <br>
                 <small style="color: #666;">
                     <?php 
-                    echo esc_html(human_time_diff($sent_time, current_time('timestamp'))); 
+                    // Use current_time with GMT parameter for accurate comparison
+                    echo esc_html(human_time_diff($sent_time, current_time('timestamp', true))); 
                     echo ' ';
                     echo esc_html__('ago', 'penalis-emailer'); 
                     ?>
