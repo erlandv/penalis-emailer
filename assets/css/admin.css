@@ -412,3 +412,61 @@ th.check-column input[type="checkbox"] {
     border-radius: 4px;
     margin-top: 0;
 }
+
+/* ========================================
+   Recipient Names Tooltip
+   ======================================== */
+
+.penalis-recipient-more {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted #2271b1;
+}
+
+.penalis-recipient-more:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 10px 15px;
+    background: #1d2327;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: 4px;
+    white-space: normal;
+    max-width: 300px;
+    width: max-content;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.penalis-recipient-more:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 2px;
+    border: 6px solid transparent;
+    border-top-color: #1d2327;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+/* Adjust tooltip position if near viewport edge */
+@media (max-width: 782px) {
+    .penalis-recipient-more:hover::after {
+        left: 0;
+        transform: none;
+        max-width: 250px;
+    }
+    
+    .penalis-recipient-more:hover::before {
+        left: 20px;
+        transform: none;
+    }
+}

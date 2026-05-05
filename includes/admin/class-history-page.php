@@ -167,7 +167,8 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                     </th>
                     <?php if ($tab === 'manual'): ?>
                         <th scope="col"><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
+                        <th scope="col" style="width: 80px;"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Recipient Names', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Sent By', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
@@ -227,12 +228,17 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                     <?php endif; ?>
                 </td>
                 
-                <!-- Recipients Column -->
-                <td>
+                <!-- Recipients Count Column -->
+                <td style="text-align: center;">
                     <?php 
                     $recipient_count = isset($entry['recipient_count']) ? $entry['recipient_count'] : 1;
-                    echo esc_html($recipient_count) . ' ' . esc_html__('users', 'penalis-emailer'); 
+                    echo '<strong>' . esc_html($recipient_count) . '</strong>';
                     ?>
+                </td>
+                
+                <!-- Recipient Names Column -->
+                <td>
+                    <?php $this->render_recipient_names($entry); ?>
                 </td>
                 
                 <!-- Sent By Column -->
@@ -300,5 +306,68 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             </td>
         </tr>
         <?php
+    }
+    
+    /**
+     * Render recipient names with tooltip for overflow
+     *
+     * Displays up to 5 recipient names inline, with remaining names
+     * shown in a tooltip on hover.
+     *
+     * @param array $entry Log entry data
+     * @return void
+     */
+    private function render_recipient_names(array $entry): void {
+        // Get recipient IDs
+        $recipient_ids = isset($entry['recipients']) ? $entry['recipients'] : [];
+        
+        if (empty($recipient_ids)) {
+            echo '<em style="color: #999;">' . esc_html__('No recipients', 'penalis-emailer') . '</em>';
+            return;
+        }
+        
+        // Fetch user data for all recipients
+        $recipient_names = [];
+        foreach ($recipient_ids as $user_id) {
+            $user = get_userdata($user_id);
+            if ($user) {
+                $recipient_names[] = $user->display_name;
+            }
+        }
+        
+        if (empty($recipient_names)) {
+            echo '<em style="color: #999;">' . esc_html__('Recipients not found', 'penalis-emailer') . '</em>';
+            return;
+        }
+        
+        $total_count = count($recipient_names);
+        $display_limit = 5;
+        
+        if ($total_count <= $display_limit) {
+            // Display all names
+            echo esc_html(implode(', ', $recipient_names));
+        } else {
+            // Display first 5 names + "and X more" with tooltip
+            $visible_names = array_slice($recipient_names, 0, $display_limit);
+            $hidden_names = array_slice($recipient_names, $display_limit);
+            $remaining_count = count($hidden_names);
+            
+            echo esc_html(implode(', ', $visible_names));
+            
+            // Create tooltip with remaining names
+            $tooltip_content = implode(', ', $hidden_names);
+            ?>
+            <span class="penalis-recipient-more" 
+                  data-tooltip="<?php echo esc_attr($tooltip_content); ?>"
+                  style="color: #2271b1; cursor: help; font-weight: 500;">
+                <?php 
+                printf(
+                    esc_html__(' and %d more', 'penalis-emailer'),
+                    $remaining_count
+                ); 
+                ?>
+            </span>
+            <?php
+        }
     }
 }
