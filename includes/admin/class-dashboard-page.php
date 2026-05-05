@@ -6,7 +6,7 @@
  * Provides overview of email activity and system status.
  *
  * @package Penalis_Emailer
- * @since 1.4.0
+ * @since 1.3.0
  */
 
 // Prevent direct access
