@@ -107,6 +107,7 @@ function penalis_emailer_init() {
     );
     
     // Register admin pages as singletons
+    $container::singleton(Penalis_Dashboard_Page::class);
     $container::singleton(Penalis_Compose_Page::class);
     $container::singleton(Penalis_History_Page::class);
     $container::singleton(Penalis_Settings_Page::class);

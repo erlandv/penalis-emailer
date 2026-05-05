@@ -470,3 +470,311 @@ th.check-column input[type="checkbox"] {
         transform: none;
     }
 }
+
+/* ========================================
+   Dashboard Page
+   ======================================== */
+
+.penalis-dashboard {
+    max-width: 1400px;
+}
+
+.penalis-dashboard > h1 {
+    margin-bottom: 8px;
+}
+
+.penalis-dashboard > .description {
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+/* Statistics Cards */
+.penalis-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.penalis-stat-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.penalis-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.penalis-stat-card-primary {
+    border-left: 4px solid #2271b1;
+}
+
+.penalis-stat-card-info {
+    border-left: 4px solid #72aee6;
+}
+
+.penalis-stat-card-success {
+    border-left: 4px solid #00a32a;
+}
+
+.penalis-stat-icon {
+    font-size: 48px;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.penalis-stat-content {
+    flex: 1;
+}
+
+.penalis-stat-label {
+    font-size: 13px;
+    color: #646970;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.penalis-stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1d2327;
+    line-height: 1;
+}
+
+/* Quick Actions */
+.penalis-quick-actions {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.penalis-quick-actions h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-action-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.penalis-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.penalis-action-btn .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.penalis-action-btn-primary {
+    background: #2271b1;
+    color: #fff;
+    border-color: #2271b1;
+}
+
+.penalis-action-btn-primary:hover {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.3);
+}
+
+.penalis-action-btn-secondary {
+    background: #f6f7f7;
+    color: #2c3338;
+    border-color: #c3c4c7;
+}
+
+.penalis-action-btn-secondary:hover {
+    background: #fff;
+    border-color: #2271b1;
+    color: #2271b1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Recent Activity */
+.penalis-recent-activity {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.penalis-recent-activity h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.penalis-activity-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: #f6f7f7;
+    border-radius: 6px;
+    border-left: 3px solid #dcdcde;
+    transition: all 0.2s ease;
+}
+
+.penalis-activity-item:hover {
+    background: #fff;
+    border-left-color: #2271b1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.penalis-activity-icon {
+    flex-shrink: 0;
+}
+
+.penalis-activity-icon .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.penalis-activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.penalis-activity-title {
+    font-size: 14px;
+    color: #1d2327;
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.penalis-activity-title strong {
+    font-weight: 600;
+}
+
+.penalis-activity-meta {
+    font-size: 13px;
+    color: #646970;
+}
+
+.penalis-activity-separator {
+    margin: 0 8px;
+}
+
+.penalis-activity-time {
+    font-style: italic;
+}
+
+.penalis-view-all {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.penalis-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+}
+
+.penalis-empty-state p {
+    font-size: 15px;
+    margin-bottom: 20px;
+}
+
+/* Tips Section */
+.penalis-tips-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.penalis-tips-section h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-tips-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.penalis-tips-list li {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #e7f5ff;
+    border-left: 4px solid #2271b1;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #1d2327;
+    line-height: 1.6;
+}
+
+.penalis-tips-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 782px) {
+    .penalis-stats-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .penalis-action-buttons {
+        flex-direction: column;
+    }
+    
+    .penalis-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .penalis-stat-value {
+        font-size: 28px;
+    }
+    
+    .penalis-stat-icon {
+        font-size: 36px;
+    }
+}

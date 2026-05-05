@@ -22,6 +22,13 @@ if (!defined('ABSPATH')) {
 class Penalis_Admin_Interface {
     
     /**
+     * Dashboard page instance
+     *
+     * @var Penalis_Dashboard_Page
+     */
+    private $dashboard_page;
+    
+    /**
      * Compose page instance
      *
      * @var Penalis_Compose_Page
@@ -52,17 +59,20 @@ class Penalis_Admin_Interface {
     /**
      * Constructor
      *
-     * @param Penalis_Compose_Page  $compose_page  Compose page instance
-     * @param Penalis_History_Page  $history_page  History page instance
-     * @param Penalis_Settings_Page $settings_page Settings page instance
-     * @param Penalis_Ajax_Handler  $ajax_handler  AJAX handler instance
+     * @param Penalis_Dashboard_Page $dashboard_page Dashboard page instance
+     * @param Penalis_Compose_Page   $compose_page   Compose page instance
+     * @param Penalis_History_Page   $history_page   History page instance
+     * @param Penalis_Settings_Page  $settings_page  Settings page instance
+     * @param Penalis_Ajax_Handler   $ajax_handler   AJAX handler instance
      */
     public function __construct(
+        Penalis_Dashboard_Page $dashboard_page,
         Penalis_Compose_Page $compose_page,
         Penalis_History_Page $history_page,
         Penalis_Settings_Page $settings_page,
         Penalis_Ajax_Handler $ajax_handler
     ) {
+        $this->dashboard_page = $dashboard_page;
         $this->compose_page = $compose_page;
         $this->history_page = $history_page;
         $this->settings_page = $settings_page;
@@ -99,24 +109,34 @@ class Penalis_Admin_Interface {
      * @return void
      */
     public function add_admin_menu(): void {
-        // Main menu page - Compose Email
+        // Main menu page - Dashboard
         add_menu_page(
             __('Penalis Email', 'penalis-emailer'),
             __('Penalis Email', 'penalis-emailer'),
             'manage_options',
             Penalis_Config::PAGE_SLUG,
-            [$this->compose_page, 'render'],
+            [$this, 'render_main_page'],
             'dashicons-email',
             30
         );
         
-        // Rename first submenu to "Compose Email"
+        // Dashboard submenu (same as main page)
+        add_submenu_page(
+            Penalis_Config::PAGE_SLUG,
+            __('Dashboard', 'penalis-emailer'),
+            __('Dashboard', 'penalis-emailer'),
+            'manage_options',
+            Penalis_Config::PAGE_SLUG,
+            [$this, 'render_main_page']
+        );
+        
+        // Compose Email submenu
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Compose Email', 'penalis-emailer'),
             __('Compose Email', 'penalis-emailer'),
             'manage_options',
-            Penalis_Config::PAGE_SLUG,
+            Penalis_Config::PAGE_SLUG . '&tab=compose',
             [$this->compose_page, 'render']
         );
         
@@ -139,6 +159,30 @@ class Penalis_Admin_Interface {
             Penalis_Config::SETTINGS_PAGE_SLUG,
             [$this->settings_page, 'render']
         );
+    }
+    
+    /**
+     * Render main page (dashboard or compose based on tab)
+     *
+     * @return void
+     */
+    public function render_main_page(): void {
+        // Check if tab parameter exists
+        $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : '';
+        
+        // Route to appropriate page
+        switch ($tab) {
+            case 'compose':
+                $this->compose_page->render();
+                break;
+            case 'settings':
+                $this->settings_page->render();
+                break;
+            default:
+                // Default to dashboard
+                $this->dashboard_page->render();
+                break;
+        }
     }
     
     /**
