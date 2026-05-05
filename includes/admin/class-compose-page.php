@@ -44,7 +44,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     public function __construct(Penalis_Email_Sender $email_sender, Penalis_Email_Validator $validator) {
         $this->email_sender = $email_sender;
         $this->validator = $validator;
-        $this->page_slug = Penalis_Config::PAGE_SLUG;
+        $this->page_slug = 'penalis-email-compose';
     }
     
     /**

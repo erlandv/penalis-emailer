@@ -136,7 +136,7 @@ class Penalis_Admin_Interface {
             __('Compose Email', 'penalis-emailer'),
             __('Compose Email', 'penalis-emailer'),
             'manage_options',
-            Penalis_Config::PAGE_SLUG . '&tab=compose',
+            'penalis-email-compose',
             [$this->compose_page, 'render']
         );
         
@@ -172,9 +172,6 @@ class Penalis_Admin_Interface {
         
         // Route to appropriate page
         switch ($tab) {
-            case 'compose':
-                $this->compose_page->render();
-                break;
             case 'settings':
                 $this->settings_page->render();
                 break;
@@ -208,6 +205,7 @@ class Penalis_Admin_Interface {
         
         $our_pages = [
             Penalis_Config::PAGE_SLUG,
+            'penalis-email-compose',
             'penalis-email-history',
             Penalis_Config::SETTINGS_PAGE_SLUG
         ];
@@ -244,6 +242,7 @@ class Penalis_Admin_Interface {
         // Only load on our admin pages
         $our_pages = [
             'toplevel_page_' . Penalis_Config::PAGE_SLUG,
+            'penalis-email_page_penalis-email-compose',
             'penalis-email_page_penalis-email-history',
             'penalis-email_page_' . Penalis_Config::SETTINGS_PAGE_SLUG
         ];
