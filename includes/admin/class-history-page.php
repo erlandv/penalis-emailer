@@ -277,9 +277,23 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                 <td>
                     <?php 
                     if (isset($entry['recipient_name'])) {
-                        echo esc_html($entry['recipient_name']);
+                        // Get recipient ID for author link
+                        $recipient_id = null;
+                        if (isset($entry['recipients']) && is_array($entry['recipients']) && !empty($entry['recipients'])) {
+                            $recipient_id = $entry['recipients'][0]; // Automatic emails have single recipient
+                        }
                         
-                        // Add email if available
+                        // Display name with link to author profile if ID available
+                        if ($recipient_id) {
+                            $author_url = get_author_posts_url($recipient_id);
+                            echo '<a href="' . esc_url($author_url) . '" target="_blank">';
+                            echo esc_html($entry['recipient_name']);
+                            echo '</a>';
+                        } else {
+                            echo esc_html($entry['recipient_name']);
+                        }
+                        
+                        // Add email if available (not linked)
                         if (isset($entry['recipient_email'])) {
                             echo ' <span style="color: #666;">(' . esc_html($entry['recipient_email']) . ')</span>';
                         }
