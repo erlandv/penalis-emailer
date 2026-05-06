@@ -1,6 +1,48 @@
 # Changelog
 
-### Version 1.3.2 (Current)
+### Version 1.3.3 (Current)
+
+#### **New Features**
+- **Email History Enhancements**
+  - Added dedicated "Email" column in Manual Emails tab showing recipient email addresses
+  - Display recipient email alongside name in history table for better identification
+  - Added clickable author profile links to recipient names for quick access to user profiles
+  - Improved recipient information display with both name and email visible
+
+- **Email Template Improvements**
+  - Added preheader text support for email previews
+  - Preheader text appears in email client preview panes before opening the email
+  - Enhances email open rates by providing context in inbox preview
+
+#### **Code Quality & Refactoring**
+- **Template System Cleanup**
+  - Removed deprecated `render_with_template()` method from Email Template class
+  - Removed deprecated `render_without_template()` method from Email Template class
+  - Removed deprecated `use_template` parameter from email sending workflow
+  - Simplified email rendering logic by consolidating to single `render()` method
+  - Cleaner codebase with reduced technical debt
+
+#### **Improvements**
+- **Better Accessibility**
+  - Restructured checkbox markup in history table for improved screen reader support
+  - Improved checkbox accessibility with proper ARIA labels
+  - Removed redundant CSS for cleaner stylesheet
+  - Standardized checkbox column alignment and spacing across all admin tables
+
+- **Enhanced User Experience**
+  - Improved tooltip positioning for recipient overflow display
+  - Fixed selection counting accuracy in bulk operations
+  - Better visual hierarchy in history table with email information
+  - Consistent spacing and alignment across admin interface
+
+#### **Bug Fixes**
+- Fixed tooltip positioning issues when hovering over recipient names
+- Fixed selection counting logic to accurately reflect selected items
+- Improved checkbox alignment consistency across different table views
+
+---
+
+### Version 1.3.2
 
 #### **New Features**
 - **Select All Users Across Pages**

@@ -3,7 +3,7 @@
  * Plugin Name: Penalis Emailer
  * Plugin URI: https://github.com/erlandv/penalis-emailer
  * Description: Automatically notifies post authors via email when posts are published and manage email notifications for your contributors
- * Version: 1.3.2
+ * Version: 1.3.3
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Author: Penalis
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('PENALIS_EMAILER_VERSION', '1.3.2');
+define('PENALIS_EMAILER_VERSION', '1.3.3');
 define('PENALIS_EMAILER_PATH', plugin_dir_path(__FILE__));
 define('PENALIS_EMAILER_URL', plugin_dir_url(__FILE__));
 
