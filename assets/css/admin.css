@@ -451,40 +451,6 @@
     color: #fff;
 }
 
-/* Checkbox column - WordPress standard styling */
-.check-column {
-    width: 2.2em;
-    padding: 8px 0;
-    vertical-align: middle;
-    text-align: center;
-}
-
-.check-column input[type="checkbox"] {
-    margin: 0;
-}
-
-th.check-column {
-    padding: 8px 0;
-    vertical-align: middle;
-    text-align: center;
-}
-
-th.check-column input[type="checkbox"] {
-    margin: 0;
-    vertical-align: middle;
-}
-
-td.check-column {
-    padding: 8px 0;
-    vertical-align: middle;
-    text-align: center;
-}
-
-td.check-column input[type="checkbox"] {
-    margin: 0;
-    vertical-align: middle;
-}
-
 /* ========================================
    Submit Actions
    ======================================== */
