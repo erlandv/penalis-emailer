@@ -180,8 +180,12 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
                     'user_login' => $user->user_login
                 ];
                 
+                // Generate preheader from subject (first 100 chars)
+                $preheader = wp_strip_all_tags($subject);
+                $preheader = mb_substr($preheader, 0, 100);
+                
                 // Render flexible email with markdown support
-                $email_body = $this->template->render_flexible_email($message, $user_data);
+                $email_body = $this->template->render_flexible_email($message, $user_data, $preheader);
                 
                 // Send email using common method (post_id = 0 for manual emails)
                 $sent = $this->send_email(

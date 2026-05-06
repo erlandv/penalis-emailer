@@ -73,9 +73,10 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
      * 
      * @param string $body_content   Plain text/markdown body content
      * @param array  $user_data      User data for personalization (display_name, user_email, user_login)
+     * @param string $preheader_text Optional preheader text for email preview
      * @return string Complete HTML email
      */
-    public function render_flexible_email(string $body_content, array $user_data = []): string {
+    public function render_flexible_email(string $body_content, array $user_data = [], string $preheader_text = ''): string {
         // Replace user placeholders first
         $body_content = $this->replace_user_placeholders($body_content, $user_data);
         
@@ -86,7 +87,7 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
         $body_section = $this->get_body_wrapper_html($body_html);
         
         // Combine header + body + footer
-        return $this->get_header_html() . $body_section . $this->get_footer_html();
+        return $this->get_header_html($preheader_text) . $body_section . $this->get_footer_html();
     }
     
     /**
@@ -121,8 +122,11 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
         // Wrap in body container
         $body_section = $this->get_body_wrapper_html($body_html);
         
+        // Preheader for automatic emails
+        $preheader = 'Tulisanmu sudah terbit di Penalis. Yuk cek sekarang!';
+        
         // Combine header + body + footer
-        return $this->get_header_html() . $body_section . $this->get_footer_html();
+        return $this->get_header_html($preheader) . $body_section . $this->get_footer_html();
     }
     
     /**
@@ -170,11 +174,12 @@ class Penalis_Email_Template implements Penalis_Email_Template_Interface {
     /**
      * Get email wrapper HTML (interface implementation)
      *
-     * @param string $content Email content
+     * @param string $content        Email content
+     * @param string $preheader_text Optional preheader text
      * @return string Complete HTML with wrapper
      */
-    public function get_email_wrapper(string $content): string {
-        return $this->get_header_html() . $this->get_body_wrapper_html($content) . $this->get_footer_html();
+    public function get_email_wrapper(string $content, string $preheader_text = ''): string {
+        return $this->get_header_html($preheader_text) . $this->get_body_wrapper_html($content) . $this->get_footer_html();
     }
     
     /**
@@ -204,14 +209,20 @@ Salam Literasi,
     /**
      * Get email header HTML
      * 
+     * @param string $preheader_text Optional preheader text for email preview
      * @return string HTML header section
      */
-    public function get_header_html(): string {
+    public function get_header_html(string $preheader_text = ''): string {
         ob_start();
         ?>
 <table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0" style="margin:0; padding:0;">
 <tr>
 <td align="center" style="padding: 20px 10px;">
+
+<?php if (!empty($preheader_text)): ?>
+<!-- Preheader (hidden preview text) -->
+<span style="display:none; max-height:0; overflow:hidden; opacity:0; font-size:1px; color:#ffffff; line-height:1;"><?php echo esc_html($preheader_text); ?> &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</span>
+<?php endif; ?>
 
 <!-- Main Container -->
 <table role="presentation" border="0" width="600" cellspacing="0" cellpadding="0" style="width:100%; max-width:600px; background-color:#FEFEFE; border-radius:8px; overflow:hidden; border:1px solid #e5e5e5;">
