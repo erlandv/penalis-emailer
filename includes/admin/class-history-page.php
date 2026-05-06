@@ -178,6 +178,7 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                     <?php else: ?>
                         <th scope="col"><?php echo esc_html__('Post', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Recipient', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Email', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
                     <?php endif; ?>
@@ -298,13 +299,19 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                         } else {
                             echo esc_html($entry['recipient_name']);
                         }
-                        
-                        // Add email if available (not linked)
-                        if (isset($entry['recipient_email'])) {
-                            echo ' <span style="color: #666;">(' . esc_html($entry['recipient_email']) . ')</span>';
-                        }
                     } else {
                         echo esc_html__('Unknown', 'penalis-emailer');
+                    }
+                    ?>
+                </td>
+                
+                <!-- Email Column -->
+                <td>
+                    <?php 
+                    if (isset($entry['recipient_email'])) {
+                        echo '<span style="color: #666;">' . esc_html($entry['recipient_email']) . '</span>';
+                    } else {
+                        echo '<em style="color: #999;">' . esc_html__('N/A', 'penalis-emailer') . '</em>';
                     }
                     ?>
                 </td>
