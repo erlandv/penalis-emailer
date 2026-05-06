@@ -475,13 +475,31 @@
     border-bottom: 1px dotted #2271b1;
 }
 
-.penalis-recipient-more:hover::after {
-    content: attr(data-tooltip);
+.penalis-recipient-more::before,
+.penalis-recipient-more::after {
     position: absolute;
-    bottom: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.penalis-recipient-more::before {
+    content: '';
+    top: 100%;
     left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 8px;
+    transform: translateX(-50%) translateY(-4px);
+    margin-top: 2px;
+    border: 6px solid transparent;
+    border-bottom-color: #1d2327;
+    z-index: 1001;
+}
+
+.penalis-recipient-more::after {
+    content: attr(data-tooltip);
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    margin-top: 14px;
     padding: 10px 15px;
     background: #1d2327;
     color: #fff;
@@ -493,33 +511,32 @@
     width: max-content;
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
 }
 
-.penalis-recipient-more:hover::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 2px;
-    border: 6px solid transparent;
-    border-top-color: #1d2327;
-    z-index: 1001;
-    pointer-events: none;
+.penalis-recipient-more:hover::before,
+.penalis-recipient-more:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* Adjust tooltip position if near viewport edge */
 @media (max-width: 782px) {
-    .penalis-recipient-more:hover::after {
+    .penalis-recipient-more::after {
         left: 0;
-        transform: none;
-        max-width: 250px;
+        transform: translateX(0) translateY(-6px);
     }
-    
-    .penalis-recipient-more:hover::before {
+
+    .penalis-recipient-more::before {
         left: 20px;
-        transform: none;
+        transform: translateX(0) translateY(-4px);
+    }
+
+    .penalis-recipient-more:hover::after {
+        transform: translateX(0) translateY(0);
+    }
+
+    .penalis-recipient-more:hover::before {
+        transform: translateX(0) translateY(0);
     }
 }
 

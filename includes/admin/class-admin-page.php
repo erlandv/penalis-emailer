@@ -159,8 +159,8 @@ abstract class Penalis_Admin_Page {
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
                 'confirmSend' => __('Are you sure you want to send this email?', 'penalis-emailer'),
-                'subject' => __('Subject:', 'penalis-emailer'),
-                'recipients' => __('Recipients:', 'penalis-emailer'),
+                'subject' => __('Subject', 'penalis-emailer'),
+                'recipients' => __('Recipients', 'penalis-emailer'),
                 'users' => __('users', 'penalis-emailer'),
                 'enterBodyFirst' => __('Please enter email body first.', 'penalis-emailer'),
                 'previewFailed' => __('Failed to generate preview.', 'penalis-emailer'),

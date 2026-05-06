@@ -230,7 +230,12 @@
         },
         
         confirmSubmit: function(e) {
-            const selectedCount = $('.user-checkbox:checked').length;
+            // Count visible checkboxes in table
+            const visibleChecked = $('.user-row .user-checkbox:checked').length;
+            // Count hidden checkboxes
+            const hiddenChecked = $('#hidden-user-checkboxes input:checked').length;
+            // Total selected
+            const selectedCount = visibleChecked + hiddenChecked;
             const subject = $('#subject').val();
             
             if (selectedCount === 0) {
