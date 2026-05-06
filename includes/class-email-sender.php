@@ -144,10 +144,9 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      * @param array  $user_ids     Array of user IDs to send to
      * @param string $message      Custom message content (plain text/markdown)
      * @param string $from_name    From name for email header (default: 'Penalis')
-     * @param bool   $use_template Whether to use template or custom message (deprecated, always uses flexible template now)
      * @return array Results with 'success' count and 'failed' array of user IDs
      */
-    public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis', bool $use_template = true): array {
+    public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis'): array {
         // Apply recipients filter
         $user_ids = apply_filters('penalis_email_recipients', $user_ids);
         
