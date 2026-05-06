@@ -454,21 +454,34 @@
 /* Checkbox column - WordPress standard styling */
 .check-column {
     width: 2.2em;
-    padding: 6px 0 25px;
-    vertical-align: top;
+    padding: 8px 0;
+    vertical-align: middle;
+    text-align: center;
 }
 
 .check-column input[type="checkbox"] {
-    margin: 0 0 0 8px;
+    margin: 0;
 }
 
 th.check-column {
-    padding: 11px 0 11px 3px;
+    padding: 8px 0;
     vertical-align: middle;
+    text-align: center;
 }
 
 th.check-column input[type="checkbox"] {
-    margin: 0 0 0 5px;
+    margin: 0;
+    vertical-align: middle;
+}
+
+td.check-column {
+    padding: 8px 0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+td.check-column input[type="checkbox"] {
+    margin: 0;
     vertical-align: middle;
 }
 

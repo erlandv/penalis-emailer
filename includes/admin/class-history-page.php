@@ -211,9 +211,9 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         
         ?>
         <tr class="history-row">
-            <th scope="row" class="check-column">
+            <td class="check-column">
                 <input type="checkbox" class="log-checkbox" value="<?php echo esc_attr($log_id); ?>">
-            </th>
+            </td>
             
             <?php if ($tab === 'manual'): ?>
                 <!-- Manual Email Columns -->
