@@ -278,6 +278,11 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                     <?php 
                     if (isset($entry['recipient_name'])) {
                         echo esc_html($entry['recipient_name']);
+                        
+                        // Add email if available
+                        if (isset($entry['recipient_email'])) {
+                            echo ' <span style="color: #666;">(' . esc_html($entry['recipient_email']) . ')</span>';
+                        }
                     } else {
                         echo esc_html__('Unknown', 'penalis-emailer');
                     }
