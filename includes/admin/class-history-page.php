@@ -162,12 +162,12 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th scope="col" id="cb" class="manage-column column-cb check-column">
-                        <label class="screen-reader-text" for="select-all-logs">
-                            <?php echo esc_html__('Select All', 'penalis-emailer'); ?>
-                        </label>
+                    <td id="cb" class="manage-column column-cb check-column">
                         <input type="checkbox" id="select-all-logs">
-                    </th>
+                        <label for="select-all-logs">
+                            <span class="screen-reader-text"><?php echo esc_html__('Select All', 'penalis-emailer'); ?></span>
+                        </label>
+                    </td>
                     <?php if ($tab === 'manual'): ?>
                         <th scope="col"><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
                         <th scope="col" style="width: 80px;"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
@@ -215,10 +215,10 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         ?>
         <tr class="history-row">
             <th scope="row" class="check-column">
-                <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($log_id); ?>">
-                    <?php echo esc_html__('Select email', 'penalis-emailer'); ?>
-                </label>
                 <input type="checkbox" class="log-checkbox" id="cb-select-<?php echo esc_attr($log_id); ?>" value="<?php echo esc_attr($log_id); ?>">
+                <label for="cb-select-<?php echo esc_attr($log_id); ?>">
+                    <span class="screen-reader-text"><?php echo esc_html__('Select email', 'penalis-emailer'); ?></span>
+                </label>
             </th>
             
             <?php if ($tab === 'manual'): ?>
