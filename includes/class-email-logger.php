@@ -166,7 +166,15 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      * @return array Array of log entries with enhanced details
      */
     public function get_manual_email_log(int $limit = 0): array {
-        return $this->manual_log_repository->get_all($limit);
+        $logs = $this->manual_log_repository->get_all($limit);
+        
+        // Filter out drafts - only show sent emails
+        $logs = array_filter($logs, function($log) {
+            return !isset($log['status']) || $log['status'] !== 'draft';
+        });
+        
+        // Re-index array after filtering
+        return array_values($logs);
     }
     
     /**
@@ -178,6 +186,12 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      */
     public function get_all_email_log(int $limit = 0, string $type = 'all'): array {
         $all_logs = $this->manual_log_repository->get_all(0);
+        
+        // Filter out drafts - only show sent emails
+        $all_logs = array_filter($all_logs, function($log) {
+            // Exclude entries with status='draft'
+            return !isset($log['status']) || $log['status'] !== 'draft';
+        });
         
         // Filter by type if specified
         if ($type === 'manual') {

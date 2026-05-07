@@ -820,7 +820,7 @@
             TemplateSettingsHandler.init();
         }
         
-        if ($('#drafts-filter').length) {
+        if ($('#drafts-table-body').length) {
             DraftManagementHandler.init();
         }
     });
