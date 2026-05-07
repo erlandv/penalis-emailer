@@ -314,42 +314,39 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             <div class="penalis-card" style="margin-bottom: 20px;">
                 <h2><?php echo esc_html__('Draft Management', 'penalis-emailer'); ?></h2>
                 
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                     <?php if (!empty($drafts)): ?>
-                    <div style="flex: 1;">
-                        <label for="load-draft-select" style="display: block; margin-bottom: 5px;">
-                            <?php echo esc_html__('Load Draft:', 'penalis-emailer'); ?>
+                    <div style="flex: 0 0 auto; min-width: 300px;">
+                        <label for="load-draft-select" style="display: block; margin-bottom: 5px; font-weight: 500;">
+                            <?php echo esc_html__('Select a draft:', 'penalis-emailer'); ?>
                         </label>
-                        <select id="load-draft-select" class="regular-text">
+                        <select id="load-draft-select" class="regular-text" style="width: 100%;">
                             <option value=""><?php echo esc_html__('-- Select a draft --', 'penalis-emailer'); ?></option>
                             <?php foreach ($drafts as $draft): ?>
                                 <option value="<?php echo esc_attr($draft['id']); ?>" <?php selected($draft_id, $draft['id']); ?>>
                                     <?php 
                                     $draft_subject = !empty($draft['subject']) ? $draft['subject'] : __('(No subject)', 'penalis-emailer');
-                                    $draft_time = human_time_diff($draft['updated_at'] ?? $draft['created_at'], time());
-                                    echo esc_html($draft_subject) . ' - ' . esc_html($draft_time) . ' ' . esc_html__('ago', 'penalis-emailer');
+                                    echo esc_html($draft_subject);
                                     ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <button type="button" id="load-draft-btn" class="button" style="margin-top: 24px;">
+                    
+                    <button type="button" id="load-draft-btn" class="button">
                         <?php echo esc_html__('Load', 'penalis-emailer'); ?>
                     </button>
                     <?php endif; ?>
                     
                     <?php if ($draft_data): ?>
-                    <div style="margin-top: 24px;">
-                        <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-                        <strong><?php echo esc_html__('Draft Loaded', 'penalis-emailer'); ?></strong>
-                        <button type="button" id="clear-draft-btn" class="button" style="margin-left: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #46b450; display: flex; align-items: center; gap: 5px;">
+                            <span class="dashicons dashicons-yes-alt"></span>
+                            <strong><?php echo esc_html__('Draft Loaded', 'penalis-emailer'); ?></strong>
+                        </span>
+                        <button type="button" id="clear-draft-btn" class="button">
                             <?php echo esc_html__('Clear', 'penalis-emailer'); ?>
                         </button>
-                        <?php if (!empty($draft_id)): ?>
-                        <button type="button" id="delete-draft-btn" class="button" data-draft-id="<?php echo esc_attr($draft_id); ?>" style="margin-left: 5px;">
-                            <?php echo esc_html__('Delete Draft', 'penalis-emailer'); ?>
-                        </button>
-                        <?php endif; ?>
                     </div>
                     <?php endif; ?>
                 </div>

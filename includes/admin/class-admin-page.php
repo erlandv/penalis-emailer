@@ -188,10 +188,6 @@ abstract class Penalis_Admin_Page {
                 // Draft i18n
                 'selectDraft' => __('Please select a draft to load.', 'penalis-emailer'),
                 'confirmClearDraft' => __('Are you sure you want to clear this draft? Unsaved changes will be lost.', 'penalis-emailer'),
-                'confirmDeleteDraft' => __('Are you sure you want to delete this draft permanently?', 'penalis-emailer'),
-                'deleting' => __('Deleting...', 'penalis-emailer'),
-                'deleteDraft' => __('Delete Draft', 'penalis-emailer'),
-                'deleteDraftFailed' => __('Failed to delete draft. Please try again.', 'penalis-emailer'),
                 // Draft management i18n
                 'selectDrafts' => __('Please select at least one draft to delete.', 'penalis-emailer'),
                 'confirmBulkDeleteDrafts' => __('Are you sure you want to delete %d draft(s)?', 'penalis-emailer'),

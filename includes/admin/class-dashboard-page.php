@@ -54,6 +54,9 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         // Get recent activity
         $recent_emails = $this->email_logger->get_all_email_log(5, 'all');
         
+        // Get recent drafts
+        $recent_drafts = $this->email_logger->get_drafts(5);
+        
         ?>
         <div class="wrap penalis-dashboard">
             <h1><?php echo esc_html__('Penalis Emailer', 'penalis-emailer'); ?></h1>
@@ -67,8 +70,14 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
             <!-- Quick Actions -->
             <?php $this->render_quick_actions(); ?>
             
-            <!-- Recent Activity -->
-            <?php $this->render_recent_activity($recent_emails); ?>
+            <!-- Recent Activity & Drafts Grid -->
+            <div class="penalis-recent-grid">
+                <!-- Recent Activity -->
+                <?php $this->render_recent_activity($recent_emails); ?>
+                
+                <!-- Recent Drafts -->
+                <?php $this->render_recent_drafts($recent_drafts); ?>
+            </div>
             
             <!-- Tips & Best Practices -->
             <?php $this->render_tips(); ?>
@@ -196,15 +205,11 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
     private function render_recent_activity(array $recent_emails): void {
         ?>
         <div class="penalis-recent-activity">
-            <h2><?php echo esc_html__('Recent Activity', 'penalis-emailer'); ?></h2>
+            <h2><?php echo esc_html__('Recent Emails', 'penalis-emailer'); ?></h2>
             
             <?php if (empty($recent_emails)): ?>
                 <div class="penalis-empty-state">
-                    <p><?php echo esc_html__('No emails sent yet. Start by composing your first email!', 'penalis-emailer'); ?></p>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-compose')); ?>" 
-                       class="button button-primary">
-                        <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
-                    </a>
+                    <p><?php echo esc_html__('No emails sent yet.', 'penalis-emailer'); ?></p>
                 </div>
             <?php else: ?>
                 <div class="penalis-activity-list">
@@ -282,6 +287,92 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
                         }
                         ?>
                     <?php endif; ?>
+                    <span class="penalis-activity-separator">•</span>
+                    <span class="penalis-activity-time"><?php echo esc_html($time_ago); ?></span>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render recent drafts section
+     *
+     * @param array $recent_drafts Recent draft entries
+     * @return void
+     */
+    private function render_recent_drafts(array $recent_drafts): void {
+        ?>
+        <div class="penalis-recent-drafts">
+            <h2><?php echo esc_html__('Recent Drafts', 'penalis-emailer'); ?></h2>
+            
+            <?php if (empty($recent_drafts)): ?>
+                <div class="penalis-empty-state">
+                    <p><?php echo esc_html__('No drafts yet.', 'penalis-emailer'); ?></p>
+                </div>
+            <?php else: ?>
+                <div class="penalis-activity-list">
+                    <?php foreach ($recent_drafts as $draft): ?>
+                        <?php $this->render_draft_item($draft); ?>
+                    <?php endforeach; ?>
+                </div>
+                
+                <div class="penalis-view-all">
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-drafts')); ?>" 
+                       class="button">
+                        <?php echo esc_html__('View All Drafts', 'penalis-emailer'); ?> →
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render single draft item
+     *
+     * @param array $draft Draft entry
+     * @return void
+     */
+    private function render_draft_item(array $draft): void {
+        $draft_id = $draft['id'] ?? '';
+        $subject = !empty($draft['subject']) ? $draft['subject'] : __('(No subject)', 'penalis-emailer');
+        $recipient_count = $draft['recipient_count'] ?? 0;
+        $updated_at = $draft['updated_at'] ?? ($draft['created_at'] ?? 0);
+        
+        // Get time ago
+        $time_ago = human_time_diff($updated_at, current_time('timestamp', true)) . ' ' . __('ago', 'penalis-emailer');
+        
+        // Edit URL
+        $edit_url = add_query_arg([
+            'page' => 'penalis-email-compose',
+            'draft_id' => $draft_id
+        ], admin_url('admin.php'));
+        
+        ?>
+        <div class="penalis-activity-item">
+            <div class="penalis-activity-icon">
+                <span class="dashicons dashicons-edit" style="color: #d63638;"></span>
+            </div>
+            
+            <div class="penalis-activity-content">
+                <div class="penalis-activity-title">
+                    <a href="<?php echo esc_url($edit_url); ?>" style="text-decoration: none; color: inherit;">
+                        <strong><?php echo esc_html($subject); ?></strong>
+                    </a>
+                </div>
+                
+                <div class="penalis-activity-meta">
+                    <?php 
+                    if ($recipient_count > 0) {
+                        printf(
+                            esc_html__('%d recipients', 'penalis-emailer'),
+                            $recipient_count
+                        );
+                    } else {
+                        echo esc_html__('No recipients', 'penalis-emailer');
+                    }
+                    ?>
                     <span class="penalis-activity-separator">•</span>
                     <span class="penalis-activity-time"><?php echo esc_html($time_ago); ?></span>
                 </div>

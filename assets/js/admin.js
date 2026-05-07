@@ -47,7 +47,6 @@
             $('#save-draft-btn').on('click', this.saveDraft.bind(this));
             $('#load-draft-btn').on('click', this.loadDraft.bind(this));
             $('#clear-draft-btn').on('click', this.clearDraft.bind(this));
-            $('#delete-draft-btn').on('click', this.deleteDraft.bind(this));
             
             // Row hover effect
             $('.user-row').hover(
@@ -336,39 +335,6 @@
             
             // Redirect to compose page without draft_id
             window.location.href = penalisAdmin.composeUrl;
-        },
-        
-        deleteDraft: function() {
-            const draftId = $(this).data('draft-id');
-            
-            if (!draftId) {
-                return;
-            }
-            
-            if (!confirm(penalisAdmin.i18n.confirmDeleteDraft || 'Are you sure you want to delete this draft permanently?')) {
-                return;
-            }
-            
-            const button = $(this);
-            button.prop('disabled', true).text(penalisAdmin.i18n.deleting || 'Deleting...');
-            
-            $.post(penalisAdmin.ajaxUrl, {
-                action: 'penalis_delete_draft',
-                nonce: penalisAdmin.nonces.deleteDraft,
-                draft_id: draftId
-            }, function(response) {
-                if (response.success) {
-                    alert(response.data.message);
-                    // Redirect to compose page without draft_id
-                    window.location.href = penalisAdmin.composeUrl;
-                } else {
-                    alert(response.data.message);
-                    button.prop('disabled', false).text(penalisAdmin.i18n.deleteDraft || 'Delete Draft');
-                }
-            }).fail(function() {
-                alert(penalisAdmin.i18n.deleteDraftFailed || 'Failed to delete draft. Please try again.');
-                button.prop('disabled', false).text(penalisAdmin.i18n.deleteDraft || 'Delete Draft');
-            });
         },
         
         initAutosave: function() {
