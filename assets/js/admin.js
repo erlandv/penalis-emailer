@@ -702,8 +702,6 @@
             
             // Row actions
             $(document).on('click', '.delete-draft', this.deleteSingleDraft.bind(this));
-            $(document).on('click', '.preview-draft', this.previewDraft.bind(this));
-            $(document).on('click', '.duplicate-draft', this.duplicateDraft.bind(this));
             $(document).on('click', '.send-draft, .send-draft-btn', this.sendDraft.bind(this));
         },
         
@@ -790,103 +788,11 @@
                             window.location.reload();
                         }
                     });
-                    alert(response.data.message);
                 } else {
                     alert(response.data.message);
                 }
             }).fail(function() {
                 alert('An error occurred. Please try again.');
-            });
-        },
-        
-        previewDraft: function(e) {
-            e.preventDefault();
-            
-            const draftId = $(e.currentTarget).data('draft-id');
-            
-            // Show loading modal
-            if ($('#draft-preview-modal').length === 0) {
-                $('body').append(`
-                    <div id="draft-preview-modal" class="penalis-modal">
-                        <div class="penalis-modal-content" style="max-width: 800px;">
-                            <span class="penalis-modal-close" id="close-draft-preview">&times;</span>
-                            <h2>${penalisAdmin.i18n.previewLoading}</h2>
-                            <div id="draft-preview-content">
-                                <p style="text-align: center; padding: 40px;">
-                                    <span class="spinner is-active" style="float: none;"></span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                `);
-                
-                // Bind close event
-                $(document).on('click', '#close-draft-preview', function() {
-                    $('#draft-preview-modal').hide();
-                });
-                
-                $(document).on('click', '#draft-preview-modal', function(e) {
-                    if (e.target === this) {
-                        $(this).hide();
-                    }
-                });
-            }
-            
-            $('#draft-preview-modal').show();
-            
-            $.post(penalisAdmin.ajaxUrl, {
-                action: 'penalis_preview_draft',
-                nonce: penalisAdmin.nonces.previewDraft,
-                draft_id: draftId
-            }, function(response) {
-                if (response.success) {
-                    const subject = response.data.subject || '(No subject)';
-                    const fromName = response.data.from_name || 'Penalis';
-                    
-                    $('#draft-preview-content').html(`
-                        <div style="margin-bottom: 20px; padding: 15px; background: #f0f0f1; border-radius: 4px;">
-                            <p style="margin: 0 0 10px 0;"><strong>From:</strong> ${fromName}</p>
-                            <p style="margin: 0;"><strong>Subject:</strong> ${subject}</p>
-                        </div>
-                        <iframe style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
-                    `);
-                    
-                    const iframe = $('#draft-preview-content iframe')[0];
-                    iframe.contentWindow.document.open();
-                    iframe.contentWindow.document.write(response.data.html);
-                    iframe.contentWindow.document.close();
-                } else {
-                    $('#draft-preview-content').html(`<p style="color: #d63638;">${response.data.message}</p>`);
-                }
-            }).fail(function() {
-                $('#draft-preview-content').html('<p style="color: #d63638;">Failed to load preview.</p>');
-            });
-        },
-        
-        duplicateDraft: function(e) {
-            e.preventDefault();
-            
-            const draftId = $(e.currentTarget).data('draft-id');
-            const link = $(e.currentTarget);
-            const originalText = link.text();
-            
-            link.text(penalisAdmin.i18n.duplicating);
-            
-            $.post(penalisAdmin.ajaxUrl, {
-                action: 'penalis_duplicate_draft',
-                nonce: penalisAdmin.nonces.duplicateDraft,
-                draft_id: draftId
-            }, function(response) {
-                if (response.success) {
-                    alert(response.data.message);
-                    window.location.reload();
-                } else {
-                    alert(response.data.message);
-                    link.text(originalText);
-                }
-            }).fail(function() {
-                alert('An error occurred. Please try again.');
-                link.text(originalText);
             });
         },
         
