@@ -32,9 +32,6 @@ if (!defined('ABSPATH')) {
                    required
                    value="<?php echo esc_attr($from_name ?? Penalis_Config::DEFAULT_FROM_NAME); ?>"
                    placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
-            <p class="description">
-                <?php echo esc_html__('Sender name that will appear in the email.', 'penalis-emailer'); ?>
-            </p>
         </div>
         
         <div class="penalis-form-group">

@@ -26,13 +26,10 @@ if (!defined('ABSPATH')) {
         </label>
         <textarea name="body" 
                   id="body" 
-                  rows="14" 
+                  rows="24" 
                   class="large-text code"
                   required
-                  style="font-family: monospace;"
+                  style="font-family: monospace; padding: 4px 8px 0 8px;"
                   placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"><?php echo esc_textarea($body ?? ''); ?></textarea>
-        <p class="description">
-            <?php echo esc_html__('Use placeholders like {USER_NAME} and format with markdown. See Tips & Guide in sidebar.', 'penalis-emailer'); ?>
-        </p>
     </div>
 </div>

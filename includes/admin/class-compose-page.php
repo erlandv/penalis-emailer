@@ -378,81 +378,29 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
                     
                     <!-- Email Content Card -->
                     <?php $this->render_email_content_card($body); ?>
-                    
-                    <!-- Tips & Guide Card (Compact & Collapsed) -->
-                    <details class="penalis-form-card penalis-tips-card">
-                        <summary>
-                            <span class="dashicons dashicons-lightbulb"></span>
-                            <?php echo esc_html__('Tips & Formatting Guide', 'penalis-emailer'); ?>
-                        </summary>
-                        
-                        <div class="penalis-guide-grid">
-                            <!-- Tips Column -->
-                            <div class="penalis-guide-column">
-                                <strong><?php echo esc_html__('Tips', 'penalis-emailer'); ?></strong>
-                                <ul>
-                                    <li><?php echo esc_html__('Use placeholders to personalize', 'penalis-emailer'); ?></li>
-                                    <li><?php echo esc_html__('Format with markdown', 'penalis-emailer'); ?></li>
-                                    <li><?php echo esc_html__('Preview before sending', 'penalis-emailer'); ?></li>
-                                </ul>
-                            </div>
-                            
-                            <!-- Placeholders Column -->
-                            <div class="penalis-guide-column">
-                                <strong><?php echo esc_html__('Placeholders', 'penalis-emailer'); ?></strong>
-                                <ul>
-                                    <li><code>{USER_NAME}</code> - <?php echo esc_html__('Name', 'penalis-emailer'); ?></li>
-                                    <li><code>{USER_EMAIL}</code> - <?php echo esc_html__('Email', 'penalis-emailer'); ?></li>
-                                    <li><code>{USERNAME}</code> - <?php echo esc_html__('Username', 'penalis-emailer'); ?></li>
-                                    <li><code>{DATE}</code> - <?php echo esc_html__('Date', 'penalis-emailer'); ?></li>
-                                    <li><code>{SITE_NAME}</code> - <?php echo esc_html__('Site name', 'penalis-emailer'); ?></li>
-                                    <li><code>{SITE_URL}</code> - <?php echo esc_html__('Site URL', 'penalis-emailer'); ?></li>
-                                </ul>
-                            </div>
-                            
-                            <!-- Formatting Column -->
-                            <div class="penalis-guide-column">
-                                <strong><?php echo esc_html__('Formatting', 'penalis-emailer'); ?></strong>
-                                <ul>
-                                    <li><code>**bold**</code> - <strong><?php echo esc_html__('Bold', 'penalis-emailer'); ?></strong></li>
-                                    <li><code>*italic*</code> - <em><?php echo esc_html__('Italic', 'penalis-emailer'); ?></em></li>
-                                    <li><code>[text](url)</code> - <?php echo esc_html__('Link', 'penalis-emailer'); ?></li>
-                                    <li><code>- item</code> - <?php echo esc_html__('List', 'penalis-emailer'); ?></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </details>
-                    
-                    <!-- Actions Card (Compact) -->
-                    <div class="penalis-form-card penalis-actions-card">
-                        <h3>
-                            <span class="dashicons dashicons-admin-tools"></span>
-                            <?php echo esc_html__('Actions', 'penalis-emailer'); ?>
-                        </h3>
-                        
-                        <div class="penalis-actions-compact">
+                </div>
+                
+                <!-- Sidebar (Right) - Actions & Recipients -->
+                <div class="penalis-sidebar">
+                    <!-- Action Buttons (Invisible Card) -->
+                    <div class="penalis-actions-wrapper">
+                        <div class="penalis-actions-row">
                             <button type="button" id="preview-email-btn" class="button button-secondary">
-                                <span class="dashicons dashicons-visibility"></span>
                                 <?php echo esc_html__('Preview', 'penalis-emailer'); ?>
                             </button>
                             
                             <button type="button" id="save-draft-btn" class="button button-secondary">
-                                <span class="dashicons dashicons-download"></span>
                                 <?php echo esc_html__('Save Draft', 'penalis-emailer'); ?>
                             </button>
-                            
-                            <button type="submit" class="button button-primary penalis-btn-send-compact">
-                                <span class="dashicons dashicons-email-alt"></span>
-                                <?php echo esc_html__('Send to', 'penalis-emailer'); ?>
-                                <strong id="main-selected-count">0</strong>
-                                <?php echo esc_html__('users', 'penalis-emailer'); ?>
-                            </button>
                         </div>
+                        
+                        <button type="submit" class="button button-primary penalis-btn-send-full">
+                            <?php echo esc_html__('Send to', 'penalis-emailer'); ?>
+                            <strong id="main-selected-count">0</strong>
+                            <?php echo esc_html__('users', 'penalis-emailer'); ?>
+                        </button>
                     </div>
-                </div>
-                
-                <!-- Sidebar (Right) - Recipients Only -->
-                <div class="penalis-sidebar">
+                    
                     <!-- Recipients Card -->
                     <?php $this->render_recipients_card($users, $current_page, $total_pages, $total_users, $selected_recipients); ?>
                 </div>
