@@ -57,6 +57,115 @@
     color: #2271b1;
 }
 
+.penalis-form-card code {
+    background: #f6f7f7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    border: 1px solid #c3c4c7;
+    font-family: monospace;
+}
+
+.penalis-form-card ul {
+    list-style: disc;
+}
+
+.penalis-form-card ul li {
+    line-height: 1.6;
+}
+
+/* Template Guide Grid Layout */
+.penalis-template-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+}
+
+.penalis-guide-column {
+    min-width: 0;
+}
+
+.penalis-guide-title {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-tips-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    list-style: disc;
+}
+
+.penalis-tips-list li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+    color: #1d2327;
+}
+
+.penalis-placeholder-list {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+    font-size: 13px;
+}
+
+.penalis-placeholder-list li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+    color: #1d2327;
+}
+
+.penalis-placeholder-list code {
+    margin-right: 4px;
+}
+
+.penalis-formatting-section {
+    font-size: 13px;
+}
+
+.penalis-formatting-section strong {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-formatting-section strong:first-child {
+    margin-top: 0;
+}
+
+.penalis-formatting-section ul {
+    margin: 0 0 8px 0;
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.penalis-formatting-section ul li {
+    margin-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* Responsive Grid */
+@media (max-width: 1200px) {
+    .penalis-template-guide-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 782px) {
+    .penalis-template-guide-grid {
+        gap: 20px;
+    }
+}
+
 /* ========================================
    Form Groups (Compact Layout)
    ======================================== */

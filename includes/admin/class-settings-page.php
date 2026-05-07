@@ -116,22 +116,23 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
             <?php wp_nonce_field('penalis_save_template', 'penalis_template_nonce'); ?>
             <input type="hidden" name="action" value="penalis_save_template">
             
-            <table class="form-table">
-                <tr>
-                    <th scope="row">
-                        <label for="email_body"><?php echo esc_html__('Email Body Template', 'penalis-emailer'); ?></label>
-                    </th>
-                    <td>
-                        <textarea name="email_body" 
-                                  id="email_body" 
-                                  rows="20" 
-                                  class="large-text code"
-                                  style="font-family: monospace; width: 100%;"><?php echo esc_textarea($current_body); ?></textarea>
-                        
-                        <?php $this->render_template_help(); ?>
-                    </td>
-                </tr>
-            </table>
+            <!-- Email Body Template Card -->
+            <div class="penalis-form-card">
+                <h3>
+                    <span class="dashicons dashicons-edit"></span>
+                    <?php echo esc_html__('Email Body Template', 'penalis-emailer'); ?>
+                </h3>
+                
+                <div class="penalis-form-group">
+                    <textarea name="email_body" 
+                              id="email_body" 
+                              rows="20" 
+                              class="large-text code"
+                              style="font-family: monospace; padding: 4px 8px 0 8px;"><?php echo esc_textarea($current_body); ?></textarea>
+                </div>
+            </div>
+            
+            <?php $this->render_template_help(); ?>
             
             <p class="submit penalis-submit-actions">
                 <button type="submit" class="button penalis-btn-primary">
@@ -163,58 +164,71 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
      */
     private function render_template_help(): void {
         ?>
-        <div class="description" style="margin-top: 10px;">
-            <!-- Quick Tips Box -->
-            <div class="penalis-warning-box">
-                <strong><?php echo esc_html__('Quick Tips:', 'penalis-emailer'); ?></strong>
-                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
-                    <li><?php echo esc_html__('Use {BUTTON_CTA} for default "Baca Tulisanmu" button', 'penalis-emailer'); ?></li>
-                    <li><?php echo esc_html__('Use [button: Custom Text](url) for additional custom buttons', 'penalis-emailer'); ?></li>
-                    <li><?php echo esc_html__('Placeholders like {AUTHOR_NAME} are auto-replaced with actual data', 'penalis-emailer'); ?></li>
-                </ul>
-            </div>
+        <!-- Template Guide Card -->
+        <div class="penalis-form-card">
+            <h3>
+                <span class="dashicons dashicons-info"></span>
+                <?php echo esc_html__('Template Guide & Placeholders', 'penalis-emailer'); ?>
+            </h3>
             
-            <!-- Available Placeholders -->
-            <strong><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
-            <ul style="margin: 5px 0 15px 0; padding-left: 20px;">
-                <li><code>{AUTHOR_NAME}</code> → <?php echo esc_html__("Author's full name", 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "John Doe"', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{POST_TITLE}</code> → <?php echo esc_html__('Post title', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "My Amazing Article"', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{POST_URL}</code> → <?php echo esc_html__('Post URL', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "https://penalis.com/post"', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{BUTTON_CTA}</code> → <?php echo esc_html__('Default button "Baca Tulisanmu"', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('auto-links to post', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{DATE}</code> → <?php echo esc_html__('Current date', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "May 1, 2026"', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{SITE_NAME}</code> → <?php echo esc_html__('Website name', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "Penalis"', 'penalis-emailer'); ?>)</em></li>
-                <li><code>{SITE_URL}</code> → <?php echo esc_html__('Website URL', 'penalis-emailer'); ?> <em style="color: #666;">(<?php echo esc_html__('e.g., "https://penalis.com"', 'penalis-emailer'); ?>)</em></li>
-            </ul>
-            
-            <!-- Collapsible Formatting Tips -->
-            <details class="penalis-formatting-guide">
-                <summary><?php echo esc_html__('Formatting Guide (click to expand)', 'penalis-emailer'); ?></summary>
-                <div>
-                    <strong><?php echo esc_html__('Text Formatting:', 'penalis-emailer'); ?></strong>
-                    <ul>
-                        <li><code>**bold**</code> or <code>__bold__</code> → <strong><?php echo esc_html__('bold text', 'penalis-emailer'); ?></strong></li>
-                        <li><code>*italic*</code> or <code>_italic_</code> → <em><?php echo esc_html__('italic text', 'penalis-emailer'); ?></em></li>
-                    </ul>
-                    
-                    <strong><?php echo esc_html__('Links & Buttons:', 'penalis-emailer'); ?></strong>
-                    <ul>
-                        <li><code>[link text](https://example.com)</code> → <?php echo esc_html__('Regular clickable link', 'penalis-emailer'); ?></li>
-                        <li><code>[button: Button Text](https://example.com)</code> → <?php echo esc_html__('Custom CTA button', 'penalis-emailer'); ?></li>
-                    </ul>
-                    
-                    <strong><?php echo esc_html__('Lists:', 'penalis-emailer'); ?></strong>
-                    <ul>
-                        <li><code>- item</code> → <?php echo esc_html__('Bullet list item', 'penalis-emailer'); ?></li>
-                        <li><code>1. item</code> → <?php echo esc_html__('Numbered list item', 'penalis-emailer'); ?></li>
-                    </ul>
-                    
-                    <strong><?php echo esc_html__('Line Breaks:', 'penalis-emailer'); ?></strong>
-                    <ul>
-                        <li><?php echo esc_html__('Press Enter once for line break', 'penalis-emailer'); ?></li>
-                        <li><?php echo esc_html__('Press Enter twice for new paragraph', 'penalis-emailer'); ?></li>
+            <div class="penalis-template-guide-grid">
+                <!-- Quick Tips Column -->
+                <div class="penalis-guide-column">
+                    <strong class="penalis-guide-title"><?php echo esc_html__('Quick Tips:', 'penalis-emailer'); ?></strong>
+                    <ul class="penalis-tips-list">
+                        <li><?php echo esc_html__('Use {BUTTON_CTA} for default "Baca Tulisanmu" button', 'penalis-emailer'); ?></li>
+                        <li><?php echo esc_html__('Use [button: Custom Text](url) for additional custom buttons', 'penalis-emailer'); ?></li>
+                        <li><?php echo esc_html__('Placeholders like {AUTHOR_NAME} are auto-replaced with actual data', 'penalis-emailer'); ?></li>
+                        <li><?php echo esc_html__('Use plain text with markdown formatting for best results', 'penalis-emailer'); ?></li>
+                        <li><?php echo esc_html__('Preview your template before saving to see how it looks', 'penalis-emailer'); ?></li>
+                        <li><?php echo esc_html__('Send test email to verify formatting and content', 'penalis-emailer'); ?></li>
                     </ul>
                 </div>
-            </details>
+                
+                <!-- Available Placeholders Column -->
+                <div class="penalis-guide-column">
+                    <strong class="penalis-guide-title"><?php echo esc_html__('Available Placeholders:', 'penalis-emailer'); ?></strong>
+                    <ul class="penalis-placeholder-list">
+                        <li><code>{AUTHOR_NAME}</code> — <?php echo esc_html__("Author's full name", 'penalis-emailer'); ?></li>
+                        <li><code>{POST_TITLE}</code> — <?php echo esc_html__('Post title', 'penalis-emailer'); ?></li>
+                        <li><code>{POST_URL}</code> — <?php echo esc_html__('Post URL', 'penalis-emailer'); ?></li>
+                        <li><code>{BUTTON_CTA}</code> — <?php echo esc_html__('Default "Baca Tulisanmu" button', 'penalis-emailer'); ?></li>
+                        <li><code>{DATE}</code> — <?php echo esc_html__('Current date', 'penalis-emailer'); ?></li>
+                        <li><code>{SITE_NAME}</code> — <?php echo esc_html__('Website name', 'penalis-emailer'); ?></li>
+                        <li><code>{SITE_URL}</code> — <?php echo esc_html__('Website URL', 'penalis-emailer'); ?></li>
+                    </ul>
+                </div>
+                
+                <!-- Formatting Guide Column -->
+                <div class="penalis-guide-column">
+                    <strong class="penalis-guide-title"><?php echo esc_html__('Formatting Guide:', 'penalis-emailer'); ?></strong>
+                    <div class="penalis-formatting-section">
+                        <strong><?php echo esc_html__('Text Formatting:', 'penalis-emailer'); ?></strong>
+                        <ul>
+                            <li><code>**bold**</code> or <code>__bold__</code></li>
+                            <li><code>*italic*</code> or <code>_italic_</code></li>
+                        </ul>
+                        
+                        <strong><?php echo esc_html__('Links & Buttons:', 'penalis-emailer'); ?></strong>
+                        <ul>
+                            <li><code>[link text](url)</code></li>
+                            <li><code>[button: Text](url)</code></li>
+                        </ul>
+                        
+                        <strong><?php echo esc_html__('Lists:', 'penalis-emailer'); ?></strong>
+                        <ul>
+                            <li><code>- item</code> <?php echo esc_html__('(bullet)', 'penalis-emailer'); ?></li>
+                            <li><code>1. item</code> <?php echo esc_html__('(numbered)', 'penalis-emailer'); ?></li>
+                        </ul>
+                        
+                        <strong><?php echo esc_html__('Line Breaks:', 'penalis-emailer'); ?></strong>
+                        <ul>
+                            <li><?php echo esc_html__('Enter once = line break', 'penalis-emailer'); ?></li>
+                            <li><?php echo esc_html__('Enter twice = new paragraph', 'penalis-emailer'); ?></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
         <?php
     }
