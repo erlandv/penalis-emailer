@@ -70,6 +70,7 @@ class Penalis_Ajax_Handler {
         add_action('wp_ajax_penalis_preview_draft', [$this, 'preview_draft']);
         add_action('wp_ajax_penalis_duplicate_draft', [$this, 'duplicate_draft']);
         add_action('wp_ajax_penalis_send_draft_ajax', [$this, 'send_draft_ajax']);
+        add_action('wp_ajax_penalis_autosave_draft', [$this, 'autosave_draft']);
     }
     
     /**
@@ -560,6 +561,77 @@ class Penalis_Ajax_Handler {
             wp_send_json_error([
                 'message' => __('Failed to send emails. Please check your configuration.', 'penalis-emailer')
             ]);
+        }
+    }
+    
+    /**
+     * AJAX handler for auto-save draft
+     *
+     * @return void
+     */
+    public function autosave_draft(): void {
+        // Check nonce
+        check_ajax_referer('penalis_autosave_draft', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        // Get draft data
+        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        $from_name = isset($_POST['from_name']) ? sanitize_text_field($_POST['from_name']) : '';
+        $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
+        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        $user_ids = isset($_POST['user_ids']) && is_array($_POST['user_ids']) 
+            ? array_map('intval', $_POST['user_ids']) 
+            : [];
+        
+        // Prepare draft data
+        $draft_data = [
+            'type' => 'manual',
+            'from_name' => $from_name,
+            'subject' => $subject,
+            'body' => $body,
+            'recipient_count' => count($user_ids),
+            'recipients' => $user_ids
+        ];
+        
+        // Check if updating existing draft or creating new
+        if (!empty($draft_id)) {
+            // Update existing draft
+            $success = $this->email_logger->update_draft($draft_id, $draft_data);
+            
+            if ($success) {
+                wp_send_json_success([
+                    'message' => __('Draft auto-saved', 'penalis-emailer'),
+                    'draft_id' => $draft_id,
+                    'timestamp' => time()
+                ]);
+            } else {
+                wp_send_json_error([
+                    'message' => __('Failed to auto-save draft', 'penalis-emailer')
+                ]);
+            }
+        } else {
+            // Create new draft
+            $success = $this->email_logger->save_draft($draft_data);
+            
+            if ($success) {
+                // Get the newly created draft to return its ID
+                $drafts = $this->email_logger->get_drafts(1);
+                $new_draft_id = !empty($drafts) ? $drafts[0]['id'] : '';
+                
+                wp_send_json_success([
+                    'message' => __('Draft auto-saved', 'penalis-emailer'),
+                    'draft_id' => $new_draft_id,
+                    'timestamp' => time()
+                ]);
+            } else {
+                wp_send_json_error([
+                    'message' => __('Failed to auto-save draft', 'penalis-emailer')
+                ]);
+            }
         }
     }
 }

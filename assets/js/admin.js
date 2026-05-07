@@ -13,9 +13,14 @@
      */
     const ComposeEmailHandler = {
         
+        autosaveTimer: null,
+        autosaveInterval: 60000, // 60 seconds
+        lastAutosaveData: null,
+        
         init: function() {
             this.bindEvents();
             this.updateSelectedCount();
+            this.initAutosave();
         },
         
         bindEvents: function() {
@@ -364,6 +369,115 @@
                 alert(penalisAdmin.i18n.deleteDraftFailed || 'Failed to delete draft. Please try again.');
                 button.prop('disabled', false).text(penalisAdmin.i18n.deleteDraft || 'Delete Draft');
             });
+        },
+        
+        initAutosave: function() {
+            // Check if auto-save is enabled
+            if (!penalisAdmin.autosaveEnabled) {
+                return;
+            }
+            
+            // Start auto-save timer
+            this.autosaveTimer = setInterval(this.performAutosave.bind(this), this.autosaveInterval);
+            
+            // Show auto-save indicator
+            if ($('#autosave-indicator').length === 0) {
+                $('.penalis-submit-actions').before(`
+                    <div id="autosave-indicator" style="margin-bottom: 15px; padding: 10px; background: #f0f0f1; border-radius: 4px; display: none;">
+                        <span class="dashicons dashicons-backup" style="color: #2271b1;"></span>
+                        <span id="autosave-message"></span>
+                    </div>
+                `);
+            }
+            
+            // Clear timer on form submit
+            $('#penalis-email-form').on('submit', function() {
+                clearInterval(ComposeEmailHandler.autosaveTimer);
+            });
+        },
+        
+        performAutosave: function() {
+            // Get current form data
+            const currentData = this.getFormData();
+            
+            // Check if data has changed
+            if (this.lastAutosaveData && JSON.stringify(currentData) === JSON.stringify(this.lastAutosaveData)) {
+                return; // No changes, skip auto-save
+            }
+            
+            // Check if form has any content
+            if (!currentData.subject && !currentData.body && currentData.user_ids.length === 0) {
+                return; // Empty form, skip auto-save
+            }
+            
+            // Show saving indicator
+            $('#autosave-indicator').show();
+            $('#autosave-message').html('<span class="spinner is-active" style="float: none; margin: 0 5px 0 0;"></span>' + (penalisAdmin.i18n.autoSaving || 'Auto-saving...'));
+            
+            // Perform auto-save
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_autosave_draft',
+                nonce: penalisAdmin.nonces.autosaveDraft,
+                draft_id: $('#draft-id').val(),
+                from_name: currentData.from_name,
+                subject: currentData.subject,
+                body: currentData.body,
+                user_ids: currentData.user_ids
+            }, function(response) {
+                if (response.success) {
+                    // Update draft ID if new draft was created
+                    if (response.data.draft_id && !$('#draft-id').val()) {
+                        $('#draft-id').val(response.data.draft_id);
+                    }
+                    
+                    // Show success message
+                    const timestamp = new Date(response.data.timestamp * 1000);
+                    const timeString = timestamp.toLocaleTimeString();
+                    $('#autosave-message').html('<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span> ' + (penalisAdmin.i18n.autoSaved || 'Auto-saved at') + ' ' + timeString);
+                    
+                    // Update last saved data
+                    ComposeEmailHandler.lastAutosaveData = currentData;
+                    
+                    // Hide indicator after 3 seconds
+                    setTimeout(function() {
+                        $('#autosave-indicator').fadeOut();
+                    }, 3000);
+                } else {
+                    $('#autosave-message').html('<span class="dashicons dashicons-warning" style="color: #d63638;"></span> ' + (response.data.message || 'Auto-save failed'));
+                    
+                    setTimeout(function() {
+                        $('#autosave-indicator').fadeOut();
+                    }, 5000);
+                }
+            }).fail(function() {
+                $('#autosave-message').html('<span class="dashicons dashicons-warning" style="color: #d63638;"></span> ' + (penalisAdmin.i18n.autoSaveFailed || 'Auto-save failed'));
+                
+                setTimeout(function() {
+                    $('#autosave-indicator').fadeOut();
+                }, 5000);
+            });
+        },
+        
+        getFormData: function() {
+            // Get visible checkboxes
+            const visibleUserIds = $('.user-row .user-checkbox:checked').map(function() {
+                return parseInt($(this).val());
+            }).get();
+            
+            // Get hidden checkboxes
+            const hiddenUserIds = $('#hidden-user-checkboxes input:checked').map(function() {
+                return parseInt($(this).val());
+            }).get();
+            
+            // Combine and deduplicate
+            const allUserIds = [...new Set([...visibleUserIds, ...hiddenUserIds])];
+            
+            return {
+                from_name: $('#from_name').val(),
+                subject: $('#subject').val(),
+                body: $('#body').val(),
+                user_ids: allUserIds
+            };
         }
     };
     

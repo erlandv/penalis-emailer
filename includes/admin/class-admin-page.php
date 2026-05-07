@@ -149,6 +149,7 @@ abstract class Penalis_Admin_Page {
             'currentDate' => date_i18n(get_option('date_format')),
             'composeUrl' => admin_url('admin.php?page=penalis-email-compose'),
             'draftsUrl' => admin_url('admin.php?page=penalis-email-drafts'),
+            'autosaveEnabled' => true, // Enable auto-save by default
             'nonces' => [
                 'preview' => wp_create_nonce('penalis_preview_email'),
                 'previewAuto' => wp_create_nonce('penalis_preview_auto_email'),
@@ -162,6 +163,7 @@ abstract class Penalis_Admin_Page {
                 'previewDraft' => wp_create_nonce('penalis_preview_draft'),
                 'duplicateDraft' => wp_create_nonce('penalis_duplicate_draft'),
                 'sendDraftAjax' => wp_create_nonce('penalis_send_draft_ajax'),
+                'autosaveDraft' => wp_create_nonce('penalis_autosave_draft'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -201,6 +203,10 @@ abstract class Penalis_Admin_Page {
                 'sendingDraft' => __('Sending...', 'penalis-emailer'),
                 'duplicating' => __('Duplicating...', 'penalis-emailer'),
                 'previewLoading' => __('Loading preview...', 'penalis-emailer'),
+                // Auto-save i18n
+                'autoSaving' => __('Auto-saving...', 'penalis-emailer'),
+                'autoSaved' => __('Auto-saved at', 'penalis-emailer'),
+                'autoSaveFailed' => __('Auto-save failed', 'penalis-emailer'),
             ]
         ];
     }
