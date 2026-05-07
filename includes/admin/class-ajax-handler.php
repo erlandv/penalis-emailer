@@ -66,6 +66,10 @@ class Penalis_Ajax_Handler {
         
         // Draft actions
         add_action('wp_ajax_penalis_delete_draft', [$this, 'delete_draft']);
+        add_action('wp_ajax_penalis_bulk_delete_drafts', [$this, 'bulk_delete_drafts']);
+        add_action('wp_ajax_penalis_preview_draft', [$this, 'preview_draft']);
+        add_action('wp_ajax_penalis_duplicate_draft', [$this, 'duplicate_draft']);
+        add_action('wp_ajax_penalis_send_draft_ajax', [$this, 'send_draft_ajax']);
     }
     
     /**
@@ -350,6 +354,211 @@ class Penalis_Ajax_Handler {
         } else {
             wp_send_json_error([
                 'message' => __('Failed to delete draft', 'penalis-emailer')
+            ]);
+        }
+    }
+    
+    /**
+     * AJAX handler for bulk delete drafts
+     *
+     * @return void
+     */
+    public function bulk_delete_drafts(): void {
+        // Check nonce
+        check_ajax_referer('penalis_bulk_delete_drafts', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $draft_ids = isset($_POST['draft_ids']) && is_array($_POST['draft_ids']) 
+            ? array_map('sanitize_text_field', $_POST['draft_ids']) 
+            : [];
+        
+        if (empty($draft_ids)) {
+            wp_send_json_error(['message' => __('No drafts selected', 'penalis-emailer')]);
+        }
+        
+        // Delete each draft
+        $deleted_count = 0;
+        foreach ($draft_ids as $draft_id) {
+            if ($this->email_logger->delete_draft($draft_id)) {
+                $deleted_count++;
+            }
+        }
+        
+        wp_send_json_success([
+            'message' => sprintf(__('%d draft(s) deleted successfully', 'penalis-emailer'), $deleted_count),
+            'deleted_count' => $deleted_count
+        ]);
+    }
+    
+    /**
+     * AJAX handler for preview draft
+     *
+     * @return void
+     */
+    public function preview_draft(): void {
+        // Check nonce
+        check_ajax_referer('penalis_preview_draft', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        
+        if (empty($draft_id)) {
+            wp_send_json_error(['message' => __('Draft ID is required', 'penalis-emailer')]);
+        }
+        
+        // Get draft
+        $draft = $this->email_logger->find_draft_by_id($draft_id);
+        
+        if (!$draft) {
+            wp_send_json_error(['message' => __('Draft not found', 'penalis-emailer')]);
+        }
+        
+        $body = $draft['body'] ?? '';
+        
+        // Generate preview with sample user data
+        $sample_user_data = [
+            'display_name' => 'John Doe',
+            'user_email' => 'john@example.com',
+            'user_login' => 'johndoe'
+        ];
+        
+        $preview_html = $this->email_template->render_flexible_email($body, $sample_user_data);
+        
+        wp_send_json_success([
+            'html' => $preview_html,
+            'subject' => $draft['subject'] ?? '',
+            'from_name' => $draft['from_name'] ?? ''
+        ]);
+    }
+    
+    /**
+     * AJAX handler for duplicate draft
+     *
+     * @return void
+     */
+    public function duplicate_draft(): void {
+        // Check nonce
+        check_ajax_referer('penalis_duplicate_draft', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        
+        if (empty($draft_id)) {
+            wp_send_json_error(['message' => __('Draft ID is required', 'penalis-emailer')]);
+        }
+        
+        // Get original draft
+        $original_draft = $this->email_logger->find_draft_by_id($draft_id);
+        
+        if (!$original_draft) {
+            wp_send_json_error(['message' => __('Draft not found', 'penalis-emailer')]);
+        }
+        
+        // Create duplicate with new ID
+        $duplicate_data = [
+            'type' => 'manual',
+            'from_name' => $original_draft['from_name'] ?? '',
+            'subject' => ($original_draft['subject'] ?? '') . ' ' . __('(Copy)', 'penalis-emailer'),
+            'body' => $original_draft['body'] ?? '',
+            'recipient_count' => $original_draft['recipient_count'] ?? 0,
+            'recipients' => $original_draft['recipients'] ?? []
+        ];
+        
+        // Save duplicate
+        $success = $this->email_logger->save_draft($duplicate_data);
+        
+        if ($success) {
+            wp_send_json_success([
+                'message' => __('Draft duplicated successfully', 'penalis-emailer')
+            ]);
+        } else {
+            wp_send_json_error([
+                'message' => __('Failed to duplicate draft', 'penalis-emailer')
+            ]);
+        }
+    }
+    
+    /**
+     * AJAX handler for send draft
+     *
+     * @return void
+     */
+    public function send_draft_ajax(): void {
+        // Check nonce
+        check_ajax_referer('penalis_send_draft_ajax', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        
+        if (empty($draft_id)) {
+            wp_send_json_error(['message' => __('Draft ID is required', 'penalis-emailer')]);
+        }
+        
+        // Get draft
+        $draft = $this->email_logger->find_draft_by_id($draft_id);
+        
+        if (!$draft) {
+            wp_send_json_error(['message' => __('Draft not found', 'penalis-emailer')]);
+        }
+        
+        // Validate for sending (strict validation)
+        $validator = new Penalis_Email_Validator();
+        if (!$validator->validate_manual_email($draft)) {
+            $error_message = $validator->get_first_error();
+            wp_send_json_error(['message' => $error_message]);
+        }
+        
+        // Get email sender
+        $email_sender = Penalis_Service_Container::get(Penalis_Email_Sender::class);
+        
+        // Send emails
+        $results = $email_sender->send_manual_email(
+            $draft['subject'],
+            $draft['recipients'],
+            $draft['body'],
+            $draft['from_name']
+        );
+        
+        // Convert draft to sent
+        if ($results['success'] > 0) {
+            $this->email_logger->convert_draft_to_sent($draft_id, time());
+        }
+        
+        // Return results
+        if ($results['success'] > 0 && empty($results['failed'])) {
+            wp_send_json_success([
+                'message' => sprintf(
+                    __('Successfully sent %d email(s) from draft.', 'penalis-emailer'),
+                    $results['success']
+                )
+            ]);
+        } elseif ($results['success'] > 0 && !empty($results['failed'])) {
+            wp_send_json_success([
+                'message' => sprintf(
+                    __('Sent %d email(s) successfully, but %d failed.', 'penalis-emailer'),
+                    $results['success'],
+                    count($results['failed'])
+                )
+            ]);
+        } else {
+            wp_send_json_error([
+                'message' => __('Failed to send emails. Please check your configuration.', 'penalis-emailer')
             ]);
         }
     }

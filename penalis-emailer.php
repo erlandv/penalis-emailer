@@ -113,6 +113,7 @@ function penalis_emailer_init() {
     $container::singleton(Penalis_Compose_Page::class);
     $container::singleton(Penalis_History_Page::class);
     $container::singleton(Penalis_Settings_Page::class);
+    $container::singleton(Penalis_Draft_Page::class);
     $container::singleton(Penalis_Ajax_Handler::class);
     $container::singleton(Penalis_Admin_Interface::class);
     

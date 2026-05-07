@@ -872,3 +872,161 @@
         height: 24px;
     }
 }
+
+
+/* ========================================
+   Draft Management Page
+   ======================================== */
+
+.penalis-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.penalis-empty-state .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #c3c4c7;
+    margin-bottom: 20px;
+}
+
+.penalis-empty-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0 0 10px 0;
+}
+
+.penalis-empty-state p {
+    font-size: 14px;
+    color: #646970;
+    margin: 0 0 20px 0;
+}
+
+/* Draft Table Columns */
+.column-subject {
+    width: 35%;
+}
+
+.column-recipients {
+    width: 15%;
+}
+
+.column-created {
+    width: 18%;
+}
+
+.column-modified {
+    width: 18%;
+}
+
+.column-actions {
+    width: 14%;
+    text-align: right;
+}
+
+/* Draft Row Actions */
+.row-actions {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.row-actions span {
+    display: inline;
+}
+
+.row-actions a {
+    text-decoration: none;
+}
+
+.row-actions a:hover {
+    text-decoration: underline;
+}
+
+/* Draft Preview Modal */
+#draft-preview-modal .penalis-modal-content {
+    max-width: 800px;
+}
+
+#draft-preview-content {
+    margin-top: 20px;
+}
+
+/* Bulk Actions Bar */
+.tablenav {
+    margin: 12px 0;
+    padding: 8px 0;
+}
+
+.tablenav .alignleft {
+    float: left;
+}
+
+.tablenav .alignright {
+    float: right;
+}
+
+.tablenav .bulkactions {
+    display: inline-block;
+}
+
+.tablenav .bulkactions select {
+    margin-right: 5px;
+}
+
+.displaying-num {
+    color: #646970;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Table Styling */
+#drafts-filter table {
+    margin-top: 0;
+}
+
+#drafts-filter .check-column {
+    width: 2.2em;
+    padding: 8px 0 8px 3px;
+    vertical-align: middle;
+}
+
+#drafts-filter .check-column input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Button Spacing in Actions Column */
+.column-actions .button {
+    margin-left: 5px;
+}
+
+.column-actions .button:first-child {
+    margin-left: 0;
+}
+
+/* Responsive Draft Table */
+@media screen and (max-width: 782px) {
+    .column-subject {
+        width: auto;
+    }
+    
+    .column-recipients,
+    .column-created,
+    .column-modified {
+        display: none;
+    }
+    
+    .column-actions {
+        width: auto;
+    }
+    
+    .row-actions {
+        display: block;
+        margin-top: 8px;
+    }
+}

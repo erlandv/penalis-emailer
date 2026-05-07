@@ -50,6 +50,13 @@ class Penalis_Admin_Interface {
     private $settings_page;
     
     /**
+     * Draft page instance
+     *
+     * @var Penalis_Draft_Page
+     */
+    private $draft_page;
+    
+    /**
      * AJAX handler instance
      *
      * @var Penalis_Ajax_Handler
@@ -63,6 +70,7 @@ class Penalis_Admin_Interface {
      * @param Penalis_Compose_Page   $compose_page   Compose page instance
      * @param Penalis_History_Page   $history_page   History page instance
      * @param Penalis_Settings_Page  $settings_page  Settings page instance
+     * @param Penalis_Draft_Page     $draft_page     Draft page instance
      * @param Penalis_Ajax_Handler   $ajax_handler   AJAX handler instance
      */
     public function __construct(
@@ -70,12 +78,14 @@ class Penalis_Admin_Interface {
         Penalis_Compose_Page $compose_page,
         Penalis_History_Page $history_page,
         Penalis_Settings_Page $settings_page,
+        Penalis_Draft_Page $draft_page,
         Penalis_Ajax_Handler $ajax_handler
     ) {
         $this->dashboard_page = $dashboard_page;
         $this->compose_page = $compose_page;
         $this->history_page = $history_page;
         $this->settings_page = $settings_page;
+        $this->draft_page = $draft_page;
         $this->ajax_handler = $ajax_handler;
     }
     
@@ -95,6 +105,7 @@ class Penalis_Admin_Interface {
         add_action('admin_post_penalis_send_email', [$this->compose_page, 'handle_submission']);
         add_action('admin_post_penalis_save_template', [$this->settings_page, 'handle_save']);
         add_action('admin_post_penalis_reset_template', [$this->settings_page, 'handle_reset']);
+        add_action('admin_post_penalis_send_draft', [$this->draft_page, 'handle_send_draft']);
         
         // Admin notices - single handler for all pages
         add_action('admin_notices', [$this, 'show_admin_notices']);
@@ -138,6 +149,16 @@ class Penalis_Admin_Interface {
             'manage_options',
             'penalis-email-compose',
             [$this->compose_page, 'render']
+        );
+        
+        // Draft Management submenu
+        add_submenu_page(
+            Penalis_Config::PAGE_SLUG,
+            __('Draft Management', 'penalis-emailer'),
+            __('Drafts', 'penalis-emailer'),
+            'manage_options',
+            'penalis-email-drafts',
+            [$this->draft_page, 'render']
         );
         
         // Email History submenu
@@ -206,6 +227,7 @@ class Penalis_Admin_Interface {
         $our_pages = [
             Penalis_Config::PAGE_SLUG,
             'penalis-email-compose',
+            'penalis-email-drafts',
             'penalis-email-history',
             Penalis_Config::SETTINGS_PAGE_SLUG
         ];
@@ -243,6 +265,7 @@ class Penalis_Admin_Interface {
         $our_pages = [
             'toplevel_page_' . Penalis_Config::PAGE_SLUG,
             'penalis-email_page_penalis-email-compose',
+            'penalis-email_page_penalis-email-drafts',
             'penalis-email_page_penalis-email-history',
             'penalis-email_page_' . Penalis_Config::SETTINGS_PAGE_SLUG
         ];

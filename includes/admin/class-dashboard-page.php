@@ -165,6 +165,12 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
                     <?php echo esc_html__('Compose Email', 'penalis-emailer'); ?>
                 </a>
                 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-drafts')); ?>" 
+                   class="penalis-action-btn penalis-action-btn-secondary">
+                    <span class="dashicons dashicons-edit"></span>
+                    <?php echo esc_html__('Manage Drafts', 'penalis-emailer'); ?>
+                </a>
+                
                 <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history')); ?>" 
                    class="penalis-action-btn penalis-action-btn-secondary">
                     <span class="dashicons dashicons-list-view"></span>

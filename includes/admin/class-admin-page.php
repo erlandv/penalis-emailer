@@ -148,6 +148,7 @@ abstract class Penalis_Admin_Page {
             'siteName' => get_bloginfo('name'),
             'currentDate' => date_i18n(get_option('date_format')),
             'composeUrl' => admin_url('admin.php?page=penalis-email-compose'),
+            'draftsUrl' => admin_url('admin.php?page=penalis-email-drafts'),
             'nonces' => [
                 'preview' => wp_create_nonce('penalis_preview_email'),
                 'previewAuto' => wp_create_nonce('penalis_preview_auto_email'),
@@ -157,6 +158,10 @@ abstract class Penalis_Admin_Page {
                 'bulkDeleteLogs' => wp_create_nonce('penalis_bulk_delete_logs'),
                 'clearAllLogs' => wp_create_nonce('penalis_clear_all_logs'),
                 'deleteDraft' => wp_create_nonce('penalis_delete_draft'),
+                'bulkDeleteDrafts' => wp_create_nonce('penalis_bulk_delete_drafts'),
+                'previewDraft' => wp_create_nonce('penalis_preview_draft'),
+                'duplicateDraft' => wp_create_nonce('penalis_duplicate_draft'),
+                'sendDraftAjax' => wp_create_nonce('penalis_send_draft_ajax'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -187,6 +192,15 @@ abstract class Penalis_Admin_Page {
                 'deleting' => __('Deleting...', 'penalis-emailer'),
                 'deleteDraft' => __('Delete Draft', 'penalis-emailer'),
                 'deleteDraftFailed' => __('Failed to delete draft. Please try again.', 'penalis-emailer'),
+                // Draft management i18n
+                'selectDrafts' => __('Please select at least one draft to delete.', 'penalis-emailer'),
+                'confirmBulkDeleteDrafts' => __('Are you sure you want to delete %d draft(s)?', 'penalis-emailer'),
+                'confirmDeleteSingleDraft' => __('Are you sure you want to delete this draft?', 'penalis-emailer'),
+                'confirmSendDraft' => __('Are you sure you want to send this draft? This will send emails to all selected recipients.', 'penalis-emailer'),
+                'confirmDuplicateDraft' => __('Duplicate this draft?', 'penalis-emailer'),
+                'sendingDraft' => __('Sending...', 'penalis-emailer'),
+                'duplicating' => __('Duplicating...', 'penalis-emailer'),
+                'previewLoading' => __('Loading preview...', 'penalis-emailer'),
             ]
         ];
     }
