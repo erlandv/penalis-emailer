@@ -306,6 +306,12 @@ class Penalis_Email_Log_Options_Repository implements Penalis_Email_Log_Reposito
         $draft_data['created_at'] = $draft_data['created_at'] ?? time();
         $draft_data['updated_at'] = time();
         
+        // Ensure created_by is set (should be set by logger, but fallback to current user)
+        if (!isset($draft_data['created_by'])) {
+            $current_user = wp_get_current_user();
+            $draft_data['created_by'] = $current_user->ID;
+        }
+        
         // Save to logs (drafts are stored in the same option)
         return $this->save($draft_data);
     }
@@ -380,9 +386,10 @@ class Penalis_Email_Log_Options_Repository implements Penalis_Email_Log_Reposito
         
         foreach ($logs as $index => $log) {
             if (isset($log['id']) && $log['id'] === $id && isset($log['status']) && $log['status'] === 'draft') {
-                // Preserve original ID and created_at
+                // Preserve original ID, created_at, and created_by
                 $draft_data['id'] = $id;
                 $draft_data['created_at'] = $log['created_at'] ?? time();
+                $draft_data['created_by'] = $log['created_by'] ?? 0;
                 $draft_data['updated_at'] = time();
                 $draft_data['status'] = 'draft';
                 
