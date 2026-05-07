@@ -77,13 +77,9 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             $draft_data = $this->logger->find_draft_by_id($draft_id);
         }
         
-        // Get current page for pagination
-        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        
-        // Get eligible users
-        $users = $this->get_eligible_users($current_page);
-        $total_users = $this->get_total_users();
-        $total_pages = ceil($total_users / Penalis_Config::get_users_per_page());
+        // Get ALL eligible users (no pagination)
+        $users = $this->get_all_eligible_users();
+        $total_users = count($users);
         
         // Get all drafts for dropdown
         $drafts = $this->logger->get_drafts(50); // Limit to 50 most recent drafts
@@ -97,8 +93,8 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             </p>
             
             <?php
-            // Render form
-            $this->render_form($users, $current_page, $total_pages, $total_users, $drafts, $draft_data);
+            // Render form (pass dummy values for pagination since we show all)
+            $this->render_form($users, 1, 1, $total_users, $drafts, $draft_data);
             $this->render_preview_modal();
             ?>
         </div>
@@ -267,6 +263,21 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     }
     
     /**
+     * Get ALL eligible users (no pagination)
+     *
+     * @return array Array of WP_User objects
+     */
+    private function get_all_eligible_users(): array {
+        $args = [
+            'role__in' => Penalis_Config::get_eligible_roles(),
+            'orderby' => 'display_name',
+            'order' => 'ASC'
+        ];
+        
+        return get_users($args);
+    }
+    
+    /**
      * Get total number of eligible users
      *
      * @return int Total user count
@@ -308,82 +319,145 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         $draft_id = $draft_data['id'] ?? '';
         
         ?>
-        <div class="penalis-compose-form">
-            <!-- Draft Management Section -->
-            <?php if (!empty($drafts) || $draft_data): ?>
-            <div class="penalis-card" style="margin-bottom: 20px;">
-                <h2><?php echo esc_html__('Draft Management', 'penalis-emailer'); ?></h2>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
+            <?php wp_nonce_field('penalis_send_email', 'penalis_email_nonce'); ?>
+            <input type="hidden" name="action" value="penalis_send_email">
+            <input type="hidden" name="action_type" id="action-type" value="send">
+            <input type="hidden" name="draft_id" id="draft-id" value="<?php echo esc_attr($draft_id); ?>">
+            
+            <!-- 2-Column Layout -->
+            <div class="penalis-compose-layout">
+                <!-- Main Content (Left) -->
+                <div class="penalis-main-content">
+                    
+                    <!-- Draft Management Section -->
+                    <?php if (!empty($drafts) || $draft_data): ?>
+                    <div class="penalis-form-card penalis-draft-card">
+                        <h3>
+                            <span class="dashicons dashicons-media-document"></span>
+                            <?php echo esc_html__('Draft Management', 'penalis-emailer'); ?>
+                        </h3>
+                        
+                        <div class="penalis-draft-controls">
+                            <?php if (!empty($drafts)): ?>
+                            <div class="penalis-draft-select-group">
+                                <select id="load-draft-select" class="regular-text">
+                                    <option value=""><?php echo esc_html__('-- Select a draft --', 'penalis-emailer'); ?></option>
+                                    <?php foreach ($drafts as $draft): ?>
+                                        <option value="<?php echo esc_attr($draft['id']); ?>" <?php selected($draft_id, $draft['id']); ?>>
+                                            <?php 
+                                            $draft_subject = !empty($draft['subject']) ? $draft['subject'] : __('(No subject)', 'penalis-emailer');
+                                            echo esc_html($draft_subject);
+                                            ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" id="load-draft-btn" class="button">
+                                    <?php echo esc_html__('Load', 'penalis-emailer'); ?>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($draft_data): ?>
+                            <div class="penalis-draft-loaded">
+                                <span class="penalis-draft-status">
+                                    <span class="dashicons dashicons-yes-alt"></span>
+                                    <strong><?php echo esc_html__('Draft Loaded', 'penalis-emailer'); ?></strong>
+                                </span>
+                                <button type="button" id="clear-draft-btn" class="button">
+                                    <?php echo esc_html__('Clear', 'penalis-emailer'); ?>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Email Details Card -->
+                    <?php $this->render_email_details_card($from_name, $subject); ?>
+                    
+                    <!-- Email Content Card -->
+                    <?php $this->render_email_content_card($body); ?>
+                    
+                    <!-- Tips & Guide Card (Compact & Collapsed) -->
+                    <details class="penalis-form-card penalis-tips-card">
+                        <summary>
+                            <span class="dashicons dashicons-lightbulb"></span>
+                            <?php echo esc_html__('Tips & Formatting Guide', 'penalis-emailer'); ?>
+                        </summary>
+                        
+                        <div class="penalis-guide-grid">
+                            <!-- Tips Column -->
+                            <div class="penalis-guide-column">
+                                <strong><?php echo esc_html__('Tips', 'penalis-emailer'); ?></strong>
+                                <ul>
+                                    <li><?php echo esc_html__('Use placeholders to personalize', 'penalis-emailer'); ?></li>
+                                    <li><?php echo esc_html__('Format with markdown', 'penalis-emailer'); ?></li>
+                                    <li><?php echo esc_html__('Preview before sending', 'penalis-emailer'); ?></li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Placeholders Column -->
+                            <div class="penalis-guide-column">
+                                <strong><?php echo esc_html__('Placeholders', 'penalis-emailer'); ?></strong>
+                                <ul>
+                                    <li><code>{USER_NAME}</code> - <?php echo esc_html__('Name', 'penalis-emailer'); ?></li>
+                                    <li><code>{USER_EMAIL}</code> - <?php echo esc_html__('Email', 'penalis-emailer'); ?></li>
+                                    <li><code>{USERNAME}</code> - <?php echo esc_html__('Username', 'penalis-emailer'); ?></li>
+                                    <li><code>{DATE}</code> - <?php echo esc_html__('Date', 'penalis-emailer'); ?></li>
+                                    <li><code>{SITE_NAME}</code> - <?php echo esc_html__('Site name', 'penalis-emailer'); ?></li>
+                                    <li><code>{SITE_URL}</code> - <?php echo esc_html__('Site URL', 'penalis-emailer'); ?></li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Formatting Column -->
+                            <div class="penalis-guide-column">
+                                <strong><?php echo esc_html__('Formatting', 'penalis-emailer'); ?></strong>
+                                <ul>
+                                    <li><code>**bold**</code> - <strong><?php echo esc_html__('Bold', 'penalis-emailer'); ?></strong></li>
+                                    <li><code>*italic*</code> - <em><?php echo esc_html__('Italic', 'penalis-emailer'); ?></em></li>
+                                    <li><code>[text](url)</code> - <?php echo esc_html__('Link', 'penalis-emailer'); ?></li>
+                                    <li><code>- item</code> - <?php echo esc_html__('List', 'penalis-emailer'); ?></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <!-- Actions Card (Compact) -->
+                    <div class="penalis-form-card penalis-actions-card">
+                        <h3>
+                            <span class="dashicons dashicons-admin-tools"></span>
+                            <?php echo esc_html__('Actions', 'penalis-emailer'); ?>
+                        </h3>
+                        
+                        <div class="penalis-actions-compact">
+                            <button type="button" id="preview-email-btn" class="button button-secondary">
+                                <span class="dashicons dashicons-visibility"></span>
+                                <?php echo esc_html__('Preview', 'penalis-emailer'); ?>
+                            </button>
+                            
+                            <button type="button" id="save-draft-btn" class="button button-secondary">
+                                <span class="dashicons dashicons-download"></span>
+                                <?php echo esc_html__('Save Draft', 'penalis-emailer'); ?>
+                            </button>
+                            
+                            <button type="submit" class="button button-primary penalis-btn-send-compact">
+                                <span class="dashicons dashicons-email-alt"></span>
+                                <?php echo esc_html__('Send to', 'penalis-emailer'); ?>
+                                <strong id="main-selected-count">0</strong>
+                                <?php echo esc_html__('users', 'penalis-emailer'); ?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 
-                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                    <?php if (!empty($drafts)): ?>
-                    <div style="flex: 0 0 auto; min-width: 300px;">
-                        <label for="load-draft-select" style="display: block; margin-bottom: 5px; font-weight: 500;">
-                            <?php echo esc_html__('Select a draft:', 'penalis-emailer'); ?>
-                        </label>
-                        <select id="load-draft-select" class="regular-text" style="width: 100%;">
-                            <option value=""><?php echo esc_html__('-- Select a draft --', 'penalis-emailer'); ?></option>
-                            <?php foreach ($drafts as $draft): ?>
-                                <option value="<?php echo esc_attr($draft['id']); ?>" <?php selected($draft_id, $draft['id']); ?>>
-                                    <?php 
-                                    $draft_subject = !empty($draft['subject']) ? $draft['subject'] : __('(No subject)', 'penalis-emailer');
-                                    echo esc_html($draft_subject);
-                                    ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <button type="button" id="load-draft-btn" class="button">
-                        <?php echo esc_html__('Load', 'penalis-emailer'); ?>
-                    </button>
-                    <?php endif; ?>
-                    
-                    <?php if ($draft_data): ?>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="color: #46b450; display: flex; align-items: center; gap: 5px;">
-                            <span class="dashicons dashicons-yes-alt"></span>
-                            <strong><?php echo esc_html__('Draft Loaded', 'penalis-emailer'); ?></strong>
-                        </span>
-                        <button type="button" id="clear-draft-btn" class="button">
-                            <?php echo esc_html__('Clear', 'penalis-emailer'); ?>
-                        </button>
-                    </div>
-                    <?php endif; ?>
+                <!-- Sidebar (Right) - Recipients Only -->
+                <div class="penalis-sidebar">
+                    <!-- Recipients Card -->
+                    <?php $this->render_recipients_card($users, $current_page, $total_pages, $total_users, $selected_recipients); ?>
                 </div>
             </div>
-            <?php endif; ?>
-            
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
-                <?php wp_nonce_field('penalis_send_email', 'penalis_email_nonce'); ?>
-                <input type="hidden" name="action" value="penalis_send_email">
-                <input type="hidden" name="action_type" id="action-type" value="send">
-                <input type="hidden" name="draft_id" id="draft-id" value="<?php echo esc_attr($draft_id); ?>">
-                
-                <!-- Email Details Card -->
-                <?php $this->render_email_details_card($from_name, $subject); ?>
-                
-                <!-- Email Content Card -->
-                <?php $this->render_email_content_card($body); ?>
-                
-                <!-- Recipients Card -->
-                <?php $this->render_recipients_card($users, $current_page, $total_pages, $total_users, $selected_recipients); ?>
-                
-                <!-- Action Buttons -->
-                <p class="submit penalis-submit-actions">
-                    <button type="button" id="preview-email-btn" class="button penalis-btn-secondary">
-                        <?php echo esc_html__('Preview Email', 'penalis-emailer'); ?>
-                    </button>
-                    
-                    <button type="button" id="save-draft-btn" class="button" style="margin-left: 10px;">
-                        <?php echo esc_html__('Save as Draft', 'penalis-emailer'); ?>
-                    </button>
-                    
-                    <button type="submit" class="button penalis-btn-primary" style="margin-left: 10px;">
-                        <?php echo esc_html__('Send Email', 'penalis-emailer'); ?>
-                    </button>
-                </p>
-            </form>
-        </div>
+        </form>
         <?php
     }
     

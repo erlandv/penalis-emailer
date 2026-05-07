@@ -6,6 +6,28 @@
  */
 
 /* ========================================
+   2-Column Compose Layout
+   ======================================== */
+
+.penalis-compose-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 20px;
+    align-items: start;
+}
+
+.penalis-main-content {
+    min-width: 0; /* Prevent grid blowout */
+}
+
+.penalis-sidebar {
+    position: sticky;
+    top: 32px; /* WordPress admin bar height */
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+}
+
+/* ========================================
    Form Cards
    ======================================== */
 
@@ -26,6 +48,388 @@
     font-size: 14px;
     font-weight: 600;
     color: #1d2327;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.penalis-form-card h3 .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #2271b1;
+}
+
+/* ========================================
+   Form Groups (Compact Layout)
+   ======================================== */
+
+.penalis-form-group {
+    margin-bottom: 16px;
+}
+
+.penalis-form-group:last-child {
+    margin-bottom: 0;
+}
+
+.penalis-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.penalis-label-required::after {
+    content: " *";
+    color: #d63638;
+    font-weight: 600;
+}
+
+.penalis-form-group input[type="text"],
+.penalis-form-group textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.penalis-form-group .description {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Form Row (2-column layout for Email Details) */
+.penalis-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 782px) {
+    .penalis-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   Draft Management Card
+   ======================================== */
+
+.penalis-draft-card {
+    background: #f0f6fc;
+    border-color: #72aee6;
+}
+
+.penalis-draft-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.penalis-draft-select-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.penalis-draft-select-group select {
+    flex: 1;
+    min-width: 0;
+}
+
+.penalis-draft-loaded {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #72aee6;
+}
+
+.penalis-draft-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #00a32a;
+}
+
+.penalis-draft-status .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* ========================================
+   Recipients Card (Sidebar)
+   ======================================== */
+
+.penalis-recipients-card {
+    margin-bottom: 16px;
+}
+
+.penalis-recipients-controls {
+    margin-bottom: 12px;
+}
+
+.penalis-recipients-controls input[type="text"] {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.penalis-quick-select {
+    padding: 10px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.penalis-quick-select strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #1d2327;
+}
+
+.penalis-quick-select-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.penalis-quick-select-buttons .button-small {
+    padding: 4px 8px;
+    height: auto;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.penalis-selected-count {
+    padding: 8px 10px;
+    background: #f6f7f7;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.penalis-selected-count strong {
+    color: #2271b1;
+}
+
+.penalis-recipients-list {
+    max-height: calc(100vh - 280px); /* Dynamic height to bottom of screen */
+    overflow-y: auto;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.penalis-user-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f1;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.penalis-user-item:last-child {
+    border-bottom: none;
+}
+
+.penalis-user-item:hover {
+    background: #f6f7f7;
+}
+
+.penalis-user-item input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.penalis-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.penalis-user-name {
+    font-weight: 500;
+    font-size: 13px;
+    color: #1d2327;
+    margin-bottom: 4px;
+}
+
+.penalis-user-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+}
+
+.penalis-user-email {
+    color: #646970;
+    word-break: break-all;
+}
+
+.penalis-user-role {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #1d2327;
+    width: fit-content;
+}
+
+.penalis-no-users {
+    padding: 40px 20px;
+    text-align: center;
+    color: #646970;
+}
+
+/* ========================================
+   Tips & Guide Card (Compact & Collapsed)
+   ======================================== */
+
+.penalis-tips-card {
+    background: #fcf9e8;
+    border-color: #dba617;
+}
+
+.penalis-tips-card summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    margin: -20px -20px 0 -20px;
+    background: #fcf9e8;
+    border-bottom: 1px solid #dba617;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1d2327;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+}
+
+.penalis-tips-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.penalis-tips-card summary::before {
+    content: "▶";
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.penalis-tips-card[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.penalis-tips-card summary:hover {
+    background: #f9f5e0;
+}
+
+.penalis-tips-card summary .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #dba617;
+}
+
+.penalis-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 16px;
+}
+
+.penalis-guide-column strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-guide-column ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.penalis-guide-column ul li {
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #1d2327;
+    line-height: 1.4;
+}
+
+.penalis-guide-column code {
+    background: #fff;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    border: 1px solid rgba(219, 166, 23, 0.3);
+    font-family: monospace;
+}
+
+@media (max-width: 992px) {
+    .penalis-guide-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* ========================================
+   Actions Card (Compact)
+   ======================================== */
+
+.penalis-actions-card {
+    background: #f0f6fc;
+    border-color: #2271b1;
+}
+
+.penalis-actions-compact {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.penalis-actions-compact .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px !important;
+    height: auto !important;
+    font-size: 13px !important;
+    white-space: nowrap;
+}
+
+.penalis-actions-compact .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.penalis-btn-send-compact {
+    justify-content: center;
+}
+
+.penalis-btn-send-compact strong {
+    font-size: 18px;
+    margin: 0 4px;
+}
+
+@media (max-width: 782px) {
+    .penalis-actions-compact {
+        grid-template-columns: 1fr;
+    }
+    
+    .penalis-actions-compact .button {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* ========================================
@@ -71,6 +475,118 @@
 .penalis-btn-secondary:focus {
     background: #fff !important;
     border-color: #8c8f94 !important;
+}
+
+/* ========================================
+   Formatting Guide (Collapsible)
+   ======================================== */
+
+.penalis-formatting-guide {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.penalis-formatting-guide summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1d2327;
+    user-select: none;
+    padding: 4px 0;
+}
+
+.penalis-formatting-guide summary:hover {
+    color: #2271b1;
+}
+
+.penalis-formatting-guide > div {
+    margin-top: 12px;
+}
+
+.penalis-formatting-guide strong {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.penalis-formatting-guide strong:first-child {
+    margin-top: 0;
+}
+
+.penalis-formatting-guide ul {
+    margin: 0 0 8px 0;
+    padding-left: 20px;
+    font-size: 13px;
+}
+
+.penalis-formatting-guide ul li {
+    margin-bottom: 4px;
+    color: #1d2327;
+}
+
+.penalis-formatting-guide code {
+    background: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    border: 1px solid #c3c4c7;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+/* Laptop */
+@media (max-width: 1400px) {
+    .penalis-compose-layout {
+        grid-template-columns: 1fr 360px;
+    }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .penalis-compose-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .penalis-sidebar {
+        position: static;
+        max-height: none;
+    }
+    
+    .penalis-recipients-list {
+        max-height: 300px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 782px) {
+    .penalis-compose-layout {
+        gap: 16px;
+    }
+    
+    .penalis-form-card {
+        padding: 16px;
+    }
+    
+    .penalis-quick-select-buttons {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .penalis-draft-select-group {
+        flex-direction: column;
+    }
+    
+    .penalis-draft-select-group select,
+    .penalis-draft-select-group button {
+        width: 100%;
+    }
 }
 
 /* ========================================
