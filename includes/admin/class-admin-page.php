@@ -147,6 +147,7 @@ abstract class Penalis_Admin_Page {
             'siteUrl' => home_url(),
             'siteName' => get_bloginfo('name'),
             'currentDate' => date_i18n(get_option('date_format')),
+            'composeUrl' => admin_url('admin.php?page=penalis-email-compose'),
             'nonces' => [
                 'preview' => wp_create_nonce('penalis_preview_email'),
                 'previewAuto' => wp_create_nonce('penalis_preview_auto_email'),
@@ -155,6 +156,7 @@ abstract class Penalis_Admin_Page {
                 'getUsersByRole' => wp_create_nonce('penalis_get_users_by_role'),
                 'bulkDeleteLogs' => wp_create_nonce('penalis_bulk_delete_logs'),
                 'clearAllLogs' => wp_create_nonce('penalis_clear_all_logs'),
+                'deleteDraft' => wp_create_nonce('penalis_delete_draft'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -178,6 +180,13 @@ abstract class Penalis_Admin_Page {
                 'confirmBulkDelete' => __('Are you sure you want to delete %d email logs?', 'penalis-emailer'),
                 'confirmClearAll' => __('Are you sure you want to clear all %s email history? This action cannot be undone.', 'penalis-emailer'),
                 'confirmClearAllFinal' => __('This will permanently delete all emails in this tab. Are you absolutely sure?', 'penalis-emailer'),
+                // Draft i18n
+                'selectDraft' => __('Please select a draft to load.', 'penalis-emailer'),
+                'confirmClearDraft' => __('Are you sure you want to clear this draft? Unsaved changes will be lost.', 'penalis-emailer'),
+                'confirmDeleteDraft' => __('Are you sure you want to delete this draft permanently?', 'penalis-emailer'),
+                'deleting' => __('Deleting...', 'penalis-emailer'),
+                'deleteDraft' => __('Delete Draft', 'penalis-emailer'),
+                'deleteDraftFailed' => __('Failed to delete draft. Please try again.', 'penalis-emailer'),
             ]
         ];
     }

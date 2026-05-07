@@ -63,6 +63,9 @@ class Penalis_Ajax_Handler {
         // Delete actions
         add_action('wp_ajax_penalis_bulk_delete_logs', [$this, 'bulk_delete_logs']);
         add_action('wp_ajax_penalis_clear_all_logs', [$this, 'clear_all_logs']);
+        
+        // Draft actions
+        add_action('wp_ajax_penalis_delete_draft', [$this, 'delete_draft']);
     }
     
     /**
@@ -315,5 +318,39 @@ class Penalis_Ajax_Handler {
             'message' => sprintf(__('%d log entries deleted successfully', 'penalis-emailer'), $deleted_count),
             'deleted_count' => $deleted_count
         ]);
+    }
+    
+    /**
+     * AJAX handler for delete draft
+     *
+     * @return void
+     */
+    public function delete_draft(): void {
+        // Check nonce
+        check_ajax_referer('penalis_delete_draft', 'nonce');
+        
+        // Check capability
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+        
+        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        
+        if (empty($draft_id)) {
+            wp_send_json_error(['message' => __('Draft ID is required', 'penalis-emailer')]);
+        }
+        
+        // Delete draft
+        $success = $this->email_logger->delete_draft($draft_id);
+        
+        if ($success) {
+            wp_send_json_success([
+                'message' => __('Draft deleted successfully', 'penalis-emailer')
+            ]);
+        } else {
+            wp_send_json_error([
+                'message' => __('Failed to delete draft', 'penalis-emailer')
+            ]);
+        }
     }
 }

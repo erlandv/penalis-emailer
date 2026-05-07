@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
                        id="from_name" 
                        class="regular-text" 
                        required
-                       value="<?php echo esc_attr(Penalis_Config::DEFAULT_FROM_NAME); ?>"
+                       value="<?php echo esc_attr($from_name ?? Penalis_Config::DEFAULT_FROM_NAME); ?>"
                        placeholder="<?php echo esc_attr__('e.g., Penalis - Event', 'penalis-emailer'); ?>">
                 <p class="description">
                     <?php echo esc_html__('Sender name that will appear in the email. Email address will always use no-reply@domain.', 'penalis-emailer'); ?>
@@ -45,6 +45,7 @@ if (!defined('ABSPATH')) {
                        id="subject" 
                        class="regular-text" 
                        required
+                       value="<?php echo esc_attr($subject ?? ''); ?>"
                        placeholder="<?php echo esc_attr__('Enter email subject', 'penalis-emailer'); ?>">
             </td>
         </tr>

@@ -266,5 +266,73 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
     public function get_log_count(): int {
         return $this->manual_log_repository->count();
     }
+    
+    /**
+     * Save a draft
+     *
+     * @param array $draft_data Draft data
+     * @return bool True on success, false on failure
+     */
+    public function save_draft(array $draft_data): bool {
+        // Add created_by if not set
+        if (!isset($draft_data['created_by'])) {
+            $current_user = wp_get_current_user();
+            $draft_data['created_by'] = $current_user->ID;
+        }
+        
+        return $this->manual_log_repository->save_draft($draft_data);
+    }
+    
+    /**
+     * Get all drafts
+     *
+     * @param int $limit Optional limit for number of entries
+     * @return array Array of draft entries
+     */
+    public function get_drafts(int $limit = 0): array {
+        return $this->manual_log_repository->get_drafts($limit);
+    }
+    
+    /**
+     * Find a draft by ID
+     *
+     * @param string $id Draft entry ID
+     * @return array|null Draft entry or null if not found
+     */
+    public function find_draft_by_id(string $id): ?array {
+        return $this->manual_log_repository->find_draft_by_id($id);
+    }
+    
+    /**
+     * Update a draft
+     *
+     * @param string $id         Draft entry ID
+     * @param array  $draft_data Updated draft data
+     * @return bool True on success, false on failure
+     */
+    public function update_draft(string $id, array $draft_data): bool {
+        return $this->manual_log_repository->update_draft($id, $draft_data);
+    }
+    
+    /**
+     * Delete a draft
+     *
+     * @param string $id Draft entry ID
+     * @return bool True on success, false on failure
+     */
+    public function delete_draft(string $id): bool {
+        return $this->manual_log_repository->delete_draft($id);
+    }
+    
+    /**
+     * Convert draft to sent status
+     *
+     * @param string $id      Draft entry ID
+     * @param int    $sent_at Timestamp when sent
+     * @return bool True on success, false on failure
+     */
+    public function convert_draft_to_sent(string $id, int $sent_at): bool {
+        return $this->manual_log_repository->convert_draft_to_sent($id, $sent_at);
+    }
 }
 

@@ -83,4 +83,54 @@ interface Penalis_Email_Log_Repository_Interface {
      * @return int Total number of log entries
      */
     public function count(): int;
+    
+    /**
+     * Save a draft entry
+     *
+     * @param array $draft_data Draft data
+     * @return bool True on success, false on failure
+     */
+    public function save_draft(array $draft_data): bool;
+    
+    /**
+     * Get all draft entries
+     *
+     * @param int $limit Optional limit for number of entries (0 = no limit)
+     * @return array Array of draft entries
+     */
+    public function get_drafts(int $limit = 0): array;
+    
+    /**
+     * Find a draft entry by ID
+     *
+     * @param string $id Draft entry ID
+     * @return array|null Draft entry or null if not found
+     */
+    public function find_draft_by_id(string $id): ?array;
+    
+    /**
+     * Update a draft entry
+     *
+     * @param string $id         Draft entry ID
+     * @param array  $draft_data Updated draft data
+     * @return bool True on success, false on failure
+     */
+    public function update_draft(string $id, array $draft_data): bool;
+    
+    /**
+     * Delete a draft entry by ID
+     *
+     * @param string $id Draft entry ID
+     * @return bool True on success, false on failure
+     */
+    public function delete_draft(string $id): bool;
+    
+    /**
+     * Convert draft to sent status
+     *
+     * @param string $id      Draft entry ID
+     * @param int    $sent_at Timestamp when sent
+     * @return bool True on success, false on failure
+     */
+    public function convert_draft_to_sent(string $id, int $sent_at): bool;
 }

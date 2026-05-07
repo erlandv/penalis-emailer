@@ -8,16 +8,20 @@
  * @package Penalis_Emailer
  * @since 1.1.0
  * 
- * @var array $users        Array of WP_User objects
- * @var int   $current_page Current page number
- * @var int   $total_pages  Total number of pages
- * @var int   $total_users  Total number of users
+ * @var array $users               Array of WP_User objects
+ * @var int   $current_page        Current page number
+ * @var int   $total_pages         Total number of pages
+ * @var int   $total_users         Total number of users
+ * @var array $selected_recipients Array of selected user IDs from draft
  */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Ensure selected_recipients is an array
+$selected_recipients = $selected_recipients ?? [];
 ?>
 
 <div class="penalis-form-card">
@@ -63,7 +67,22 @@ if (!defined('ABSPATH')) {
                 <!-- Recipients Table -->
                 <div class="penalis-recipients-table">
                     <!-- Hidden container for dynamically added checkboxes (for "Select All Users" feature) -->
-                    <div id="hidden-user-checkboxes" style="display: none;"></div>
+                    <div id="hidden-user-checkboxes" style="display: none;">
+                        <?php
+                        // Add hidden checkboxes for selected recipients not on current page
+                        if (!empty($selected_recipients)) {
+                            $visible_user_ids = array_map(function($user) {
+                                return $user->ID;
+                            }, $users);
+                            
+                            foreach ($selected_recipients as $recipient_id) {
+                                if (!in_array($recipient_id, $visible_user_ids)) {
+                                    echo '<input type="checkbox" name="user_ids[]" value="' . esc_attr($recipient_id) . '" class="hidden-user-checkbox" checked>';
+                                }
+                            }
+                        }
+                        ?>
+                    </div>
                     
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
@@ -89,6 +108,7 @@ if (!defined('ABSPATH')) {
                                     <?php 
                                     $user_roles = implode(', ', array_map('ucfirst', $user->roles));
                                     $post_count = count_user_posts($user->ID, 'post', true);
+                                    $is_selected = in_array($user->ID, $selected_recipients);
                                     ?>
                                     <tr class="user-row" 
                                         data-name="<?php echo esc_attr(strtolower($user->display_name)); ?>" 
@@ -99,6 +119,7 @@ if (!defined('ABSPATH')) {
                                                    name="user_ids[]" 
                                                    value="<?php echo esc_attr($user->ID); ?>"
                                                    class="user-checkbox"
+                                                   <?php checked($is_selected, true); ?>
                                                    style="margin: 0;">
                                         </td>
                                         <td style="padding: 8px 10px;">

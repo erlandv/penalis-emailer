@@ -288,4 +288,189 @@ class Penalis_Email_Log_Options_Repository implements Penalis_Email_Log_Reposito
     private function get_timestamp(array $log): int {
         return isset($log['sent_at']) ? $log['sent_at'] : (isset($log['timestamp']) ? $log['timestamp'] : 0);
     }
+    
+    /**
+     * Save a draft entry
+     *
+     * @param array $draft_data Draft data
+     * @return bool True on success, false on failure
+     */
+    public function save_draft(array $draft_data): bool {
+        // Generate unique draft ID if not provided
+        if (!isset($draft_data['id'])) {
+            $draft_data['id'] = 'draft_' . time() . '_' . wp_generate_password(8, false);
+        }
+        
+        // Set draft-specific fields
+        $draft_data['status'] = 'draft';
+        $draft_data['created_at'] = $draft_data['created_at'] ?? time();
+        $draft_data['updated_at'] = time();
+        
+        // Save to logs (drafts are stored in the same option)
+        return $this->save($draft_data);
+    }
+    
+    /**
+     * Get all draft entries
+     *
+     * @param int $limit Optional limit for number of entries (0 = no limit)
+     * @return array Array of draft entries, sorted by updated_at descending
+     */
+    public function get_drafts(int $limit = 0): array {
+        $logs = get_option($this->option_key, []);
+        
+        // Ensure it's an array
+        if (!is_array($logs)) {
+            $logs = [];
+        }
+        
+        // Filter only drafts
+        $drafts = array_filter($logs, function($log) {
+            return isset($log['status']) && $log['status'] === 'draft';
+        });
+        
+        // Sort by updated_at descending (newest first)
+        usort($drafts, function($a, $b) {
+            $time_a = $a['updated_at'] ?? $a['created_at'] ?? 0;
+            $time_b = $b['updated_at'] ?? $b['created_at'] ?? 0;
+            return $time_b - $time_a;
+        });
+        
+        // Apply limit if specified
+        if ($limit > 0) {
+            $drafts = array_slice($drafts, 0, $limit);
+        }
+        
+        return $drafts;
+    }
+    
+    /**
+     * Find a draft entry by ID
+     *
+     * @param string $id Draft entry ID
+     * @return array|null Draft entry or null if not found
+     */
+    public function find_draft_by_id(string $id): ?array {
+        $logs = get_option($this->option_key, []);
+        
+        foreach ($logs as $log) {
+            if (isset($log['id']) && $log['id'] === $id && isset($log['status']) && $log['status'] === 'draft') {
+                return $log;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Update a draft entry
+     *
+     * @param string $id         Draft entry ID
+     * @param array  $draft_data Updated draft data
+     * @return bool True on success, false on failure
+     */
+    public function update_draft(string $id, array $draft_data): bool {
+        $logs = get_option($this->option_key, []);
+        
+        if (!is_array($logs)) {
+            return false;
+        }
+        
+        $found = false;
+        
+        foreach ($logs as $index => $log) {
+            if (isset($log['id']) && $log['id'] === $id && isset($log['status']) && $log['status'] === 'draft') {
+                // Preserve original ID and created_at
+                $draft_data['id'] = $id;
+                $draft_data['created_at'] = $log['created_at'] ?? time();
+                $draft_data['updated_at'] = time();
+                $draft_data['status'] = 'draft';
+                
+                // Update the entry
+                $logs[$index] = $draft_data;
+                $found = true;
+                break;
+            }
+        }
+        
+        if (!$found) {
+            return false;
+        }
+        
+        return update_option($this->option_key, $logs);
+    }
+    
+    /**
+     * Delete a draft entry by ID
+     *
+     * @param string $id Draft entry ID
+     * @return bool True on success, false on failure
+     */
+    public function delete_draft(string $id): bool {
+        $logs = get_option($this->option_key, []);
+        
+        if (!is_array($logs)) {
+            return false;
+        }
+        
+        $original_count = count($logs);
+        
+        // Filter out the draft with matching ID
+        $logs = array_filter($logs, function($log) use ($id) {
+            return !(isset($log['id']) && $log['id'] === $id && isset($log['status']) && $log['status'] === 'draft');
+        });
+        
+        // Re-index array
+        $logs = array_values($logs);
+        
+        // Save back
+        $result = update_option($this->option_key, $logs);
+        
+        // Return true if count changed and update succeeded
+        return $result && count($logs) < $original_count;
+    }
+    
+    /**
+     * Convert draft to sent status
+     *
+     * @param string $id      Draft entry ID
+     * @param int    $sent_at Timestamp when sent
+     * @return bool True on success, false on failure
+     */
+    public function convert_draft_to_sent(string $id, int $sent_at): bool {
+        $logs = get_option($this->option_key, []);
+        
+        if (!is_array($logs)) {
+            return false;
+        }
+        
+        $found = false;
+        
+        foreach ($logs as $index => $log) {
+            if (isset($log['id']) && $log['id'] === $id && isset($log['status']) && $log['status'] === 'draft') {
+                // Update status to sent
+                $logs[$index]['status'] = 'sent';
+                $logs[$index]['sent_at'] = $sent_at;
+                $logs[$index]['updated_at'] = $sent_at;
+                
+                // Generate body_preview if not exists
+                if (!isset($logs[$index]['body_preview']) && isset($logs[$index]['body'])) {
+                    $body_preview = mb_substr(strip_tags($logs[$index]['body']), 0, 100);
+                    if (mb_strlen(strip_tags($logs[$index]['body'])) > 100) {
+                        $body_preview .= '...';
+                    }
+                    $logs[$index]['body_preview'] = $body_preview;
+                }
+                
+                $found = true;
+                break;
+            }
+        }
+        
+        if (!$found) {
+            return false;
+        }
+        
+        return update_option($this->option_key, $logs);
+    }
 }

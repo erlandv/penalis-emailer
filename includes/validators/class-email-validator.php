@@ -78,6 +78,33 @@ class Penalis_Email_Validator implements Penalis_Email_Validator_Interface {
     }
     
     /**
+     * Validate draft data (more lenient than manual email)
+     *
+     * @param array $data Draft data to validate
+     * @return bool True if valid, false otherwise
+     */
+    public function validate_draft(array $data): bool {
+        $this->errors = [];
+        
+        // Validate from_name (optional for draft, but if provided must be valid)
+        $from_name = trim($data['from_name'] ?? '');
+        if (!empty($from_name) && mb_strlen($from_name) < 2) {
+            $this->errors['from_name'] = __('Email from name must be at least 2 characters if provided.', 'penalis-emailer');
+        }
+        
+        // Validate subject (optional for draft, but if provided must be at least 1 char)
+        $subject = trim($data['subject'] ?? '');
+        if (!empty($subject) && mb_strlen($subject) < 1) {
+            $this->errors['subject'] = __('Email subject must be at least 1 character if provided.', 'penalis-emailer');
+        }
+        
+        // Body is optional for draft
+        // Recipients are optional for draft
+        
+        return empty($this->errors);
+    }
+    
+    /**
      * Validate from name
      *
      * @param string $from_name From name

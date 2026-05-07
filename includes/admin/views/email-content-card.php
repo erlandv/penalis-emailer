@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
                           class="large-text code"
                           required
                           style="font-family: monospace;"
-                          placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"></textarea>
+                          placeholder="<?php echo esc_attr__('Write your email message here...', 'penalis-emailer'); ?>"><?php echo esc_textarea($body ?? ''); ?></textarea>
             
                 <div class="description" style="margin-top: 10px;">
                     <!-- Quick Tips Box -->
