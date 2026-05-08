@@ -140,9 +140,9 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             $sanitized['from_name']
         );
         
-        // If sent from draft, convert draft to sent
+        // If sent from draft, delete the draft (log already created by send_manual_email)
         if (!empty($draft_id)) {
-            $this->logger->convert_draft_to_sent($draft_id, time());
+            $this->logger->delete_draft($draft_id);
         }
         
         // Prepare notice message

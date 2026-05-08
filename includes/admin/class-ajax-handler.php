@@ -438,9 +438,9 @@ class Penalis_Ajax_Handler {
             $draft['from_name']
         );
         
-        // Convert draft to sent
+        // Delete draft after sending (log already created by send_manual_email)
         if ($results['success'] > 0) {
-            $this->email_logger->convert_draft_to_sent($draft_id, time());
+            $this->email_logger->delete_draft($draft_id);
         }
         
         // Return results

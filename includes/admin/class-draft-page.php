@@ -311,9 +311,9 @@ class Penalis_Draft_Page extends Penalis_Admin_Page {
             $draft['from_name']
         );
         
-        // Convert draft to sent
+        // Delete draft after sending (log already created by send_manual_email)
         if ($results['success'] > 0) {
-            $this->logger->convert_draft_to_sent($draft_id, time());
+            $this->logger->delete_draft($draft_id);
         }
         
         // Prepare notice message
