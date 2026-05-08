@@ -235,14 +235,14 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
                     __('%d email(s) have been queued and will be sent in the background.', 'penalis-emailer'),
                     $results['success']
                 );
-                $this->redirect_with_notice($this->page_slug, 'success', $message);
+                $this->redirect_with_job($this->page_slug, 'success', $message, $results['job_id']);
             } elseif ($results['success'] > 0 && $invalid_count > 0) {
                 $message = sprintf(
                     __('%d email(s) queued. %d recipient(s) were skipped (invalid user or email).', 'penalis-emailer'),
                     $results['success'],
                     $invalid_count
                 );
-                $this->redirect_with_notice($this->page_slug, 'warning', $message);
+                $this->redirect_with_job($this->page_slug, 'warning', $message, $results['job_id']);
             } else {
                 $message = __('No valid recipients found. Please check your recipient list.', 'penalis-emailer');
                 $this->redirect_with_notice($this->page_slug, 'error', $message);
@@ -268,6 +268,30 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             $message = __('Failed to send emails. Please check your configuration.', 'penalis-emailer');
             $this->redirect_with_notice($this->page_slug, 'error', $message);
         }
+    }
+
+    /**
+     * Redirect with notice and job_id for progress tracking
+     *
+     * @param string $page   Page slug
+     * @param string $type   Notice type
+     * @param string $message Notice message
+     * @param string $job_id  Queue job ID
+     * @return void
+     */
+    private function redirect_with_job(string $page, string $type, string $message, string $job_id): void {
+        $redirect_url = add_query_arg(
+            [
+                'page'            => $page,
+                'penalis_notice'  => urlencode($message),
+                'penalis_type'    => $type,
+                'penalis_job_id'  => urlencode($job_id),
+            ],
+            admin_url('admin.php')
+        );
+
+        wp_redirect($redirect_url);
+        exit;
     }
     
     /**

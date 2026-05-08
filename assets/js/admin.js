@@ -754,16 +754,24 @@
                 draft_id: draftId
             }, function(response) {
                 if (response.success) {
-                    alert(response.data.message);
-                    // Remove row or reload
-                    button.closest('tr').fadeOut(300, function() {
-                        $(this).remove();
-                        
-                        // Check if table is empty
-                        if ($('#drafts-table-body tr').length === 0) {
-                            window.location.reload();
-                        }
-                    });
+                    // If async (queued), start progress tracking instead of alert
+                    if (response.data.queued && response.data.job_id) {
+                        button.closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                            if ($('#drafts-table-body tr').length === 0) {
+                                window.location.reload();
+                            }
+                        });
+                        QueueProgressHandler.start(response.data.job_id);
+                    } else {
+                        alert(response.data.message);
+                        button.closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                            if ($('#drafts-table-body tr').length === 0) {
+                                window.location.reload();
+                            }
+                        });
+                    }
                 } else {
                     alert(response.data.message);
                     button.prop('disabled', false).text(originalText);
@@ -775,6 +783,196 @@
         }
     };
     
+    /**
+     * Queue Progress Handler
+     *
+     * Polls the server for job status after emails are queued,
+     * and renders a live progress bar in the admin notice area.
+     *
+     * Activated when:
+     *   1. The page URL contains ?penalis_job_id=<id>  (after form submit redirect)
+     *   2. JS receives a queued=true response from send_draft_ajax
+     */
+    const QueueProgressHandler = {
+
+        jobId:        null,
+        pollTimer:    null,
+        pollInterval: 5000,   // ms between polls
+        maxPolls:     120,    // stop after 10 minutes (120 × 5s) to avoid infinite loops
+        pollCount:    0,
+
+        /**
+         * Start tracking a job.
+         *
+         * @param {string} jobId
+         */
+        start: function(jobId) {
+            if (!jobId) return;
+
+            this.jobId     = jobId;
+            this.pollCount = 0;
+
+            this.renderBanner();
+            this.poll();
+        },
+
+        /**
+         * Render the progress banner above the page content.
+         */
+        renderBanner: function() {
+            // Remove any existing banner first
+            $('#penalis-queue-banner').remove();
+
+            const banner = $(
+                '<div id="penalis-queue-banner" class="penalis-queue-banner">' +
+                    '<div class="penalis-queue-banner-header">' +
+                        '<span class="dashicons dashicons-email-alt penalis-queue-banner-icon"></span>' +
+                        '<span class="penalis-queue-banner-title">' +
+                            (penalisAdmin.i18n.queueProcessing || 'Sending in progress...') +
+                        '</span>' +
+                        '<span class="penalis-queue-banner-counts"></span>' +
+                    '</div>' +
+                    '<div class="penalis-progress-track">' +
+                        '<div class="penalis-progress-bar" style="width:0%"></div>' +
+                    '</div>' +
+                    '<div class="penalis-queue-banner-meta"></div>' +
+                '</div>'
+            );
+
+            // Insert after the <h1> on the page, or at the top of .wrap
+            const $h1 = $('.wrap > h1').first();
+            if ($h1.length) {
+                $h1.after(banner);
+            } else {
+                $('.wrap').prepend(banner);
+            }
+        },
+
+        /**
+         * Poll the server for job status.
+         */
+        poll: function() {
+            if (!this.jobId) return;
+
+            this.pollCount++;
+
+            if (this.pollCount > this.maxPolls) {
+                this.stopPolling();
+                this.updateBanner({
+                    overall: 'timeout',
+                    sent: 0, total: 0, pending: 0, failed: 0, permanently_failed: 0
+                });
+                return;
+            }
+
+            const self = this;
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_get_queue_status',
+                nonce:  penalisAdmin.nonces.getQueueStatus,
+                job_id: this.jobId
+            }, function(response) {
+                if (response.success) {
+                    self.updateBanner(response.data);
+
+                    if (response.data.overall === 'completed') {
+                        self.stopPolling();
+                    } else {
+                        self.pollTimer = setTimeout(function() {
+                            self.poll();
+                        }, self.pollInterval);
+                    }
+                } else {
+                    // Server error — retry after a longer delay
+                    self.pollTimer = setTimeout(function() {
+                        self.poll();
+                    }, self.pollInterval * 2);
+                }
+            }).fail(function() {
+                // Network error — retry
+                self.pollTimer = setTimeout(function() {
+                    self.poll();
+                }, self.pollInterval * 2);
+            });
+        },
+
+        /**
+         * Update the progress banner with latest data.
+         *
+         * @param {Object} data  Job summary from server
+         */
+        updateBanner: function(data) {
+            const $banner = $('#penalis-queue-banner');
+            if (!$banner.length) return;
+
+            const total     = data.total     || 0;
+            const sent      = data.sent      || 0;
+            const failed    = (data.permanently_failed || 0);
+            const pending   = (data.pending  || 0) + (data.processing || 0) + (data.failed || 0);
+            const done      = sent + failed;
+            const pct       = total > 0 ? Math.round((done / total) * 100) : 0;
+            const overall   = data.overall   || 'in_progress';
+
+            // Update progress bar width
+            $banner.find('.penalis-progress-bar').css('width', pct + '%');
+
+            // Update counts text
+            const countsText = sent + ' / ' + total + ' sent';
+            $banner.find('.penalis-queue-banner-counts').text(countsText);
+
+            // Update meta line
+            let metaText = '';
+            if (pending > 0) {
+                metaText = pending + ' remaining...';
+            }
+            if (failed > 0) {
+                metaText += (metaText ? '  ·  ' : '') + failed + ' permanently failed';
+            }
+            $banner.find('.penalis-queue-banner-meta').text(metaText);
+
+            if (overall === 'completed') {
+                $banner.addClass('penalis-queue-banner--done');
+                $banner.find('.penalis-queue-banner-title').text(
+                    penalisAdmin.i18n.queueCompleted || 'All emails sent successfully.'
+                );
+                $banner.find('.penalis-progress-bar').css('width', '100%');
+
+                // Auto-dismiss after 8 seconds
+                setTimeout(function() {
+                    $banner.fadeOut(600, function() { $(this).remove(); });
+                }, 8000);
+
+            } else if (overall === 'timeout') {
+                $banner.addClass('penalis-queue-banner--warning');
+                $banner.find('.penalis-queue-banner-title').text(
+                    'Progress tracking timed out. Emails are still being sent in the background.'
+                );
+            }
+        },
+
+        /**
+         * Stop the polling timer.
+         */
+        stopPolling: function() {
+            if (this.pollTimer) {
+                clearTimeout(this.pollTimer);
+                this.pollTimer = null;
+            }
+        },
+
+        /**
+         * Check URL for a job_id parameter and auto-start if found.
+         * Called on page load.
+         */
+        checkUrlForJob: function() {
+            const params = new URLSearchParams(window.location.search);
+            const jobId  = params.get('penalis_job_id');
+            if (jobId) {
+                this.start(jobId);
+            }
+        }
+    };
+
     /**
      * Initialize on document ready
      */
@@ -795,6 +993,9 @@
         if ($('#drafts-table-body').length) {
             DraftManagementHandler.init();
         }
+
+        // Auto-start queue progress tracking if job_id is in URL
+        QueueProgressHandler.checkUrlForJob();
     });
     
 })(jQuery);
