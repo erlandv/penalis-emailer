@@ -76,13 +76,16 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             $draft_id = sanitize_text_field($_GET['draft_id']);
             $draft_data = $this->logger->find_draft_by_id($draft_id);
         }
-        
-        // Get ALL eligible users (no pagination)
-        $users = $this->get_all_eligible_users();
-        $total_users = count($users);
+
+        // v2.0.0: Only load the first batch — remaining users are loaded
+        // via AJAX infinite scroll in the recipients sidebar.
+        $batch_size  = Penalis_Config::RECIPIENTS_INITIAL_LOAD;
+        $users       = $this->get_eligible_users_batch(0, $batch_size);
+        $total_users = $this->get_total_users();
+        $has_more    = $total_users > $batch_size;
         
         // Get all drafts for dropdown
-        $drafts = $this->logger->get_drafts(50); // Limit to 50 most recent drafts
+        $drafts = $this->logger->get_drafts(50);
         
         ?>
         <div class="wrap">
@@ -93,8 +96,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             </p>
             
             <?php
-            // Render form (pass dummy values for pagination since we show all)
-            $this->render_form($users, 1, 1, $total_users, $drafts, $draft_data);
+            $this->render_form($users, $total_users, $has_more, $drafts, $draft_data);
             $this->render_preview_modal();
             ?>
         </div>
@@ -295,80 +297,42 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     }
     
     /**
-     * Get eligible users with pagination
+     * Get total number of eligible users.
      *
-     * @param int $page Current page number
-     * @return array Array of WP_User objects
-     */
-    private function get_eligible_users(int $page = 1): array {
-        $per_page = Penalis_Config::get_users_per_page();
-        
-        $args = [
-            'role__in' => Penalis_Config::get_eligible_roles(),
-            'number' => $per_page,
-            'offset' => ($page - 1) * $per_page,
-            'orderby' => 'display_name',
-            'order' => 'ASC'
-        ];
-        
-        return get_users($args);
-    }
-    
-    /**
-     * Get ALL eligible users (no pagination)
-     *
-     * @return array Array of WP_User objects
-     */
-    private function get_all_eligible_users(): array {
-        $args = [
-            'role__in' => Penalis_Config::get_eligible_roles(),
-            'orderby' => 'display_name',
-            'order' => 'ASC'
-        ];
-        
-        return get_users($args);
-    }
-    
-    /**
-     * Get total number of eligible users
-     *
-     * @return int Total user count
+     * @return int
      */
     private function get_total_users(): int {
-        $args = [
-            'role__in' => Penalis_Config::get_eligible_roles(),
-            'count_total' => true
-        ];
-        
-        $user_query = new WP_User_Query($args);
-        return $user_query->get_total();
+        $query = new WP_User_Query([
+            'role__in'    => Penalis_Config::get_eligible_roles(),
+            'count_total' => true,
+            'number'      => 0,
+        ]);
+        return (int) $query->get_total();
     }
     
     /**
      * Render the compose form
      *
-     * @param array      $users        Array of WP_User objects
-     * @param int        $current_page Current page number
-     * @param int        $total_pages  Total number of pages
-     * @param int        $total_users  Total number of users
-     * @param array      $drafts       Array of draft entries
-     * @param array|null $draft_data   Draft data if loading a draft
+     * @param array      $users       Initial batch of WP_User objects
+     * @param int        $total_users Total number of eligible users
+     * @param bool       $has_more    Whether more users exist beyond initial batch
+     * @param array      $drafts      Array of draft entries
+     * @param array|null $draft_data  Draft data if loading a draft
      * @return void
      */
     private function render_form(
-        array $users, 
-        int $current_page, 
-        int $total_pages, 
+        array $users,
         int $total_users,
+        bool $has_more,
         array $drafts = [],
         ?array $draft_data = null
     ): void {
         // Extract draft data if available
-        $from_name = $draft_data['from_name'] ?? Penalis_Config::DEFAULT_FROM_NAME;
-        $subject = $draft_data['subject'] ?? '';
-        $body = $draft_data['body'] ?? '';
+        $from_name           = $draft_data['from_name']  ?? Penalis_Config::DEFAULT_FROM_NAME;
+        $subject             = $draft_data['subject']    ?? '';
+        $body                = $draft_data['body']       ?? '';
         $selected_recipients = $draft_data['recipients'] ?? [];
-        $draft_id = $draft_data['id'] ?? '';
+        $draft_id            = $draft_data['id']         ?? '';
         
         ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
@@ -454,7 +418,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
                     </div>
                     
                     <!-- Recipients Card -->
-                    <?php $this->render_recipients_card($users, $current_page, $total_pages, $total_users, $selected_recipients); ?>
+                    <?php $this->render_recipients_card($users, $total_users, $has_more, $selected_recipients); ?>
                 </div>
             </div>
         </form>
@@ -497,25 +461,61 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     /**
      * Render recipients card
      *
-     * @param array $users               Array of WP_User objects
-     * @param int   $current_page        Current page number
-     * @param int   $total_pages         Total number of pages
-     * @param int   $total_users         Total number of users
+     * @param array $users               Initial batch of WP_User objects
+     * @param int   $total_users         Total number of eligible users
+     * @param bool  $has_more            Whether more users exist beyond initial batch
      * @param array $selected_recipients Array of selected user IDs
      * @return void
      */
     private function render_recipients_card(
-        array $users, 
-        int $current_page, 
-        int $total_pages, 
+        array $users,
         int $total_users,
+        bool $has_more,
         array $selected_recipients = []
     ): void {
-        // Pass variables to view
-        $data = compact('users', 'current_page', 'total_pages', 'total_users', 'selected_recipients');
+        $data = compact('users', 'total_users', 'has_more', 'selected_recipients');
         extract($data);
         
         require PENALIS_EMAILER_PATH . 'includes/admin/views/recipients-card.php';
+    }
+
+    /**
+     * Get a batch of eligible users by offset.
+     *
+     * Used for both the initial page render and AJAX load-more requests.
+     *
+     * @param int $offset Zero-based offset
+     * @param int $number Number of users to fetch
+     * @return array Array of WP_User objects
+     */
+    public function get_eligible_users_batch(int $offset, int $number): array {
+        return get_users([
+            'role__in' => Penalis_Config::get_eligible_roles(),
+            'number'   => $number,
+            'offset'   => $offset,
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+        ]);
+    }
+
+    /**
+     * Search eligible users by name or email.
+     *
+     * Used by the AJAX search endpoint.
+     *
+     * @param string $query  Search term
+     * @param int    $number Max results to return
+     * @return array Array of WP_User objects
+     */
+    public function search_eligible_users(string $query, int $number = 50): array {
+        return get_users([
+            'role__in' => Penalis_Config::get_eligible_roles(),
+            'search'   => '*' . $query . '*',
+            'search_columns' => ['display_name', 'user_email', 'user_login'],
+            'number'   => $number,
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+        ]);
     }
     
     /**

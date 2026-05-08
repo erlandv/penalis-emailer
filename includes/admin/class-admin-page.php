@@ -156,6 +156,7 @@ abstract class Penalis_Admin_Page {
                 'testEmail' => wp_create_nonce('penalis_send_test_email'),
                 'getAllUserIds' => wp_create_nonce('penalis_get_all_user_ids'),
                 'getUsersByRole' => wp_create_nonce('penalis_get_users_by_role'),
+                'loadRecipients' => wp_create_nonce('penalis_load_recipients'),
                 'bulkDeleteLogs' => wp_create_nonce('penalis_bulk_delete_logs'),
                 'clearAllLogs' => wp_create_nonce('penalis_clear_all_logs'),
                 'deleteDraft' => wp_create_nonce('penalis_delete_draft'),
@@ -204,6 +205,10 @@ abstract class Penalis_Admin_Page {
                 'queueProcessing' => __('Sending in progress...', 'penalis-emailer'),
                 'queueCompleted' => __('All emails sent successfully.', 'penalis-emailer'),
                 'queueCheckStatus' => __('Check Status', 'penalis-emailer'),
+                // Recipients infinite scroll i18n
+                'loadingRecipients' => __('Loading...', 'penalis-emailer'),
+                'noMoreRecipients'  => __('All users loaded.', 'penalis-emailer'),
+                'searchNoResults'   => __('No users found.', 'penalis-emailer'),
             ]
         ];
     }

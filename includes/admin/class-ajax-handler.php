@@ -41,6 +41,13 @@ class Penalis_Ajax_Handler {
      * @var Penalis_Email_Queue_Repository
      */
     private $queue;
+
+    /**
+     * Compose page instance (used for recipient queries)
+     *
+     * @var Penalis_Compose_Page
+     */
+    private $compose_page;
     
     /**
      * Constructor
@@ -48,15 +55,18 @@ class Penalis_Ajax_Handler {
      * @param Penalis_Email_Template         $email_template Email template instance
      * @param Penalis_Email_Logger           $email_logger   Email logger instance
      * @param Penalis_Email_Queue_Repository $queue          Queue repository instance
+     * @param Penalis_Compose_Page           $compose_page   Compose page instance
      */
     public function __construct(
         Penalis_Email_Template $email_template,
         Penalis_Email_Logger $email_logger,
-        Penalis_Email_Queue_Repository $queue
+        Penalis_Email_Queue_Repository $queue,
+        Penalis_Compose_Page $compose_page
     ) {
         $this->email_template = $email_template;
         $this->email_logger   = $email_logger;
         $this->queue          = $queue;
+        $this->compose_page   = $compose_page;
     }
     
     /**
@@ -72,6 +82,7 @@ class Penalis_Ajax_Handler {
         // User selection
         add_action('wp_ajax_penalis_get_all_user_ids', [$this, 'get_all_user_ids']);
         add_action('wp_ajax_penalis_get_users_by_role', [$this, 'get_users_by_role']);
+        add_action('wp_ajax_penalis_load_recipients',  [$this, 'load_recipients']);
         
         // Delete actions
         add_action('wp_ajax_penalis_bulk_delete_logs', [$this, 'bulk_delete_logs']);
@@ -585,6 +596,84 @@ class Penalis_Ajax_Handler {
                 ]);
             }
         }
+    }
+
+    /**
+     * AJAX handler for loading recipients (infinite scroll + search).
+     *
+     * Accepts:
+     *   offset  (int)    — zero-based offset for load-more
+     *   search  (string) — search term (triggers search mode, ignores offset)
+     *
+     * Returns an array of user HTML items ready to be appended to the list,
+     * plus a `has_more` flag so JS knows whether to keep the scroll observer.
+     *
+     * @return void
+     */
+    public function load_recipients(): void {
+        check_ajax_referer('penalis_load_recipients', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+
+        $batch_size = Penalis_Config::RECIPIENTS_INITIAL_LOAD;
+        $search     = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $offset     = isset($_POST['offset']) ? max(0, (int) $_POST['offset']) : 0;
+
+        if ($search !== '') {
+            // Search mode — return matching users, no offset
+            $users    = $this->compose_page->search_eligible_users($search, 50);
+            $has_more = false; // Search always returns full result set (capped at 50)
+        } else {
+            // Load-more mode — return next batch by offset
+            $users      = $this->compose_page->get_eligible_users_batch($offset, $batch_size);
+            $total      = $this->get_total_eligible_users();
+            $has_more   = ($offset + $batch_size) < $total;
+        }
+
+        // Build HTML for each user item — same markup as recipients-card.php
+        $items_html = '';
+        foreach ($users as $user) {
+            $user_roles = implode(', ', array_map('ucfirst', $user->roles));
+            $items_html .= sprintf(
+                '<label class="penalis-user-item" data-name="%s" data-email="%s" data-role="%s">'
+                . '<input type="checkbox" name="user_ids[]" value="%d" class="user-checkbox">'
+                . '<div class="penalis-user-info">'
+                . '<div class="penalis-user-name">%s</div>'
+                . '<div class="penalis-user-meta">'
+                . '<span class="penalis-user-email">%s</span>'
+                . '<span class="penalis-user-role">%s</span>'
+                . '</div></div></label>',
+                esc_attr(strtolower($user->display_name)),
+                esc_attr(strtolower($user->user_email)),
+                esc_attr(implode(',', $user->roles)),
+                $user->ID,
+                esc_html($user->display_name),
+                esc_html($user->user_email),
+                esc_html($user_roles)
+            );
+        }
+
+        wp_send_json_success([
+            'html'     => $items_html,
+            'has_more' => $has_more,
+            'count'    => count($users),
+        ]);
+    }
+
+    /**
+     * Get total count of eligible users.
+     *
+     * @return int
+     */
+    private function get_total_eligible_users(): int {
+        $query = new WP_User_Query([
+            'role__in'    => Penalis_Config::get_eligible_roles(),
+            'count_total' => true,
+            'number'      => 0,
+        ]);
+        return (int) $query->get_total();
     }
 
     /**

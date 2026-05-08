@@ -25,6 +25,11 @@ class Penalis_Config {
     const PAGE_SLUG = 'penalis-email';
     const SETTINGS_PAGE_SLUG = 'penalis-email-settings';
     const USERS_PER_PAGE = 20;
+
+    // Recipients list in Compose page (infinite scroll batch size)
+    // How many users to render on initial load and per scroll batch.
+    // Configurable here — not exposed in UI (dev-facing setting).
+    const RECIPIENTS_INITIAL_LOAD = 30;
     
     // Database Keys
     const META_KEY_EMAIL_SENT = '_penalis_email_sent';

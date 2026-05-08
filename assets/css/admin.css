@@ -1766,3 +1766,44 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   Recipients Infinite Scroll (v2.0.0)
+   ======================================== */
+
+/* Sentinel — invisible trigger element at the bottom of the list */
+.penalis-scroll-sentinel {
+    height: 1px;
+    width: 100%;
+    display: block;
+}
+
+/* Loading indicator shown while fetching next batch */
+.penalis-recipients-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #646970;
+    border-top: 1px solid #f0f0f1;
+}
+
+/* Full-height loading state used during search */
+.penalis-recipients-loading--full {
+    padding: 40px 20px;
+    border-top: none;
+}
+
+/* Small spinner (inline, no WP spinner dependency) */
+.penalis-spinner-sm {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #dcdcde;
+    border-top-color: #2271b1;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+}

@@ -21,11 +21,13 @@
             this.bindEvents();
             this.updateSelectedCount();
             this.initAutosave();
+            // Initialise infinite scroll for the recipients list
+            InfiniteScrollHandler.init();
         },
         
         bindEvents: function() {
             // User selection
-            $('#user-search').on('keyup', this.filterUsers.bind(this));
+            $('#user-search').on('input', this.onSearchInput.bind(this));
             $('#select-all-users-btn').on('click', this.selectAllUsers.bind(this));
             $('#deselect-all-users-btn').on('click', this.deselectAll.bind(this));
             $('#select-authors-btn').on('click', this.selectByRole.bind(this, 'author'));
@@ -59,21 +61,185 @@
             $('#main-selected-count').text(selectedCount);
         },
         
-        filterUsers: function() {
-            const searchTerm = $('#user-search').val().toLowerCase();
-            
-            $('.penalis-user-item').each(function() {
-                const name = $(this).data('name');
-                const email = $(this).data('email');
-                
-                if (name.includes(searchTerm) || email.includes(searchTerm)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
+        // Debounce timer for search input
+        searchTimer: null,
+
+        /**
+         * Handle search input — debounced AJAX search.
+         * Replaces the old DOM-only filterUsers method.
+         */
+        onSearchInput: function() {
+            clearTimeout(this.searchTimer);
+            const self = this;
+            this.searchTimer = setTimeout(function() {
+                self.performSearch($('#user-search').val().trim());
+            }, 300);
+        },
+
+        /**
+         * Perform AJAX search or restore the normal list.
+         *
+         * @param {string} term
+         */
+        performSearch: function(term) {
+            const $list = $('#recipients-list');
+
+            if (term === '') {
+                // Empty search — restore the list to its initial batch via AJAX
+                // (no page reload, so checked state is preserved)
+                if ($list.data('search-mode')) {
+                    this.clearSearch();
+                }
+                return;
+            }
+
+            // Mark list as being in search mode so infinite scroll is paused
+            $list.data('search-mode', true);
+            InfiniteScrollHandler.pause();
+
+            // Save checked state of currently visible checkboxes to hidden
+            // container before replacing the list
+            this.saveVisibleCheckedToHidden();
+
+            // Show loading state
+            $list.html(
+                '<div class="penalis-recipients-loading penalis-recipients-loading--full">' +
+                '<span class="penalis-spinner-sm"></span>' +
+                '<span>' + (penalisAdmin.i18n.loadingRecipients || 'Loading...') + '</span>' +
+                '</div>'
+            );
+
+            const self = this;
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_load_recipients',
+                nonce:  penalisAdmin.nonces.loadRecipients,
+                search: term
+            }, function(response) {
+                if (!response.success || !response.data.html) {
+                    $list.html('<div class="penalis-no-users"><p>' + (penalisAdmin.i18n.searchNoResults || 'No users found.') + '</p></div>');
+                    return;
+                }
+
+                $list.html(response.data.html);
+
+                // Re-apply checked state for users that were already selected
+                self.restoreCheckedState();
+                self.updateSelectedCount();
+            }).fail(function() {
+                $list.html('<div class="penalis-no-users"><p>Search failed. Please try again.</p></div>');
+            });
+        },
+
+        /**
+         * Clear search mode: re-fetch the first batch via AJAX and restore
+         * the list to its normal infinite-scroll state.
+         * Called when the search box is emptied.
+         */
+        clearSearch: function() {
+            const $list  = $('#recipients-list');
+            const self   = this;
+            const batch  = parseInt($list.data('batch')) || 30;
+
+            // Save any checkboxes that are currently checked in the search
+            // results before we replace the list
+            this.saveVisibleCheckedToHidden();
+
+            // Show loading state while fetching
+            $list.html(
+                '<div class="penalis-recipients-loading penalis-recipients-loading--full">' +
+                '<span class="penalis-spinner-sm"></span>' +
+                '<span>' + (penalisAdmin.i18n.loadingRecipients || 'Loading...') + '</span>' +
+                '</div>'
+            );
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_load_recipients',
+                nonce:  penalisAdmin.nonces.loadRecipients,
+                offset: 0
+            }, function(response) {
+                if (!response.success || !response.data.html) {
+                    $list.html('<div class="penalis-no-users"><p>Failed to reload list.</p></div>');
+                    return;
+                }
+
+                // Build the list HTML — items + sentinel + loading indicator
+                // if there are more users to load
+                let html = response.data.html;
+
+                if (response.data.has_more) {
+                    html += '<div id="recipients-scroll-sentinel" class="penalis-scroll-sentinel"></div>'
+                          + '<div id="recipients-loading" class="penalis-recipients-loading" style="display:none;">'
+                          + '<span class="penalis-spinner-sm"></span>'
+                          + '<span>' + (penalisAdmin.i18n.loadingRecipients || 'Loading...') + '</span>'
+                          + '</div>';
+                }
+
+                $list.html(html);
+
+                // Update list state attributes
+                $list.data('offset',     batch);
+                $list.data('has-more',   response.data.has_more ? '1' : '0');
+                $list.data('search-mode', false);
+
+                // Restore checked state for users now visible in the list
+                self.restoreCheckedState();
+                self.updateSelectedCount();
+
+                // Re-attach IntersectionObserver if more items exist
+                if (response.data.has_more) {
+                    InfiniteScrollHandler.resume();
+                }
+            }).fail(function() {
+                $list.html('<div class="penalis-no-users"><p>Failed to reload list.</p></div>');
+            });
+        },
+
+        /**
+         * Move all currently checked visible checkboxes into the hidden
+         * container so their values survive a list replacement.
+         */
+        saveVisibleCheckedToHidden: function() {
+            const $hidden = $('#hidden-user-checkboxes');
+            const existingHiddenIds = $hidden.find('input').map(function() {
+                return parseInt($(this).val());
+            }).get();
+
+            $('.user-checkbox:checked').each(function() {
+                const id = parseInt($(this).val());
+                if (!existingHiddenIds.includes(id)) {
+                    $hidden.append(
+                        $('<input>', {
+                            type:    'checkbox',
+                            name:    'user_ids[]',
+                            value:   id,
+                            class:   'hidden-user-checkbox',
+                            checked: true
+                        })
+                    );
                 }
             });
-            
-            this.updateSelectedCount();
+        },
+
+        /**
+         * After replacing the list HTML, re-check any checkboxes whose IDs
+         * are already in the hidden container (i.e. were previously selected).
+         */
+        restoreCheckedState: function() {
+            const selectedIds = $('#hidden-user-checkboxes input:checked').map(function() {
+                return parseInt($(this).val());
+            }).get();
+
+            if (selectedIds.length === 0) return;
+
+            $('.user-checkbox').each(function() {
+                const id = parseInt($(this).val());
+                if (selectedIds.includes(id)) {
+                    $(this).prop('checked', true);
+                    // Remove from hidden container — it's now visible
+                    $('#hidden-user-checkboxes input[value="' + id + '"]').remove();
+                }
+            });
         },
         
         selectAllUsers: function() {
@@ -783,6 +949,142 @@
         }
     };
     
+    /**
+     * Infinite Scroll Handler for the Recipients list.
+     *
+     * Uses IntersectionObserver to detect when the sentinel element
+     * (last item in the list) enters the viewport, then fetches the
+     * next batch of users via AJAX and appends them.
+     */
+    const InfiniteScrollHandler = {
+
+        observer:  null,
+        paused:    false,
+
+        init: function() {
+            const $list = $('#recipients-list');
+            if (!$list.length) return;
+            if ($list.data('has-more') !== '1') return;
+
+            this.observe();
+        },
+
+        /**
+         * Attach IntersectionObserver to the sentinel element.
+         */
+        observe: function() {
+            const self     = this;
+            const sentinel = document.getElementById('recipients-scroll-sentinel');
+            if (!sentinel) return;
+
+            // Disconnect any existing observer first
+            if (this.observer) {
+                this.observer.disconnect();
+            }
+
+            this.observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting && !self.paused) {
+                        self.loadNextBatch();
+                    }
+                });
+            }, {
+                root:       document.getElementById('recipients-list'),
+                rootMargin: '0px',
+                threshold:  0.1
+            });
+
+            this.observer.observe(sentinel);
+        },
+
+        /**
+         * Pause infinite scroll (e.g. during search mode).
+         */
+        pause: function() {
+            this.paused = true;
+            if (this.observer) this.observer.disconnect();
+        },
+
+        /**
+         * Resume infinite scroll after search is cleared.
+         */
+        resume: function() {
+            this.paused = false;
+            this.observe();
+        },
+
+        /**
+         * Fetch the next batch of users and append to the list.
+         */
+        loadNextBatch: function() {
+            const $list = $('#recipients-list');
+
+            // Guard: already loading
+            if ($list.data('loading') === '1') return;
+            // Guard: no more items
+            if ($list.data('has-more') !== '1') return;
+
+            const offset = parseInt($list.data('offset')) || 0;
+
+            // Mark as loading
+            $list.data('loading', '1');
+            $('#recipients-loading').show();
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_load_recipients',
+                nonce:  penalisAdmin.nonces.loadRecipients,
+                offset: offset
+            }, function(response) {
+                $('#recipients-loading').hide();
+                $list.data('loading', '0');
+
+                if (!response.success || !response.data.html) {
+                    // No more results — remove sentinel and stop observing
+                    InfiniteScrollHandler.markComplete();
+                    return;
+                }
+
+                const $sentinel  = $('#recipients-scroll-sentinel');
+                const $loadingEl = $('#recipients-loading');
+
+                // Append new items before the sentinel
+                $(response.data.html).insertBefore($sentinel);
+
+                // Re-apply checked state for newly appended users
+                ComposeEmailHandler.restoreCheckedState();
+                ComposeEmailHandler.updateSelectedCount();
+
+                // Update offset
+                const newOffset = offset + response.data.count;
+                $list.data('offset', newOffset);
+
+                if (!response.data.has_more) {
+                    InfiniteScrollHandler.markComplete();
+                }
+                // Observer will re-fire automatically if sentinel is still visible
+            }).fail(function() {
+                $('#recipients-loading').hide();
+                $list.data('loading', '0');
+            });
+        },
+
+        /**
+         * All users loaded — remove sentinel, stop observing.
+         */
+        markComplete: function() {
+            const $list = $('#recipients-list');
+            $list.data('has-more', '0');
+
+            if (this.observer) {
+                this.observer.disconnect();
+                this.observer = null;
+            }
+
+            $('#recipients-scroll-sentinel').remove();
+            $('#recipients-loading').remove();
+        }
+    };
+
     /**
      * Queue Monitor Page Handler
      *
