@@ -162,9 +162,12 @@ class Penalis_Draft_Page extends Penalis_Admin_Page {
         $updated_at = $draft['updated_at'] ?? $created_at;
         
         // Get creator info
-        $created_by = $draft['created_by'] ?? 0;
-        $creator = get_userdata($created_by);
+        $created_by   = $draft['created_by'] ?? 0;
+        $updated_by   = $draft['updated_by']  ?? $created_by;
+        $creator      = get_userdata($created_by);
+        $editor       = get_userdata($updated_by);
         $creator_name = $creator ? $creator->display_name : __('Unknown', 'penalis-emailer');
+        $editor_name  = $editor  ? $editor->display_name  : __('Unknown', 'penalis-emailer');
         
         // Edit URL
         $edit_url = add_query_arg([
@@ -259,10 +262,16 @@ class Penalis_Draft_Page extends Penalis_Admin_Page {
                 ?>
                 <br>
                 <small style="color: #666;">
-                    <?php 
-                    echo esc_html(human_time_diff($updated_at, current_time('timestamp', true))); 
+                    <?php
+                    echo esc_html(human_time_diff($updated_at, current_time('timestamp', true)));
                     echo ' ';
-                    echo esc_html__('ago', 'penalis-emailer'); 
+                    echo esc_html__('ago', 'penalis-emailer');
+                    // Show who last edited, but only if different from creator
+                    if ($updated_by && $updated_by !== $created_by) {
+                        echo ' ' . esc_html__('by', 'penalis-emailer') . ' <strong>' . esc_html($editor_name) . '</strong>';
+                    } elseif ($updated_by) {
+                        echo ' ' . esc_html__('by', 'penalis-emailer') . ' ' . esc_html($editor_name);
+                    }
                     ?>
                 </small>
             </td>

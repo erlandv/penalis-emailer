@@ -269,10 +269,11 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
                 'recipient_count' => $draft_data['recipient_count'] ?? count($recipients),
                 'recipients'      => wp_json_encode($recipients),
                 'created_by'      => $draft_data['created_by']      ?? get_current_user_id(),
+                'updated_by'      => get_current_user_id(),
                 'created_at'      => $draft_data['created_at']      ?? $now,
                 'updated_at'      => $now,
             ],
-            ['%s','%s','%s','%s','%d','%s','%d','%d','%d']
+            ['%s','%s','%s','%s','%d','%s','%d','%d','%d','%d']
         );
 
         return $result !== false;
@@ -340,10 +341,11 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
                 'body'            => $draft_data['body']            ?? '',
                 'recipient_count' => $draft_data['recipient_count'] ?? count($recipients),
                 'recipients'      => wp_json_encode($recipients),
+                'updated_by'      => get_current_user_id(),
                 'updated_at'      => time(),
             ],
             ['draft_key' => $id],
-            ['%s','%s','%s','%d','%s','%d'],
+            ['%s','%s','%s','%d','%s','%d','%d'],
             ['%s']
         );
 
@@ -417,6 +419,7 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
         $row['type']            = 'manual';
         $row['recipient_count'] = (int) $row['recipient_count'];
         $row['created_by']      = (int) $row['created_by'];
+        $row['updated_by']      = (int) ($row['updated_by'] ?? $row['created_by']);
         $row['created_at']      = (int) $row['created_at'];
         $row['updated_at']      = (int) $row['updated_at'];
         $row['recipients']      = !empty($row['recipients'])

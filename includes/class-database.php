@@ -28,7 +28,7 @@ class Penalis_Database {
      *
      * @var string
      */
-    const SCHEMA_VERSION = '2.0.0';
+    const SCHEMA_VERSION = '2.0.1';
 
     /**
      * Option key for storing installed schema version
@@ -166,6 +166,7 @@ class Penalis_Database {
             recipient_count INT UNSIGNED  NOT NULL DEFAULT 0,
             recipients    LONGTEXT,
             created_by    BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            updated_by    BIGINT UNSIGNED NOT NULL DEFAULT 0,
             created_at    INT UNSIGNED    NOT NULL DEFAULT 0,
             updated_at    INT UNSIGNED    NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
@@ -239,9 +240,10 @@ class Penalis_Database {
                     'recipient_count' => $entry['recipient_count'] ?? count($recipients),
                     'recipients'      => wp_json_encode($recipients),
                     'created_by'      => $entry['created_by']      ?? 0,
+                    'updated_by'      => $entry['created_by']      ?? 0, // best guess for legacy data
                     'created_at'      => $entry['created_at']      ?? ($entry['updated_at'] ?? time()),
                     'updated_at'      => $entry['updated_at']      ?? time(),
-                ], ['%s','%s','%s','%s','%d','%s','%d','%d','%d']);
+                ], ['%s','%s','%s','%s','%d','%s','%d','%d','%d','%d']);
 
             } else {
                 // Migrate sent log entries
