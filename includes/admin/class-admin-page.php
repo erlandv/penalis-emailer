@@ -162,6 +162,7 @@ abstract class Penalis_Admin_Page {
                 'bulkDeleteDrafts' => wp_create_nonce('penalis_bulk_delete_drafts'),
                 'sendDraftAjax' => wp_create_nonce('penalis_send_draft_ajax'),
                 'autosaveDraft' => wp_create_nonce('penalis_autosave_draft'),
+                'getQueueStatus' => wp_create_nonce('penalis_get_queue_status'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -198,6 +199,11 @@ abstract class Penalis_Admin_Page {
                 'autoSaving' => __('Auto-saving...', 'penalis-emailer'),
                 'autoSaved' => __('Auto-saved at', 'penalis-emailer'),
                 'autoSaveFailed' => __('Auto-save failed', 'penalis-emailer'),
+                // Queue i18n (v2.0.0)
+                'emailsQueued' => __('emails queued and will be sent in the background.', 'penalis-emailer'),
+                'queueProcessing' => __('Sending in progress...', 'penalis-emailer'),
+                'queueCompleted' => __('All emails sent successfully.', 'penalis-emailer'),
+                'queueCheckStatus' => __('Check Status', 'penalis-emailer'),
             ]
         ];
     }

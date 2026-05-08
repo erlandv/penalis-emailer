@@ -129,9 +129,10 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      * @param array  $recipients Array of user IDs who received the email
      * @param string $subject    The email subject (already sanitized)
      * @param string $body       The email body content (for preview)
+     * @param string $job_id     Queue job ID (v2.0.0+, empty for legacy)
      * @return void
      */
-    public function log_manual_email(array $recipients, string $subject, string $body = ''): void {
+    public function log_manual_email(array $recipients, string $subject, string $body = '', string $job_id = ''): void {
         // Get current user
         $current_user = wp_get_current_user();
         
@@ -145,15 +146,16 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         }
         
         $log_entry = [
-            'id' => $log_id,
-            'type' => 'manual',
-            'subject' => $subject,
-            'body_preview' => $body_preview,
+            'id'              => $log_id,
+            'type'            => 'manual',
+            'subject'         => $subject,
+            'body_preview'    => $body_preview,
+            'job_id'          => $job_id,
             'recipient_count' => count($recipients),
-            'recipients' => $recipients,
-            'sent_at' => time(),
-            'sent_by' => $current_user->ID,
-            'status' => 'sent'
+            'recipients'      => $recipients,
+            'sent_at'         => time(),
+            'sent_by'         => $current_user->ID,
+            'status'          => 'sent'
         ];
         
         $this->manual_log_repository->save($log_entry);

@@ -219,10 +219,38 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     /**
      * Handle send results and redirect with appropriate notice
      *
+     * Since v2.0.0, send_manual_email() is asynchronous — it enqueues
+     * recipients and returns immediately. The notice reflects this.
+     *
      * @param array $results Send results from email sender
      * @return void
      */
     private function handle_send_results(array $results): void {
+        $invalid_count = count($results['failed']);
+
+        // Async path (v2.0.0+)
+        if (!empty($results['queued'])) {
+            if ($results['success'] > 0 && $invalid_count === 0) {
+                $message = sprintf(
+                    __('%d email(s) have been queued and will be sent in the background.', 'penalis-emailer'),
+                    $results['success']
+                );
+                $this->redirect_with_notice($this->page_slug, 'success', $message);
+            } elseif ($results['success'] > 0 && $invalid_count > 0) {
+                $message = sprintf(
+                    __('%d email(s) queued. %d recipient(s) were skipped (invalid user or email).', 'penalis-emailer'),
+                    $results['success'],
+                    $invalid_count
+                );
+                $this->redirect_with_notice($this->page_slug, 'warning', $message);
+            } else {
+                $message = __('No valid recipients found. Please check your recipient list.', 'penalis-emailer');
+                $this->redirect_with_notice($this->page_slug, 'error', $message);
+            }
+            return;
+        }
+
+        // Fallback: synchronous path (should not be reached in v2.0.0)
         if ($results['success'] > 0 && empty($results['failed'])) {
             $message = sprintf(
                 __('Successfully sent %d email(s).', 'penalis-emailer'),

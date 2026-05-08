@@ -34,16 +34,29 @@ class Penalis_Ajax_Handler {
      * @var Penalis_Email_Logger
      */
     private $email_logger;
+
+    /**
+     * Queue repository instance
+     *
+     * @var Penalis_Email_Queue_Repository
+     */
+    private $queue;
     
     /**
      * Constructor
      *
-     * @param Penalis_Email_Template $email_template Email template instance
-     * @param Penalis_Email_Logger   $email_logger   Email logger instance
+     * @param Penalis_Email_Template         $email_template Email template instance
+     * @param Penalis_Email_Logger           $email_logger   Email logger instance
+     * @param Penalis_Email_Queue_Repository $queue          Queue repository instance
      */
-    public function __construct(Penalis_Email_Template $email_template, Penalis_Email_Logger $email_logger) {
+    public function __construct(
+        Penalis_Email_Template $email_template,
+        Penalis_Email_Logger $email_logger,
+        Penalis_Email_Queue_Repository $queue
+    ) {
         $this->email_template = $email_template;
-        $this->email_logger = $email_logger;
+        $this->email_logger   = $email_logger;
+        $this->queue          = $queue;
     }
     
     /**
@@ -69,6 +82,9 @@ class Penalis_Ajax_Handler {
         add_action('wp_ajax_penalis_bulk_delete_drafts', [$this, 'bulk_delete_drafts']);
         add_action('wp_ajax_penalis_send_draft_ajax', [$this, 'send_draft_ajax']);
         add_action('wp_ajax_penalis_autosave_draft', [$this, 'autosave_draft']);
+
+        // Queue status (v2.0.0)
+        add_action('wp_ajax_penalis_get_queue_status', [$this, 'get_queue_status']);
     }
     
     /**
@@ -444,6 +460,39 @@ class Penalis_Ajax_Handler {
         }
         
         // Return results
+        if (!empty($results['queued'])) {
+            // Async path (v2.0.0+)
+            if ($results['success'] > 0) {
+                $invalid_count = count($results['failed']);
+                if ($invalid_count > 0) {
+                    wp_send_json_success([
+                        'message' => sprintf(
+                            __('%d email(s) queued from draft. %d recipient(s) skipped (invalid).', 'penalis-emailer'),
+                            $results['success'],
+                            $invalid_count
+                        ),
+                        'queued'  => true,
+                        'job_id'  => $results['job_id'],
+                    ]);
+                } else {
+                    wp_send_json_success([
+                        'message' => sprintf(
+                            __('%d email(s) from draft have been queued and will be sent in the background.', 'penalis-emailer'),
+                            $results['success']
+                        ),
+                        'queued'  => true,
+                        'job_id'  => $results['job_id'],
+                    ]);
+                }
+            } else {
+                wp_send_json_error([
+                    'message' => __('No valid recipients found in draft.', 'penalis-emailer'),
+                ]);
+            }
+            return;
+        }
+
+        // Fallback: synchronous path
         if ($results['success'] > 0 && empty($results['failed'])) {
             wp_send_json_success([
                 'message' => sprintf(
@@ -535,5 +584,31 @@ class Penalis_Ajax_Handler {
                 ]);
             }
         }
+    }
+
+    /**
+     * AJAX handler for queue job status polling (v2.0.0)
+     *
+     * Returns progress data for a specific job_id so the frontend
+     * can display a live progress indicator.
+     *
+     * @return void
+     */
+    public function get_queue_status(): void {
+        check_ajax_referer('penalis_get_queue_status', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+
+        $job_id = isset($_POST['job_id']) ? sanitize_text_field($_POST['job_id']) : '';
+
+        if (empty($job_id)) {
+            wp_send_json_error(['message' => __('Job ID is required', 'penalis-emailer')]);
+        }
+
+        $summary = $this->queue->get_job_summary($job_id);
+
+        wp_send_json_success($summary);
     }
 }

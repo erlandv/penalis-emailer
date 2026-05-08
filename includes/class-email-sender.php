@@ -5,6 +5,10 @@
  * Handles all email composition and sending logic for both automatic
  * and manual email notifications.
  *
+ * For manual bulk emails, this class enqueues jobs into the email queue
+ * for asynchronous processing via WP-Cron (since v2.0.0).
+ * Automatic single-recipient emails (post publish) are still sent synchronously.
+ *
  * @package Penalis_Emailer
  * @since 1.0.0
  */
@@ -35,16 +39,39 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      * @var Penalis_Email_Logger
      */
     private $logger;
+
+    /**
+     * Email queue repository
+     *
+     * @var Penalis_Email_Queue_Repository
+     */
+    private $queue;
+
+    /**
+     * Queue processor (used to schedule the first cron run)
+     *
+     * @var Penalis_Email_Queue_Processor
+     */
+    private $processor;
     
     /**
      * Constructor
      *
-     * @param Penalis_Email_Template $template Email template instance
-     * @param Penalis_Email_Logger   $logger   Email logger instance
+     * @param Penalis_Email_Template         $template  Email template instance
+     * @param Penalis_Email_Logger           $logger    Email logger instance
+     * @param Penalis_Email_Queue_Repository $queue     Queue repository
+     * @param Penalis_Email_Queue_Processor  $processor Queue processor
      */
-    public function __construct(Penalis_Email_Template $template, Penalis_Email_Logger $logger) {
-        $this->template = $template;
-        $this->logger = $logger;
+    public function __construct(
+        Penalis_Email_Template $template,
+        Penalis_Email_Logger $logger,
+        Penalis_Email_Queue_Repository $queue,
+        Penalis_Email_Queue_Processor $processor
+    ) {
+        $this->template  = $template;
+        $this->logger    = $logger;
+        $this->queue     = $queue;
+        $this->processor = $processor;
     }
     
     /**
@@ -135,104 +162,81 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
     }
     
     /**
-     * Send manual email to selected users
+     * Enqueue manual email to selected users for async processing via WP-Cron.
      *
-     * Sends emails to specified user IDs with custom or template-based content.
-     * Tracks success and failures.
+     * Replaces the old synchronous loop. Returns immediately after inserting
+     * all recipients into the queue table. Actual sending happens in the
+     * background via Penalis_Email_Queue_Processor::process_batch().
      *
-     * @param string $subject      Email subject
-     * @param array  $user_ids     Array of user IDs to send to
-     * @param string $message      Custom message content (plain text/markdown)
-     * @param string $from_name    From name for email header (default: 'Penalis')
-     * @return array Results with 'success' count and 'failed' array of user IDs
+     * Return value shape is kept compatible with the old synchronous version
+     * so callers (Compose_Page, Ajax_Handler) need minimal changes:
+     *   - 'success'  → number of recipients successfully enqueued
+     *   - 'failed'   → array of user IDs that could not be enqueued (invalid users)
+     *   - 'job_id'   → unique identifier for this batch (new in v2.0.0)
+     *   - 'queued'   → true (new flag to distinguish async from sync result)
+     *
+     * @param string $subject   Email subject
+     * @param array  $user_ids  Array of user IDs to send to
+     * @param string $message   Email body (markdown/HTML)
+     * @param string $from_name Sender display name
+     * @return array
      */
     public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis'): array {
-        // Apply recipients filter
+        // Apply recipients filter (same as before)
         $user_ids = apply_filters('penalis_email_recipients', $user_ids);
-        
+
         $results = [
             'success' => 0,
-            'failed' => [],
-            'errors' => []
+            'failed'  => [],
+            'errors'  => [],
+            'job_id'  => '',
+            'queued'  => true,
         ];
-        
-        $successful_recipients = [];
-        
-        // Loop through each user
+
+        if (empty($user_ids)) {
+            return $results;
+        }
+
+        // Validate each user_id before enqueuing — skip invalid ones
+        $valid_ids   = [];
+        $invalid_ids = [];
+
         foreach ($user_ids as $user_id) {
-            try {
-                $user = get_userdata($user_id);
-                
-                // Validate user and email
-                if (!$user || !is_email($user->user_email)) {
-                    throw new Penalis_Validation_Exception(
-                        'Invalid user or email',
-                        ['user_id' => 'User not found or invalid email'],
-                        ['user_id' => $user_id]
-                    );
-                }
-                
-                // Prepare user data for personalization
-                $user_data = [
-                    'display_name' => $user->display_name,
-                    'user_email' => $user->user_email,
-                    'user_login' => $user->user_login
-                ];
-                
-                // Generate preheader from subject (first 100 chars)
-                $preheader = wp_strip_all_tags($subject);
-                $preheader = mb_substr($preheader, 0, 100);
-                
-                // Render flexible email with markdown support
-                $email_body = $this->template->render_flexible_email($message, $user_data, $preheader);
-                
-                // Send email using common method (post_id = 0 for manual emails)
-                $sent = $this->send_email(
-                    $user->user_email,
-                    $subject,
-                    $email_body,
-                    $from_name,
-                    0
-                );
-                
-                if ($sent) {
-                    $results['success']++;
-                    $successful_recipients[] = $user_id;
-                } else {
-                    throw new Penalis_Email_Send_Exception(
-                        'Failed to send email via wp_mail',
-                        [$user->user_email],
-                        ['user_id' => $user_id]
-                    );
-                }
-            } catch (Penalis_Exception $e) {
-                // Log exception
-                $e->log('warning');
-                
-                // Track failed recipient
-                $results['failed'][] = $user_id;
-                $results['errors'][$user_id] = $e->getMessage();
+            $user = get_userdata((int) $user_id);
+            if ($user && is_email($user->user_email)) {
+                $valid_ids[] = (int) $user_id;
+            } else {
+                $invalid_ids[]          = $user_id;
+                $results['errors'][$user_id] = 'User not found or invalid email';
             }
         }
-        
-        // Log successful sends
-        if ($results['success'] > 0) {
-            $this->logger->log_manual_email($successful_recipients, $subject, $message);
-            
-            // Fire success action
-            do_action('penalis_email_sent_success', [
-                'type' => 'manual',
-                'subject' => $subject,
-                'success_count' => $results['success'],
-                'recipients' => $successful_recipients
+
+        $results['failed'] = $invalid_ids;
+
+        if (empty($valid_ids)) {
+            return $results;
+        }
+
+        // Generate a unique job ID for this batch
+        $job_id          = 'job_' . time() . '_' . wp_generate_password(8, false);
+        $results['job_id'] = $job_id;
+
+        // Bulk-insert all valid recipients into the queue
+        $enqueued        = $this->queue->bulk_enqueue($job_id, $valid_ids, $subject, $message, $from_name);
+        $results['success'] = $enqueued;
+
+        if ($enqueued > 0) {
+            // Schedule the first cron run (fires in ~5 seconds)
+            $this->processor->schedule_next_run();
+
+            // Fire action so other code can react (e.g. admin notices)
+            do_action('penalis_email_queued', [
+                'job_id'    => $job_id,
+                'subject'   => $subject,
+                'recipient_count' => $enqueued,
             ]);
         }
-        
-        // Fire partial failure action if some failed
-        if (!empty($results['failed'])) {
-            do_action('penalis_email_send_partial_failure', $results);
-        }
-        
+
         return $results;
     }
     

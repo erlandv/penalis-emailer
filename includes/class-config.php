@@ -45,6 +45,17 @@ class Penalis_Config {
     // Log Settings
     const DEFAULT_LOG_LIMIT = 50;
     const LOG_CLEANUP_KEEP_COUNT = 100;
+
+    // Queue Settings
+    const DEFAULT_QUEUE_BATCH_SIZE    = 30;   // emails per cron batch
+    const DEFAULT_QUEUE_INTERVAL      = 60;   // seconds between batches
+    const DEFAULT_QUEUE_MAX_ATTEMPTS  = 3;    // max retry attempts before permanent failure
+    const OPTION_KEY_QUEUE_BATCH_SIZE = 'penalis_queue_batch_size';
+    const OPTION_KEY_QUEUE_INTERVAL   = 'penalis_queue_interval';
+    const OPTION_KEY_QUEUE_MAX_ATTEMPTS = 'penalis_queue_max_attempts';
+
+    // WP-Cron hook name
+    const CRON_HOOK = 'penalis_process_email_queue';
     
     /**
      * Get logo URL with filter support
@@ -101,5 +112,32 @@ class Penalis_Config {
      */
     public static function get_users_per_page(): int {
         return apply_filters('penalis_users_per_page', self::USERS_PER_PAGE);
+    }
+
+    /**
+     * Get queue batch size (emails per cron run)
+     *
+     * @return int
+     */
+    public static function get_queue_batch_size(): int {
+        return (int) get_option(self::OPTION_KEY_QUEUE_BATCH_SIZE, self::DEFAULT_QUEUE_BATCH_SIZE);
+    }
+
+    /**
+     * Get queue processing interval in seconds
+     *
+     * @return int
+     */
+    public static function get_queue_interval(): int {
+        return (int) get_option(self::OPTION_KEY_QUEUE_INTERVAL, self::DEFAULT_QUEUE_INTERVAL);
+    }
+
+    /**
+     * Get maximum retry attempts before permanent failure
+     *
+     * @return int
+     */
+    public static function get_queue_max_attempts(): int {
+        return (int) get_option(self::OPTION_KEY_QUEUE_MAX_ATTEMPTS, self::DEFAULT_QUEUE_MAX_ATTEMPTS);
     }
 }
