@@ -4,7 +4,7 @@ Tags: email, notification, post, author, smtp, markdown, admin
 Requires at least: 6.6
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.3
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,7 +19,11 @@ Penalis Emailer is a professional WordPress plugin that streamlines communicatio
 = Key Features =
 
 * **Automatic Notifications** - Sends HTML email notifications to post authors when their posts are published
-* **Manual Email Interface** - Comprehensive admin interface for sending emails to selected users
+* **Manual Email Interface** - Comprehensive admin interface for sending emails to selected users with markdown support
+* **Email Queue System** - Emails are sent asynchronously in the background via WP-Cron, preventing timeouts on large recipient lists
+* **Email Draft Management** - Save, load, edit, and send email drafts with team collaboration transparency (created by, last edited by, sent by)
+* **Queue Monitor** - Dedicated admin page to monitor active jobs, view progress, configure queue settings, and cancel running jobs
+* **Auto-Save** - Drafts are automatically saved every 60 seconds while composing
 * **Markdown Support** - Write emails in markdown with automatic HTML conversion
 * **HTML Email Templates** - Professional, responsive email templates with dynamic placeholders
 * **Email Preview** - Preview emails before sending
@@ -34,9 +38,10 @@ Penalis Emailer is a professional WordPress plugin that streamlines communicatio
 * **Clean Architecture** - Built with SOLID principles and modern design patterns
 * **Service Container** - Automatic dependency injection and resolution
 * **Repository Pattern** - Clean data access abstraction
+* **Custom Database Tables** - Dedicated tables for email logs, queue, and drafts for better scalability
+* **Background Processing** - WP-Cron based queue with configurable batch size, throttle delay, and retry backoff
 * **Validation System** - Flexible, reusable validation with custom rules
 * **Exception Handling** - Comprehensive error handling
-* **110+ Unit Tests** - Thoroughly tested with 100% pass rate
 * **Well Documented** - Extensive inline documentation and architecture guides
 
 = Use Cases =
@@ -66,6 +71,18 @@ The admin interface allows you to:
 * Use dynamic placeholders
 * Track email history in dedicated history page
 
+Starting from v2.0.0, emails are sent asynchronously in the background via WP-Cron. After clicking Send, a progress banner appears showing real-time delivery status. This prevents PHP timeouts when sending to large recipient lists.
+
+= Email Draft Management =
+
+Save email drafts and manage them from a dedicated page:
+
+* Save drafts manually or via auto-save (every 60 seconds)
+* Load drafts from the Compose page dropdown
+* View all drafts in the Drafts management page
+* Bulk delete drafts
+* Team transparency: see who created, last edited, and sent each draft
+
 = Email History & Management =
 
 View and manage all sent emails in a dedicated history page:
@@ -75,12 +92,23 @@ View and manage all sent emails in a dedicated history page:
 * **Bulk Delete** - Select multiple emails and delete them at once using WordPress-style bulk actions
 * **Clear All History** - Remove all emails from a specific tab (manual or automatic) with double confirmation
 * **Optimized Views** - Manual tab shows subject, recipients, sent by, and timestamp; Automatic tab shows post title, recipient, and timestamp
-* **Legacy Support** - Seamlessly handles old email entries from previous versions
 
 Delete operations:
 * Check one or more email entries and use bulk delete action
 * Clear all history for manual or automatic emails separately
 * Double confirmation required for clear all operations for safety
+
+= Queue Monitor =
+
+Monitor and manage background email sending jobs from a dedicated admin page:
+
+* **Active Jobs** - View all running jobs with progress bars and sent/pending/failed counts
+* **Recently Completed** - History of the last 10 completed jobs
+* **Cancel Jobs** - Stop a running job without affecting already-sent emails
+* **Queue Settings** - Configure batch size, throttle delay, interval between batches, and max retry attempts
+* **Queue Statistics** - Breakdown of all items in the queue by status
+* **Throughput Estimate** - Auto-calculated emails/minute based on current settings
+* **Cron Health** - Warning if WP-Cron is disabled or no run is scheduled
 
 = Email Template Customization =
 
@@ -123,7 +151,8 @@ Penalis Emailer is built with developers in mind:
 
 1. Navigate to **Penalis Email** in the WordPress admin menu
 2. (Optional) Configure your SMTP settings using an SMTP plugin for reliable delivery
-3. (Optional) Customize the email template in **Penalis Email → Settings**
+3. (Optional) Customize the email template in **Penalis Email → Template Settings**
+4. (Optional) Adjust queue settings in **Penalis Email → Queue Monitor**
 
 == Frequently Asked Questions ==
 
@@ -135,13 +164,25 @@ Yes! Once activated, the plugin automatically sends email notifications to post 
 
 Absolutely! Navigate to **Penalis Email → Compose** to send custom emails to selected authors and contributors.
 
+= Why don't emails send immediately after clicking Send? =
+
+Starting from v2.0.0, emails are sent asynchronously via WP-Cron in the background. This prevents PHP timeouts when sending to large recipient lists. A progress banner will appear showing real-time delivery status. You can also monitor progress from **Penalis Email → Queue Monitor**.
+
+= Can I save an email as a draft? =
+
+Yes! Click "Save Draft" on the Compose page. Drafts are also auto-saved every 60 seconds while composing. Manage all drafts from **Penalis Email → Drafts**.
+
+= Can I monitor the email sending progress? =
+
+Yes! A progress banner appears automatically after queuing emails. You can also visit **Penalis Email → Queue Monitor** for detailed job status, configuration, and the ability to cancel running jobs.
+
 = Does it work with SMTP plugins? =
 
 Yes! Penalis Emailer uses WordPress's native `wp_mail()` function, making it fully compatible with any SMTP plugin like WP Mail SMTP, Easy WP SMTP, Post SMTP, or FluentSMTP.
 
 = Can I customize the email template? =
 
-Yes! Navigate to **Penalis Email → Settings** to customize the automatic email template. You can use markdown for easy formatting and dynamic placeholders.
+Yes! Navigate to **Penalis Email → Template Settings** to customize the automatic email template. You can use markdown for easy formatting and dynamic placeholders.
 
 = What placeholders are available? =
 
@@ -149,6 +190,11 @@ The following placeholders are available:
 * `{AUTHOR_NAME}` - Recipient's display name
 * `{POST_TITLE}` - Post title
 * `{POST_URL}` - Post permalink
+* `{USER_NAME}` - User's display name (for manual emails)
+* `{USER_EMAIL}` - User's email address
+* `{DATE}` - Current date
+* `{SITE_NAME}` - Website name
+* `{SITE_URL}` - Website URL
 
 = Can I preview emails before sending? =
 
@@ -181,7 +227,7 @@ Yes! You can write emails in markdown and the plugin will automatically convert 
 
 = What happens if email sending fails? =
 
-The plugin includes comprehensive error handling and will display appropriate error messages. Failed sends are logged for troubleshooting.
+Starting from v2.0.0, failed emails are automatically retried with exponential backoff: after 5 minutes, then 15 minutes, then marked as permanently failed. You can monitor failed items from **Penalis Email → Queue Monitor**.
 
 = Can I use it with custom post types? =
 
@@ -193,11 +239,13 @@ Yes! The plugin uses WordPress translation functions and is ready for translatio
 
 == Screenshots ==
 
-1. Compose email interface with markdown support and recipient selection
+1. Compose email interface with 2-column layout, markdown support, and recipient selection
 2. Email history page showing all sent emails with filtering options
 3. Template settings page with live preview
 4. Email preview modal showing how the email will look
-5. Automatic email notification received by post author
+5. Draft management page with table, bulk actions, and team transparency info
+6. Queue Monitor page showing active jobs, settings, and queue statistics
+7. Queue progress banner showing real-time sending status
 
 
 = Filters =
@@ -210,8 +258,12 @@ Modify the logo URL in email templates.
 Modify the user roles eligible for receiving emails.
 `add_filter('penalis_eligible_roles', function($roles) { return ['author', 'contributor', 'editor']; });`
 
+**penalis_auto_email_subject**
+Customize the automatic email subject line.
+`add_filter('penalis_auto_email_subject', function($subject) { return $custom_subject; });`
+
 **penalis_email_subject**
-Customize the email subject line.
+Customize the email subject line (applies to all emails).
 `add_filter('penalis_email_subject', function($subject, $post_id) { return $custom_subject; }, 10, 2);`
 
 **penalis_email_message**
@@ -223,22 +275,26 @@ Customize email headers (Reply-To, CC, BCC, etc.).
 `add_filter('penalis_email_headers', function($headers, $post_id) { return $custom_headers; }, 10, 2);`
 
 **penalis_email_recipients**
-Modify the recipient list for manual emails.
+Modify the recipient list for manual emails before they are queued.
 `add_filter('penalis_email_recipients', function($user_ids) { return $modified_user_ids; });`
 
 = Actions =
 
-**penalis_before_email_send**
-Fired before an email is sent.
-`add_action('penalis_before_email_send', function($email_data) { /* Your code */ });`
-
-**penalis_after_email_send**
-Fired after an email is sent.
-`add_action('penalis_after_email_send', function($email_data, $result) { /* Your code */ }, 10, 2);`
+**penalis_email_sent_success**
+Fired after an email is sent successfully (manual, automatic, or test).
+`add_action('penalis_email_sent_success', function($data) { /* $data contains type, subject, recipients */ });`
 
 **penalis_email_send_failed**
-Fired when email sending fails.
+Fired when email sending fails. Receives the exception object.
 `add_action('penalis_email_send_failed', function($exception) { /* Your code */ });`
+
+**penalis_email_queued**
+Fired after recipients are queued for background sending.
+`add_action('penalis_email_queued', function($data) { /* $data contains job_id, subject, recipient_count */ });`
+
+**penalis_email_send_partial_failure**
+Fired when some recipients fail within a batch.
+`add_action('penalis_email_send_partial_failure', function($results) { /* $results contains failed array */ });`
 
 = Code Examples =
 
@@ -272,17 +328,22 @@ add_filter('penalis_email_headers', function($headers, $post_id) {
 }, 10, 2);
 `
 
+**Log When a Job is Queued**
+`
+add_action('penalis_email_queued', function($data) {
+    error_log('Email job queued: ' . $data['job_id'] . ' for ' . $data['recipient_count'] . ' recipients');
+});
+`
+
 = Architecture =
 
 The plugin is built with clean architecture principles:
 
 * **Presentation Layer** - Admin pages, views, assets
 * **Application Layer** - Controllers, AJAX handlers, validators
-* **Business Layer** - Email sender, template renderer, markdown parser
-* **Data Layer** - Repositories, logger
-* **Infrastructure Layer** - WordPress APIs, service container
-
-For detailed architecture documentation, see the `docs/` folder in the plugin directory.
+* **Business Layer** - Email sender, queue processor, template renderer, markdown parser
+* **Data Layer** - Repositories, logger, custom database tables
+* **Infrastructure Layer** - WordPress APIs, service container, WP-Cron
 
 = Support =
 

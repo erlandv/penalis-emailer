@@ -1,6 +1,157 @@
 # Changelog
 
-### Version 1.3.3 (Current)
+### Version 2.0.0 (Current)
+
+This major release introduces a background email queue system, migration of storage
+from `wp_options` to custom database tables, and significant UI/UX improvements to
+the Compose page.
+
+---
+
+#### Breaking Changes
+
+- Email log and draft storage has been moved from `wp_options` to dedicated custom
+  database tables (`wp_penalis_email_log`, `wp_penalis_email_queue`,
+  `wp_penalis_email_draft`). Existing data in `wp_options` is migrated automatically
+  on plugin update.
+- Manual email sending is now asynchronous (background queue). The page no longer
+  waits for all emails to be delivered before responding.
+- `send_manual_email()` now returns `queued: true` and `job_id` instead of
+  immediately returning a sent count.
+
+---
+
+#### New Features
+
+**Email Queue System**
+- Manual email sending is now processed asynchronously via WP-Cron
+- Each recipient is inserted into the queue as an individual job
+- Batch processing: send N emails per cron run (default: 30, configurable)
+- Interval between batches is configurable (default: 60 seconds, minimum: 30)
+- Rate limiting: configurable delay between emails within a batch (default: 500 ms)
+- Automatic retry with exponential backoff for failed emails:
+  - 1st failure: retry after 5 minutes
+  - 2nd failure: retry after 15 minutes
+  - 3rd failure: permanently failed (no further retries)
+- Maximum retry attempts are configurable (default: 3)
+
+**Queue Monitor Page**
+- New "Queue Monitor" admin page for monitoring queue status
+- Active Jobs table: progress bar, sent/pending/failed counts per job
+- Recently Completed Jobs table: last 10 completed jobs
+- Cancel Job button: cancels a running job without affecting already-sent emails
+- Refresh button: updates job status in-place without page reload
+- Queue Settings form: configure batch size, throttle delay, interval, and max
+  retries directly from the admin UI
+- Queue Statistics: breakdown of total items by status in the queue table
+- Throughput Estimate: auto-calculated emails/minute estimate based on current settings
+- Cron Health Notice: warning when `DISABLE_WP_CRON = true` or no run is scheduled
+- "Clean up completed items" button: removes sent/permanently_failed rows from the
+  queue table
+
+**Queue Progress Banner**
+- Real-time progress banner appears automatically after emails are queued
+- Animated progress bar while sending is in progress
+- "X / Y sent" counter updated every 5 seconds via AJAX polling
+- Banner turns green and auto-dismisses after 8 seconds when all emails are sent
+- Polling stops automatically when the job completes or after 10 minutes (120 polls)
+- Also activates after sending a draft from the Draft Management page
+
+**Custom Database Tables**
+- Three new custom tables: `penalis_email_log`, `penalis_email_queue`,
+  `penalis_email_draft`
+- Automatic migration of legacy data from `wp_options` to custom tables on update
+- Schema versioning via `SCHEMA_VERSION` constant — `dbDelta` runs automatically
+  when the version changes
+- Uninstall hook: all custom tables are cleanly removed when the plugin is uninstalled
+
+**Email Draft Management**
+- New draft feature: save, load, edit, and send email drafts
+- "Drafts" page with a management table (subject, recipients, created, last modified)
+- Bulk delete drafts with confirmation dialog
+- Auto-save every 60 seconds while composing in the Compose page
+- Auto-save indicator showing the last saved timestamp
+- Load draft from a dropdown on the Compose page
+- Team collaboration transparency:
+  - "Created" column: shows who created the draft and when
+  - "Last Modified" column: shows who last edited the draft and when
+  - Email history: records who sent the email (not who created the draft)
+
+**Compose Page — Recipients List**
+- Infinite scroll: only the first 30 users are rendered on page load (configurable
+  via `RECIPIENTS_INITIAL_LOAD` in `class-config.php`)
+- Subsequent batches are loaded automatically via AJAX as the admin scrolls down
+- AJAX search: user search works across all users, not just those currently rendered
+- Clearing the search box restores the first batch via AJAX without a page reload
+- Previously checked selections are preserved when search replaces the list
+- Recipients sidebar uses `position: sticky` so the Send button is always visible
+
+---
+
+#### Improvements
+
+**Compose Page Layout**
+- New 2-column layout: email content on the left, recipients sidebar on the right
+- Action buttons (Preview, Save Draft, Send) grouped above the recipients card
+- "Send to X users" button displays the selected recipient count in real-time
+
+**Template Settings Page**
+- Redesigned with card layout and a 3-column grid guide
+- Placeholder reference, formatting guide, and tips consolidated in one view
+
+**Dashboard Page**
+- "Recent Drafts" widget added alongside the "Recent Emails" widget
+- "Manage Drafts" quick action button added
+
+**Email History**
+- Manual and automatic email logs are now stored in a custom table instead of
+  `wp_options`
+- Drafts no longer appear in the Email History page
+
+---
+
+#### Bug Fixes
+
+- Drafts no longer appear in the manual email log or the Email History page
+- `created_by` is now always populated correctly when saving a new draft
+- Drafts are deleted (not converted) after being sent successfully
+- Removed duplicate `wp_ajax_penalis_get_queue_status` hook registration in
+  `register_hooks()`
+
+---
+
+#### Configuration
+
+New constants in `includes/class-config.php` that can be adjusted by developers:
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `RECIPIENTS_INITIAL_LOAD` | `30` | Users rendered on initial Compose page load |
+| `DEFAULT_QUEUE_BATCH_SIZE` | `30` | Emails per cron batch |
+| `DEFAULT_QUEUE_INTERVAL` | `60` | Seconds between batches |
+| `DEFAULT_QUEUE_MAX_ATTEMPTS` | `3` | Max retries before permanently failed |
+| `DEFAULT_QUEUE_THROTTLE_DELAY` | `500000` | Microseconds between emails (500 ms) |
+
+`QUEUE_BATCH_SIZE`, `QUEUE_INTERVAL`, `QUEUE_MAX_ATTEMPTS`, and
+`QUEUE_THROTTLE_DELAY` can also be changed from the Queue Monitor page in the admin
+UI without editing code.
+
+---
+
+#### Technical
+
+- Autoloader updated to recognise `Queue` and `Database` class prefixes
+- Activation hook: `Penalis_Database::install()` is called when the plugin is activated
+- Deactivation hook: WP-Cron queue hook is unscheduled when the plugin is deactivated
+- Uninstall hook: all custom tables and options are removed on uninstall
+- `Penalis_Email_Queue_Repository` and `Penalis_Email_Queue_Processor` registered as
+  singletons in the service container
+- `Penalis_Queue_Monitor_Page` added as a new admin submenu
+
+---
+
+### Version 1.3.3
+
 
 #### **New Features**
 - **Email History Enhancements**
