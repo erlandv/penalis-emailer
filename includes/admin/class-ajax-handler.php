@@ -85,6 +85,7 @@ class Penalis_Ajax_Handler {
 
         // Queue status (v2.0.0)
         add_action('wp_ajax_penalis_get_queue_status', [$this, 'get_queue_status']);
+        add_action('wp_ajax_penalis_cancel_job',       [$this, 'cancel_job']);
     }
     
     /**
@@ -610,5 +611,47 @@ class Penalis_Ajax_Handler {
         $summary = $this->queue->get_job_summary($job_id);
 
         wp_send_json_success($summary);
+    }
+
+    /**
+     * AJAX handler for cancelling a queue job (v2.0.0)
+     *
+     * Deletes all pending/failed items for the given job_id.
+     * Already-sent items are left intact.
+     *
+     * @return void
+     */
+    public function cancel_job(): void {
+        check_ajax_referer('penalis_cancel_job', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+
+        $job_id = isset($_POST['job_id']) ? sanitize_text_field($_POST['job_id']) : '';
+
+        if (empty($job_id)) {
+            wp_send_json_error(['message' => __('Job ID is required', 'penalis-emailer')]);
+        }
+
+        // Only delete items that have NOT been sent yet
+        global $wpdb;
+        $table   = Penalis_Database::get_queue_table();
+        $deleted = $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$table}
+                 WHERE job_id = %s
+                   AND status IN ('pending', 'processing', 'failed')",
+                $job_id
+            )
+        );
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('Job cancelled. %d pending item(s) removed.', 'penalis-emailer'),
+                (int) $deleted
+            ),
+            'deleted' => (int) $deleted,
+        ]);
     }
 }

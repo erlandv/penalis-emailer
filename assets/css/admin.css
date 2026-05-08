@@ -1626,3 +1626,143 @@
 .penalis-progress-bar {
     animation: penalis-pulse 1.8s ease-in-out infinite;
 }
+
+/* ========================================
+   Queue Monitor Page (v2.0.0)
+   ======================================== */
+
+.penalis-queue-monitor-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+    margin-top: 16px;
+}
+
+.penalis-queue-monitor-main,
+.penalis-queue-monitor-sidebar {
+    min-width: 0;
+}
+
+/* Cron health status bar */
+.penalis-cron-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 12px 0 4px 0;
+}
+
+.penalis-cron-status .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.penalis-cron-status--ok {
+    background: #f0f9f1;
+    border: 1px solid #68de7c;
+    color: #1d2327;
+}
+
+.penalis-cron-status--ok .dashicons {
+    color: #00a32a;
+}
+
+.penalis-cron-status--idle {
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    color: #646970;
+}
+
+.penalis-cron-status--idle .dashicons {
+    color: #8c8f94;
+}
+
+/* Jobs table */
+.penalis-jobs-table {
+    font-size: 13px;
+    border-collapse: collapse;
+}
+
+.penalis-jobs-table th {
+    font-weight: 600;
+    font-size: 12px;
+    color: #646970;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 8px 10px;
+}
+
+.penalis-jobs-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+/* Inline progress bar (smaller variant) */
+.penalis-progress-track--sm {
+    height: 6px;
+    width: 100px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.penalis-progress-cell {
+    white-space: nowrap;
+}
+
+.penalis-progress-pct {
+    font-size: 12px;
+    color: #646970;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Job ID code chip */
+.penalis-job-id {
+    font-size: 11px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: monospace;
+    word-break: break-all;
+    max-width: 180px;
+    display: inline-block;
+}
+
+/* Badges */
+.penalis-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.penalis-badge--blue {
+    background: #dce9f5;
+    color: #2271b1;
+}
+
+.penalis-badge--red {
+    background: #fce8e8;
+    color: #d63638;
+}
+
+/* Muted text */
+.penalis-muted {
+    color: #8c8f94;
+    font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .penalis-queue-monitor-grid {
+        grid-template-columns: 1fr;
+    }
+}

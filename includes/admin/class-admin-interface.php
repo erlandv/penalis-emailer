@@ -62,16 +62,24 @@ class Penalis_Admin_Interface {
      * @var Penalis_Ajax_Handler
      */
     private $ajax_handler;
+
+    /**
+     * Queue monitor page instance
+     *
+     * @var Penalis_Queue_Monitor_Page
+     */
+    private $queue_monitor_page;
     
     /**
      * Constructor
      *
-     * @param Penalis_Dashboard_Page $dashboard_page Dashboard page instance
-     * @param Penalis_Compose_Page   $compose_page   Compose page instance
-     * @param Penalis_History_Page   $history_page   History page instance
-     * @param Penalis_Settings_Page  $settings_page  Settings page instance
-     * @param Penalis_Draft_Page     $draft_page     Draft page instance
-     * @param Penalis_Ajax_Handler   $ajax_handler   AJAX handler instance
+     * @param Penalis_Dashboard_Page     $dashboard_page     Dashboard page instance
+     * @param Penalis_Compose_Page       $compose_page       Compose page instance
+     * @param Penalis_History_Page       $history_page       History page instance
+     * @param Penalis_Settings_Page      $settings_page      Settings page instance
+     * @param Penalis_Draft_Page         $draft_page         Draft page instance
+     * @param Penalis_Ajax_Handler       $ajax_handler       AJAX handler instance
+     * @param Penalis_Queue_Monitor_Page $queue_monitor_page Queue monitor page instance
      */
     public function __construct(
         Penalis_Dashboard_Page $dashboard_page,
@@ -79,14 +87,16 @@ class Penalis_Admin_Interface {
         Penalis_History_Page $history_page,
         Penalis_Settings_Page $settings_page,
         Penalis_Draft_Page $draft_page,
-        Penalis_Ajax_Handler $ajax_handler
+        Penalis_Ajax_Handler $ajax_handler,
+        Penalis_Queue_Monitor_Page $queue_monitor_page
     ) {
-        $this->dashboard_page = $dashboard_page;
-        $this->compose_page = $compose_page;
-        $this->history_page = $history_page;
-        $this->settings_page = $settings_page;
-        $this->draft_page = $draft_page;
-        $this->ajax_handler = $ajax_handler;
+        $this->dashboard_page     = $dashboard_page;
+        $this->compose_page       = $compose_page;
+        $this->history_page       = $history_page;
+        $this->settings_page      = $settings_page;
+        $this->draft_page         = $draft_page;
+        $this->ajax_handler       = $ajax_handler;
+        $this->queue_monitor_page = $queue_monitor_page;
     }
     
     /**
@@ -180,6 +190,16 @@ class Penalis_Admin_Interface {
             Penalis_Config::SETTINGS_PAGE_SLUG,
             [$this->settings_page, 'render']
         );
+
+        // Queue Monitor submenu (v2.0.0)
+        add_submenu_page(
+            Penalis_Config::PAGE_SLUG,
+            __('Queue Monitor', 'penalis-emailer'),
+            __('Queue Monitor', 'penalis-emailer'),
+            'manage_options',
+            'penalis-email-queue',
+            [$this->queue_monitor_page, 'render']
+        );
     }
     
     /**
@@ -229,7 +249,8 @@ class Penalis_Admin_Interface {
             'penalis-email-compose',
             'penalis-email-drafts',
             'penalis-email-history',
-            Penalis_Config::SETTINGS_PAGE_SLUG
+            Penalis_Config::SETTINGS_PAGE_SLUG,
+            'penalis-email-queue',
         ];
         
         if (!in_array($_GET['page'], $our_pages)) {
@@ -267,7 +288,8 @@ class Penalis_Admin_Interface {
             'penalis-email_page_penalis-email-compose',
             'penalis-email_page_penalis-email-drafts',
             'penalis-email_page_penalis-email-history',
-            'penalis-email_page_' . Penalis_Config::SETTINGS_PAGE_SLUG
+            'penalis-email_page_' . Penalis_Config::SETTINGS_PAGE_SLUG,
+            'penalis-email_page_penalis-email-queue',
         ];
         
         if (!in_array($hook, $our_pages)) {

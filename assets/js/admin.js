@@ -784,6 +784,112 @@
     };
     
     /**
+     * Queue Monitor Page Handler
+     *
+     * Handles Cancel and Refresh actions on the Queue Monitor admin page.
+     */
+    const QueueMonitorHandler = {
+
+        init: function() {
+            this.bindEvents();
+        },
+
+        bindEvents: function() {
+            $(document).on('click', '.penalis-cancel-job',  this.cancelJob.bind(this));
+            $(document).on('click', '.penalis-refresh-job', this.refreshJob.bind(this));
+        },
+
+        cancelJob: function(e) {
+            e.preventDefault();
+
+            const button = $(e.currentTarget);
+            const jobId  = button.data('job-id');
+            const nonce  = button.data('nonce');
+
+            if (!confirm('Cancel this job? Emails already sent will not be recalled.')) {
+                return;
+            }
+
+            button.prop('disabled', true).text('Cancelling...');
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_cancel_job',
+                nonce:  nonce,
+                job_id: jobId
+            }, function(response) {
+                if (response.success) {
+                    // Remove the row from the active jobs table
+                    button.closest('tr').fadeOut(300, function() {
+                        $(this).remove();
+                        // If table is now empty, reload to show "no active jobs"
+                        if ($('.penalis-jobs-table tbody tr').length === 0) {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    alert(response.data.message || 'Failed to cancel job.');
+                    button.prop('disabled', false).text('Cancel');
+                }
+            }).fail(function() {
+                alert('An error occurred. Please try again.');
+                button.prop('disabled', false).text('Cancel');
+            });
+        },
+
+        refreshJob: function(e) {
+            e.preventDefault();
+
+            const button = $(e.currentTarget);
+            const jobId  = button.data('job-id');
+            const nonce  = button.data('nonce');
+            const row    = button.closest('tr');
+
+            button.prop('disabled', true).text('Refreshing...');
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_get_queue_status',
+                nonce:  nonce,
+                job_id: jobId
+            }, function(response) {
+                button.prop('disabled', false).text('Refresh');
+
+                if (!response.success) return;
+
+                const d       = response.data;
+                const total   = d.total   || 1;
+                const sent    = d.sent    || 0;
+                const pending = (d.pending || 0) + (d.processing || 0) + (d.failed || 0);
+                const failed  = d.permanently_failed || 0;
+                const pct     = Math.round((sent / total) * 100);
+
+                // Update progress bar
+                row.find('.penalis-progress-bar').css('width', pct + '%');
+                row.find('.penalis-progress-pct').text(pct + '%');
+
+                // Update sent cell (3rd td)
+                row.find('td:nth-child(3)').html('<strong>' + sent + '</strong> / ' + total);
+
+                // Update pending cell (4th td)
+                row.find('td:nth-child(4)').text(pending);
+
+                // Update failed cell (5th td)
+                if (failed > 0) {
+                    row.find('td:nth-child(5)').html('<span class="penalis-badge penalis-badge--red">' + failed + '</span>');
+                } else {
+                    row.find('td:nth-child(5)').html('<span class="penalis-muted">—</span>');
+                }
+
+                // If job completed, reload page to move it to "recently completed"
+                if (d.overall === 'completed') {
+                    setTimeout(function() { window.location.reload(); }, 1000);
+                }
+            }).fail(function() {
+                button.prop('disabled', false).text('Refresh');
+            });
+        }
+    };
+
+    /**
      * Queue Progress Handler
      *
      * Polls the server for job status after emails are queued,
@@ -992,6 +1098,11 @@
         
         if ($('#drafts-table-body').length) {
             DraftManagementHandler.init();
+        }
+
+        // Queue monitor page
+        if ($('.penalis-queue-monitor').length) {
+            QueueMonitorHandler.init();
         }
 
         // Auto-start queue progress tracking if job_id is in URL

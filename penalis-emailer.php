@@ -42,9 +42,9 @@ spl_autoload_register(function ($class) {
     if ($class_name === 'Exception') {
         $file_path = PENALIS_EMAILER_PATH . 'includes/exceptions/class-penalis-exception.php';
     }
-    // Check if it's an admin class (starts with Admin or Compose or History or Settings or Ajax or Dashboard or Draft)
+    // Check if it's an admin class (starts with Admin or Compose or History or Settings or Ajax or Dashboard or Draft or Queue)
     // Must be checked BEFORE interface check because Admin_Interface would match both
-    elseif (preg_match('/^(Admin|Compose|History|Settings|Ajax|Dashboard|Draft)/', $class_name)) {
+    elseif (preg_match('/^(Admin|Compose|History|Settings|Ajax|Dashboard|Draft|Queue)/', $class_name)) {
         $file_path = PENALIS_EMAILER_PATH . 'includes/admin/class-' . $class_file . '.php';
     }
     // Check if it's an interface (ends with _Interface)
@@ -126,6 +126,7 @@ function penalis_emailer_init() {
     $container::singleton(Penalis_Settings_Page::class);
     $container::singleton(Penalis_Draft_Page::class);
     $container::singleton(Penalis_Ajax_Handler::class);
+    $container::singleton(Penalis_Queue_Monitor_Page::class);
     $container::singleton(Penalis_Admin_Interface::class);
     
     // Get instances through container (with automatic dependency injection)
