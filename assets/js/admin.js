@@ -179,7 +179,7 @@
 
                 // Update list state attributes
                 $list.data('offset',     batch);
-                $list.data('has-more',   response.data.has_more ? '1' : '0');
+                $list.data('has-more',   response.data.has_more ? 1 : 0);
                 $list.data('search-mode', false);
 
                 // Restore checked state for users now visible in the list
@@ -952,49 +952,105 @@
     /**
      * Infinite Scroll Handler for the Recipients list.
      *
-     * Uses IntersectionObserver to detect when the sentinel element
-     * (last item in the list) enters the viewport, then fetches the
+     * Uses a scroll event listener on the window to detect when the
+     * sentinel element is near the viewport bottom, then fetches the
      * next batch of users via AJAX and appends them.
+     *
+     * IntersectionObserver was avoided because it does not reliably
+     * fire when the sentinel is already visible on page load (no
+     * "crossing" event occurs), and behaves inconsistently inside
+     * overflow containers with max-height.
      */
     const InfiniteScrollHandler = {
 
-        observer:  null,
-        paused:    false,
+        observer:     null,
+        paused:       false,
+        scrollBound:  null,  // reference to bound scroll handler for removal
 
         init: function() {
             const $list = $('#recipients-list');
-            if (!$list.length) return;
-            if ($list.data('has-more') !== '1') return;
+            if (!$list.length) {
+                return;
+            }
 
-            this.observe();
+
+            if (parseInt($list.data('has-more')) !== 1) {
+                return;
+            }
+
+            this.attachScrollListener();
+
+            // Trigger immediately in case sentinel is already visible
+            // (e.g. when the initial batch is shorter than the viewport)
+            this.checkSentinel();
         },
 
         /**
-         * Attach IntersectionObserver to the sentinel element.
+         * Attach scroll listener to both window and the list container.
+         * The list has overflow-y: auto so it has its own scroll context.
          */
-        observe: function() {
-            const self     = this;
-            const sentinel = document.getElementById('recipients-scroll-sentinel');
-            if (!sentinel) return;
+        attachScrollListener: function() {
+            this.detachScrollListener();
 
-            // Disconnect any existing observer first
-            if (this.observer) {
-                this.observer.disconnect();
+            this.scrollBound = this.onScroll.bind(this);
+            window.addEventListener('scroll', this.scrollBound, { passive: true });
+
+            // Also listen to scroll inside the list container itself
+            const listEl = document.getElementById('recipients-list');
+            if (listEl) {
+                listEl.addEventListener('scroll', this.scrollBound, { passive: true });
+            } else {
+            }
+        },
+
+        /**
+         * Remove scroll listeners from window and list container.
+         */
+        detachScrollListener: function() {
+            if (this.scrollBound) {
+                window.removeEventListener('scroll', this.scrollBound);
+                const listEl = document.getElementById('recipients-list');
+                if (listEl) {
+                    listEl.removeEventListener('scroll', this.scrollBound);
+                }
+                this.scrollBound = null;
+            }
+        },
+
+        /**
+         * Scroll handler — check if sentinel is near the bottom of its scroll container.
+         */
+        onScroll: function() {
+            if (this.paused) return;
+            this.checkSentinel();
+        },
+
+        /**
+         * Check if the sentinel element is within 100px of the bottom of
+         * its scroll container (the list div with overflow-y: auto).
+         */
+        checkSentinel: function() {
+            const sentinel = document.getElementById('recipients-scroll-sentinel');
+            if (!sentinel) {
+                this.detachScrollListener();
+                return;
             }
 
-            this.observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting && !self.paused) {
-                        self.loadNextBatch();
-                    }
-                });
-            }, {
-                root:       document.getElementById('recipients-list'),
-                rootMargin: '0px',
-                threshold:  0.1
-            });
+            const $list = $('#recipients-list');
+            if (parseInt($list.data('has-more')) !== 1) {
+                this.detachScrollListener();
+                return;
+            }
 
-            this.observer.observe(sentinel);
+            const listEl         = document.getElementById('recipients-list');
+            const scrollBottom    = listEl.scrollTop + listEl.clientHeight;
+            const scrollHeight    = listEl.scrollHeight;
+            const distanceToBottom = scrollHeight - scrollBottom;
+
+            // Trigger when within 100px of the bottom of the scrollable container
+            if (distanceToBottom <= 100) {
+                this.loadNextBatch();
+            }
         },
 
         /**
@@ -1002,7 +1058,6 @@
          */
         pause: function() {
             this.paused = true;
-            if (this.observer) this.observer.disconnect();
         },
 
         /**
@@ -1010,7 +1065,9 @@
          */
         resume: function() {
             this.paused = false;
-            this.observe();
+            this.attachScrollListener();
+            // Check immediately in case sentinel is already visible
+            this.checkSentinel();
         },
 
         /**
@@ -1020,9 +1077,13 @@
             const $list = $('#recipients-list');
 
             // Guard: already loading
-            if ($list.data('loading') === '1') return;
+            if ($list.data('loading') === '1') {
+                return;
+            }
             // Guard: no more items
-            if ($list.data('has-more') !== '1') return;
+            if (parseInt($list.data('has-more')) !== 1) {
+                return;
+            }
 
             const offset = parseInt($list.data('offset')) || 0;
 
@@ -1039,13 +1100,11 @@
                 $list.data('loading', '0');
 
                 if (!response.success || !response.data.html) {
-                    // No more results — remove sentinel and stop observing
                     InfiniteScrollHandler.markComplete();
                     return;
                 }
 
                 const $sentinel  = $('#recipients-scroll-sentinel');
-                const $loadingEl = $('#recipients-loading');
 
                 // Append new items before the sentinel
                 $(response.data.html).insertBefore($sentinel);
@@ -1060,8 +1119,13 @@
 
                 if (!response.data.has_more) {
                     InfiniteScrollHandler.markComplete();
+                } else {
+                    // Check again immediately — new items may still leave
+                    // sentinel visible in the viewport
+                    setTimeout(function() {
+                        InfiniteScrollHandler.checkSentinel();
+                    }, 100);
                 }
-                // Observer will re-fire automatically if sentinel is still visible
             }).fail(function() {
                 $('#recipients-loading').hide();
                 $list.data('loading', '0');
@@ -1069,16 +1133,13 @@
         },
 
         /**
-         * All users loaded — remove sentinel, stop observing.
+         * All users loaded — remove sentinel, detach scroll listener.
          */
         markComplete: function() {
             const $list = $('#recipients-list');
-            $list.data('has-more', '0');
+            $list.data('has-more', 0);
 
-            if (this.observer) {
-                this.observer.disconnect();
-                this.observer = null;
-            }
+            this.detachScrollListener();
 
             $('#recipients-scroll-sentinel').remove();
             $('#recipients-loading').remove();

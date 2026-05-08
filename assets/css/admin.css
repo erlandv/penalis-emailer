@@ -22,6 +22,8 @@
 
 .penalis-sidebar {
     min-width: 0; /* Prevent grid blowout */
+    position: sticky;
+    top: 32px; /* WP admin bar height */
 }
 
 /* ========================================
@@ -323,7 +325,7 @@
 }
 
 .penalis-recipients-list {
-    max-height: calc(100vh - 280px); /* Dynamic height to bottom of screen */
+    max-height: 520px;
     overflow-y: auto;
     border: 1px solid #dcdcde;
     border-radius: 4px;
@@ -565,10 +567,6 @@
     .penalis-sidebar {
         position: static;
         max-height: none;
-    }
-    
-    .penalis-recipients-list {
-        max-height: 300px;
     }
 }
 
