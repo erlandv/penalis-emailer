@@ -295,9 +295,11 @@ class Penalis_Queue_Monitor_Page extends Penalis_Admin_Page {
      * @return void
      */
     private function render_settings_form(): void {
-        $batch_size   = Penalis_Config::get_queue_batch_size();
-        $interval     = Penalis_Config::get_queue_interval();
-        $max_attempts = Penalis_Config::get_queue_max_attempts();
+        $batch_size     = Penalis_Config::get_queue_batch_size();
+        $interval       = Penalis_Config::get_queue_interval();
+        $max_attempts   = Penalis_Config::get_queue_max_attempts();
+        // Convert microseconds → milliseconds for display
+        $throttle_ms    = (int) round(Penalis_Config::get_queue_throttle_delay() / 1000);
         ?>
         <div class="penalis-form-card">
             <h3>
@@ -321,6 +323,23 @@ class Penalis_Queue_Monitor_Page extends Penalis_Admin_Page {
                            class="small-text">
                     <p class="description">
                         <?php echo esc_html__('How many emails to send per cron run. Default: 30.', 'penalis-emailer'); ?>
+                    </p>
+                </div>
+
+                <div class="penalis-form-group" style="margin-top:14px;">
+                    <label for="queue_throttle_delay">
+                        <?php echo esc_html__('Delay between emails (ms)', 'penalis-emailer'); ?>
+                    </label>
+                    <input type="number"
+                           id="queue_throttle_delay"
+                           name="queue_throttle_delay"
+                           value="<?php echo esc_attr($throttle_ms); ?>"
+                           min="0"
+                           max="5000"
+                           step="100"
+                           class="small-text">
+                    <p class="description">
+                        <?php echo esc_html__('Milliseconds to wait between each email within a batch. Default: 500 ms. Set to 0 to disable. Increase if your SMTP provider has strict rate limits.', 'penalis-emailer'); ?>
                     </p>
                 </div>
 
@@ -364,6 +383,26 @@ class Penalis_Queue_Monitor_Page extends Penalis_Admin_Page {
             </form>
 
             <hr style="margin:20px 0 16px;">
+
+            <h4 style="margin:0 0 8px 0;font-size:13px;">
+                <?php echo esc_html__('Throughput Estimate', 'penalis-emailer'); ?>
+            </h4>
+            <?php
+            // Calculate estimated emails per minute based on current settings
+            $delay_per_email_s  = Penalis_Config::get_queue_throttle_delay() / 1_000_000;
+            $batch_time_s       = $batch_size * $delay_per_email_s;
+            $cycle_time_s       = $batch_time_s + $interval;
+            $emails_per_minute  = $cycle_time_s > 0 ? round(($batch_size / $cycle_time_s) * 60, 1) : 0;
+            ?>
+            <p style="font-size:12px;color:#646970;margin:0 0 12px 0;">
+                <?php
+                printf(
+                    /* translators: 1: emails per minute estimate */
+                    esc_html__('With current settings: ~%s emails/minute.', 'penalis-emailer'),
+                    '<strong>' . esc_html(number_format_i18n($emails_per_minute, 1)) . '</strong>'
+                );
+                ?>
+            </p>
 
             <h4 style="margin:0 0 8px 0;font-size:13px;">
                 <?php echo esc_html__('Retry Backoff Schedule', 'penalis-emailer'); ?>
@@ -512,13 +551,17 @@ class Penalis_Queue_Monitor_Page extends Penalis_Admin_Page {
             wp_die(__('Insufficient permissions.', 'penalis-emailer'));
         }
 
-        $batch_size   = max(1,  min(200, (int) ($_POST['queue_batch_size']   ?? Penalis_Config::DEFAULT_QUEUE_BATCH_SIZE)));
-        $interval     = max(30, min(3600, (int) ($_POST['queue_interval']    ?? Penalis_Config::DEFAULT_QUEUE_INTERVAL)));
-        $max_attempts = max(1,  min(10,  (int) ($_POST['queue_max_attempts'] ?? Penalis_Config::DEFAULT_QUEUE_MAX_ATTEMPTS)));
+        $batch_size     = max(1,  min(200,  (int) ($_POST['queue_batch_size']    ?? Penalis_Config::DEFAULT_QUEUE_BATCH_SIZE)));
+        $interval       = max(30, min(3600, (int) ($_POST['queue_interval']      ?? Penalis_Config::DEFAULT_QUEUE_INTERVAL)));
+        $max_attempts   = max(1,  min(10,   (int) ($_POST['queue_max_attempts']  ?? Penalis_Config::DEFAULT_QUEUE_MAX_ATTEMPTS)));
+        // Input is in milliseconds — convert to microseconds for storage
+        $throttle_ms    = max(0,  min(5000, (int) ($_POST['queue_throttle_delay'] ?? round(Penalis_Config::DEFAULT_QUEUE_THROTTLE_DELAY / 1000))));
+        $throttle_us    = $throttle_ms * 1000;
 
-        update_option(Penalis_Config::OPTION_KEY_QUEUE_BATCH_SIZE,    $batch_size);
-        update_option(Penalis_Config::OPTION_KEY_QUEUE_INTERVAL,      $interval);
-        update_option(Penalis_Config::OPTION_KEY_QUEUE_MAX_ATTEMPTS,  $max_attempts);
+        update_option(Penalis_Config::OPTION_KEY_QUEUE_BATCH_SIZE,   $batch_size);
+        update_option(Penalis_Config::OPTION_KEY_QUEUE_INTERVAL,     $interval);
+        update_option(Penalis_Config::OPTION_KEY_QUEUE_MAX_ATTEMPTS, $max_attempts);
+        update_option(Penalis_Config::OPTION_KEY_QUEUE_THROTTLE,     $throttle_us);
 
         $this->redirect_with_notice(
             $this->page_slug,

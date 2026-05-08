@@ -47,12 +47,14 @@ class Penalis_Config {
     const LOG_CLEANUP_KEEP_COUNT = 100;
 
     // Queue Settings
-    const DEFAULT_QUEUE_BATCH_SIZE    = 30;   // emails per cron batch
-    const DEFAULT_QUEUE_INTERVAL      = 60;   // seconds between batches
-    const DEFAULT_QUEUE_MAX_ATTEMPTS  = 3;    // max retry attempts before permanent failure
-    const OPTION_KEY_QUEUE_BATCH_SIZE = 'penalis_queue_batch_size';
-    const OPTION_KEY_QUEUE_INTERVAL   = 'penalis_queue_interval';
+    const DEFAULT_QUEUE_BATCH_SIZE      = 30;    // emails per cron batch
+    const DEFAULT_QUEUE_INTERVAL        = 60;    // seconds between batches
+    const DEFAULT_QUEUE_MAX_ATTEMPTS    = 3;     // max retry attempts before permanent failure
+    const DEFAULT_QUEUE_THROTTLE_DELAY  = 500000; // microseconds between emails (0.5 s)
+    const OPTION_KEY_QUEUE_BATCH_SIZE   = 'penalis_queue_batch_size';
+    const OPTION_KEY_QUEUE_INTERVAL     = 'penalis_queue_interval';
     const OPTION_KEY_QUEUE_MAX_ATTEMPTS = 'penalis_queue_max_attempts';
+    const OPTION_KEY_QUEUE_THROTTLE     = 'penalis_queue_throttle_delay';
 
     // WP-Cron hook name
     const CRON_HOOK = 'penalis_process_email_queue';
@@ -139,5 +141,18 @@ class Penalis_Config {
      */
     public static function get_queue_max_attempts(): int {
         return (int) get_option(self::OPTION_KEY_QUEUE_MAX_ATTEMPTS, self::DEFAULT_QUEUE_MAX_ATTEMPTS);
+    }
+
+    /**
+     * Get throttle delay between individual emails within a batch (microseconds).
+     *
+     * 0         = no delay (not recommended on shared hosting)
+     * 500000    = 0.5 seconds  (default — safe for most SMTP providers)
+     * 1000000   = 1 second
+     *
+     * @return int Microseconds
+     */
+    public static function get_queue_throttle_delay(): int {
+        return (int) get_option(self::OPTION_KEY_QUEUE_THROTTLE, self::DEFAULT_QUEUE_THROTTLE_DELAY);
     }
 }

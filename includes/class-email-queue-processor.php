@@ -77,8 +77,9 @@ class Penalis_Email_Queue_Processor {
      * }
      */
     public function process_batch(): array {
-        $batch_size = Penalis_Config::get_queue_batch_size();
-        $items      = $this->queue->get_pending_batch($batch_size);
+        $batch_size     = Penalis_Config::get_queue_batch_size();
+        $throttle_delay = Penalis_Config::get_queue_throttle_delay();
+        $items          = $this->queue->get_pending_batch($batch_size);
 
         $stats = ['processed' => 0, 'sent' => 0, 'failed' => 0];
 
@@ -86,10 +87,14 @@ class Penalis_Email_Queue_Processor {
             return $stats;
         }
 
+        $total_items   = count($items);
+        $current_index = 0;
+
         // Group items by job_id so we can log per-job after the batch
         $jobs_in_batch = [];
 
         foreach ($items as $item) {
+            $current_index++;
             $stats['processed']++;
 
             // Mark as processing to prevent double-processing on overlapping cron runs
@@ -110,6 +115,14 @@ class Penalis_Email_Queue_Processor {
             }
 
             $jobs_in_batch[$item['job_id']] = true;
+
+            // Rate limiting: pause between emails to avoid overwhelming the SMTP
+            // server or triggering provider rate limits.
+            // Skip the delay after the very last item — no point waiting after
+            // the batch is done.
+            if ($throttle_delay > 0 && $current_index < $total_items) {
+                usleep($throttle_delay);
+            }
         }
 
         // After the batch, check each job to see if it just completed
