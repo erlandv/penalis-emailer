@@ -49,7 +49,7 @@ Penalis Emailer is a professional WordPress plugin that streamlines communicatio
 * **Multi-Author Blogs** - Notify authors when their posts go live
 * **Editorial Workflow** - Keep contributors informed about publication status
 * **Content Teams** - Send announcements and updates to selected team members
-* **Newsletter Alternative** - Send custom HTML emails to authors and contributors
+* **Newsletter Alternative** - Send custom emails written in markdown to authors and contributors
 * **Audit Trail** - Track all email communications with comprehensive logging
 
 = Automatic Email Notifications =
@@ -65,7 +65,7 @@ Once activated, the plugin automatically sends email notifications to post autho
 
 The admin interface allows you to:
 
-* Compose emails in markdown or HTML
+* Compose emails in markdown
 * Select recipients from authors and contributors
 * Preview emails before sending
 * Use dynamic placeholders
