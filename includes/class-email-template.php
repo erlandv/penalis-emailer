@@ -21,13 +21,6 @@ if (!defined('ABSPATH')) {
 class Penalis_Email_Template implements Penalis_Email_Template_Interface {
     
     /**
-     * Logo URL for email header
-     * 
-     * @var string
-     */
-    private $logo_url = 'https://penalis.com/wp-content/uploads/2021/01/logo-penalis.png';
-    
-    /**
      * Markdown parser instance
      * 
      * @var Penalis_Markdown_Parser
@@ -209,7 +202,7 @@ Salam Literasi,
 <table role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
 <tr>
 <td style="background-color:#f0f0f0; padding:16px;">
-<img src="<?php echo esc_url($this->logo_url); ?>" alt="Logo Penalis" width="130" style="display:block; border:0; height:auto;">
+<img src="<?php echo esc_url(Penalis_Config::get_logo_url()); ?>" alt="Logo Penalis" width="130" style="display:block; border:0; height:auto;">
 </td>
 </tr>
 </table>
