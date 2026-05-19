@@ -221,8 +221,13 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         $job_id          = 'job_' . time() . '_' . wp_generate_password(8, false);
         $results['job_id'] = $job_id;
 
+        // Capture the current user ID now, while we're still in the HTTP request
+        // context. The queue processor runs via WP-Cron where wp_get_current_user()
+        // returns 0, so we must store the sender ID alongside the queue items.
+        $sent_by = get_current_user_id();
+
         // Bulk-insert all valid recipients into the queue
-        $enqueued        = $this->queue->bulk_enqueue($job_id, $valid_ids, $subject, $message, $from_name);
+        $enqueued        = $this->queue->bulk_enqueue($job_id, $valid_ids, $subject, $message, $from_name, $sent_by);
         $results['success'] = $enqueued;
 
         if ($enqueued > 0) {

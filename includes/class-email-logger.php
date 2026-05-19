@@ -130,11 +130,18 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      * @param string $subject    The email subject (already sanitized)
      * @param string $body       The email body content (for preview)
      * @param string $job_id     Queue job ID (v2.0.0+, empty for legacy)
+     * @param int    $sent_by    WP user ID of the sender. When 0 (default), falls
+     *                           back to wp_get_current_user(). Pass an explicit ID
+     *                           when logging from a cron/background context where
+     *                           the current user is not available.
      * @return void
      */
-    public function log_manual_email(array $recipients, string $subject, string $body = '', string $job_id = ''): void {
-        // Get current user
-        $current_user = wp_get_current_user();
+    public function log_manual_email(array $recipients, string $subject, string $body = '', string $job_id = '', int $sent_by = 0): void {
+        // Use the provided sender ID, or fall back to the current logged-in user.
+        // The fallback handles legacy/direct calls that don't pass $sent_by.
+        if ($sent_by === 0) {
+            $sent_by = get_current_user_id();
+        }
         
         // Generate unique log ID
         $log_id = 'manual_' . time() . '_' . wp_generate_password(8, false);
@@ -154,7 +161,7 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
             'recipient_count' => count($recipients),
             'recipients'      => $recipients,
             'sent_at'         => time(),
-            'sent_by'         => $current_user->ID,
+            'sent_by'         => $sent_by,
             'status'          => 'sent'
         ];
         

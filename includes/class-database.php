@@ -28,7 +28,7 @@ class Penalis_Database {
      *
      * @var string
      */
-    const SCHEMA_VERSION = '2.0.1';
+    const SCHEMA_VERSION = '2.0.2';
 
     /**
      * Option key for storing installed schema version
@@ -139,6 +139,7 @@ class Penalis_Database {
             subject       VARCHAR(255)    NOT NULL DEFAULT '',
             body          LONGTEXT,
             from_name     VARCHAR(100)    NOT NULL DEFAULT '',
+            sent_by       BIGINT UNSIGNED NOT NULL DEFAULT 0,
             status        VARCHAR(20)     NOT NULL DEFAULT 'pending',
             attempts      TINYINT UNSIGNED NOT NULL DEFAULT 0,
             next_attempt  INT UNSIGNED    NOT NULL DEFAULT 0,
