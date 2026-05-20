@@ -1,6 +1,31 @@
 # Changelog
 
-### Version 2.0.0 (Current)
+### Version 2.1.0
+
+#### New Features
+
+**Email Sender Tracking**
+- Manual emails now correctly record who sent them in the "Sent By" column of Email History
+- Previously, emails sent via the async queue always showed "Unknown" because the sender was captured inside WP-Cron (no active session)
+- Fix: sender's user ID is now captured during the HTTP request at enqueue time and stored in the queue table alongside each job item
+- The queue processor reads `sent_by` from the queue row when writing the log entry, so the correct user is always recorded
+- Database schema bumped to `2.0.2` — a `sent_by` column is added to `penalis_email_queue` via `dbDelta` on next plugin load
+
+**Placeholder & Formatting Guide in Compose Page**
+- Added a "Placeholder & Formatting Guide" card directly below the Email Body textarea on the Compose Email page
+- Matches the same 3-column layout used in Auto-Email Template Settings
+- Columns: Quick Tips, Available Placeholders (`{USER_NAME}`, `{USER_EMAIL}`, `{USERNAME}`, `{DATE}`, `{SITE_NAME}`, `{SITE_URL}`), and Formatting Guide (bold, italic, links, buttons, lists, line breaks)
+
+**Queue Snippets on Dashboard**
+- Dashboard now shows two new queue-related widgets below the existing Recent Emails / Recent Drafts grid
+- **Active Jobs** — lists all currently running jobs with job ID, sent/total count, progress percentage, and pending count; shows "Queue is idle" when empty
+- **Recently Completed Jobs** — lists the last 5 completed jobs with job ID, sent count, permanently failed count (highlighted in red if any), and time ago
+- Both widgets include a "View All Queue Monitor →" CTA button linking to `?page=penalis-email-queue`
+- `Penalis_Dashboard_Page` now receives `Penalis_Email_Queue_Repository` via constructor injection (auto-wired by the service container)
+
+---
+
+### Version 2.0.0 (Previous)
 
 This major release introduces a background email queue system, migration of storage
 from `wp_options` to custom database tables, and significant UI/UX improvements to
