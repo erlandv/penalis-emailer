@@ -83,9 +83,10 @@ class Penalis_Email_Queue_Repository {
      * @param string $subject   Email subject
      * @param string $body      Email body
      * @param string $from_name Sender display name
+     * @param int    $sent_by   WordPress user ID of the sender (0 = unknown)
      * @return int Number of rows inserted
      */
-    public function bulk_enqueue(string $job_id, array $user_ids, string $subject, string $body, string $from_name): int {
+    public function bulk_enqueue(string $job_id, array $user_ids, string $subject, string $body, string $from_name, int $sent_by = 0): int {
         global $wpdb;
 
         if (empty($user_ids)) {
@@ -97,12 +98,13 @@ class Penalis_Email_Queue_Repository {
         $values       = [];
 
         foreach ($user_ids as $user_id) {
-            $placeholders[] = '(%s, %d, %s, %s, %s, %s, %d, %d, %d, %d)';
+            $placeholders[] = '(%s, %d, %s, %s, %s, %d, %s, %d, %d, %d, %d)';
             $values[]       = $job_id;
             $values[]       = (int) $user_id;
             $values[]       = $subject;
             $values[]       = $body;
             $values[]       = $from_name;
+            $values[]       = $sent_by;
             $values[]       = 'pending';
             $values[]       = 0;       // attempts
             $values[]       = $now;    // next_attempt
@@ -115,7 +117,7 @@ class Penalis_Email_Queue_Repository {
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
             "INSERT INTO {$this->table}
-             (job_id, user_id, subject, body, from_name, status, attempts, next_attempt, created_at, sent_at)
+             (job_id, user_id, subject, body, from_name, sent_by, status, attempts, next_attempt, created_at, sent_at)
              VALUES {$placeholder_string}",
             ...$values
         );

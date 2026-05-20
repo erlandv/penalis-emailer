@@ -233,10 +233,10 @@ class Penalis_Email_Queue_Processor {
         );
         $recipients = array_map('intval', (array) $recipients);
 
-        // Retrieve subject/body from the first sent item
+        // Retrieve subject/body/sent_by from the first sent item
         $first_item = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT subject, body FROM {$queue_table} WHERE job_id = %s LIMIT 1",
+                "SELECT subject, body, sent_by FROM {$queue_table} WHERE job_id = %s LIMIT 1",
                 $job_id
             ),
             ARRAY_A
@@ -244,8 +244,9 @@ class Penalis_Email_Queue_Processor {
 
         $subject = $first_item['subject'] ?? '';
         $body    = $first_item['body']    ?? '';
+        $sent_by = isset($first_item['sent_by']) ? (int) $first_item['sent_by'] : 0;
 
-        $this->logger->log_manual_email($recipients, $subject, $body, $job_id);
+        $this->logger->log_manual_email($recipients, $subject, $body, $job_id, $sent_by);
     }
 
     /**
