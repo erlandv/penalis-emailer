@@ -27,15 +27,24 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
      * @var Penalis_Email_Logger
      */
     private $email_logger;
+
+    /**
+     * Queue repository instance
+     *
+     * @var Penalis_Email_Queue_Repository
+     */
+    private $queue;
     
     /**
      * Constructor
      *
-     * @param Penalis_Email_Logger $email_logger Email logger instance
+     * @param Penalis_Email_Logger           $email_logger Email logger instance
+     * @param Penalis_Email_Queue_Repository $queue        Queue repository instance
      */
-    public function __construct(Penalis_Email_Logger $email_logger) {
+    public function __construct(Penalis_Email_Logger $email_logger, Penalis_Email_Queue_Repository $queue) {
         $this->email_logger = $email_logger;
-        $this->page_slug = Penalis_Config::PAGE_SLUG;
+        $this->queue        = $queue;
+        $this->page_slug    = Penalis_Config::PAGE_SLUG;
     }
     
     /**
@@ -56,6 +65,14 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         
         // Get recent drafts
         $recent_drafts = $this->email_logger->get_drafts(5);
+
+        // Get queue data for dashboard snippets
+        $active_job_ids = $this->queue->get_active_job_ids();
+        $active_jobs    = [];
+        foreach ($active_job_ids as $job_id) {
+            $active_jobs[$job_id] = $this->queue->get_job_summary($job_id);
+        }
+        $recent_completed_jobs = $this->get_recent_completed_jobs(5);
         
         ?>
         <div class="wrap penalis-dashboard">
@@ -77,6 +94,15 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
                 
                 <!-- Recent Drafts -->
                 <?php $this->render_recent_drafts($recent_drafts); ?>
+            </div>
+
+            <!-- Queue Snippets Grid -->
+            <div class="penalis-recent-grid">
+                <!-- Active Jobs -->
+                <?php $this->render_active_jobs_snippet($active_jobs); ?>
+
+                <!-- Recently Completed Jobs -->
+                <?php $this->render_completed_jobs_snippet($recent_completed_jobs); ?>
             </div>
             
             <!-- Tips & Best Practices -->
@@ -381,6 +407,194 @@ class Penalis_Dashboard_Page extends Penalis_Admin_Page {
         <?php
     }
     
+    /**
+     * Render active jobs snippet for dashboard
+     *
+     * @param array $active_jobs Keyed by job_id, value = summary array
+     * @return void
+     */
+    private function render_active_jobs_snippet(array $active_jobs): void {
+        ?>
+        <div class="penalis-recent-activity">
+            <h2>
+                <?php echo esc_html__('Active Jobs', 'penalis-emailer'); ?>
+                <?php if (!empty($active_jobs)): ?>
+                    <span class="penalis-badge penalis-badge--blue" style="font-size:12px;vertical-align:middle;margin-left:6px;"><?php echo count($active_jobs); ?></span>
+                <?php endif; ?>
+            </h2>
+
+            <?php if (empty($active_jobs)): ?>
+                <div class="penalis-empty-state">
+                    <p><?php echo esc_html__('No active jobs. Queue is idle.', 'penalis-emailer'); ?></p>
+                </div>
+            <?php else: ?>
+                <div class="penalis-activity-list">
+                    <?php foreach ($active_jobs as $job_id => $summary): ?>
+                        <?php
+                        $total   = $summary['total'] ?: 1;
+                        $sent    = $summary['sent']  ?? 0;
+                        $pending = ($summary['pending'] ?? 0) + ($summary['processing'] ?? 0) + ($summary['failed'] ?? 0);
+                        $pct     = round(($sent / $total) * 100);
+                        ?>
+                        <div class="penalis-activity-item">
+                            <div class="penalis-activity-icon">
+                                <span class="dashicons dashicons-update" style="color:#2271b1;"></span>
+                            </div>
+                            <div class="penalis-activity-content">
+                                <div class="penalis-activity-title">
+                                    <code style="font-size:11px;"><?php echo esc_html($job_id); ?></code>
+                                </div>
+                                <div class="penalis-activity-meta">
+                                    <?php
+                                    printf(
+                                        /* translators: 1: sent count, 2: total count, 3: progress percent */
+                                        esc_html__('%1$d / %2$d sent (%3$d%%)', 'penalis-emailer'),
+                                        $sent, $total, $pct
+                                    );
+                                    ?>
+                                    <span class="penalis-activity-separator">•</span>
+                                    <?php
+                                    printf(
+                                        /* translators: %d: pending count */
+                                        esc_html__('%d pending', 'penalis-emailer'),
+                                        $pending
+                                    );
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="penalis-view-all">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-queue')); ?>"
+                   class="button">
+                    <?php echo esc_html__('View All Queue Monitor', 'penalis-emailer'); ?> →
+                </a>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render recently completed jobs snippet for dashboard
+     *
+     * @param array $recent_jobs Recently completed job rows
+     * @return void
+     */
+    private function render_completed_jobs_snippet(array $recent_jobs): void {
+        ?>
+        <div class="penalis-recent-drafts">
+            <h2><?php echo esc_html__('Recently Completed Jobs', 'penalis-emailer'); ?></h2>
+
+            <?php if (empty($recent_jobs)): ?>
+                <div class="penalis-empty-state">
+                    <p><?php echo esc_html__('No completed jobs yet.', 'penalis-emailer'); ?></p>
+                </div>
+            <?php else: ?>
+                <div class="penalis-activity-list">
+                    <?php foreach ($recent_jobs as $job): ?>
+                        <?php
+                        $time_ago = $job['last_sent_at'] > 0
+                            ? human_time_diff($job['last_sent_at'], current_time('timestamp', true)) . ' ' . __('ago', 'penalis-emailer')
+                            : '—';
+                        $has_failures = $job['permanently_failed'] > 0;
+                        ?>
+                        <div class="penalis-activity-item">
+                            <div class="penalis-activity-icon">
+                                <?php if ($has_failures): ?>
+                                    <span class="dashicons dashicons-warning" style="color:#d63638;"></span>
+                                <?php else: ?>
+                                    <span class="dashicons dashicons-yes-alt" style="color:#00a32a;"></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="penalis-activity-content">
+                                <div class="penalis-activity-title">
+                                    <code style="font-size:11px;"><?php echo esc_html($job['job_id']); ?></code>
+                                </div>
+                                <div class="penalis-activity-meta">
+                                    <?php
+                                    printf(
+                                        /* translators: %d: sent count */
+                                        esc_html__('%d sent', 'penalis-emailer'),
+                                        $job['sent']
+                                    );
+                                    if ($has_failures) {
+                                        echo ' <span style="color:#d63638;">• ';
+                                        printf(
+                                            /* translators: %d: failed count */
+                                            esc_html__('%d failed', 'penalis-emailer'),
+                                            $job['permanently_failed']
+                                        );
+                                        echo '</span>';
+                                    }
+                                    ?>
+                                    <span class="penalis-activity-separator">•</span>
+                                    <span class="penalis-activity-time"><?php echo esc_html($time_ago); ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="penalis-view-all">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-queue')); ?>"
+                   class="button">
+                    <?php echo esc_html__('View All Queue Monitor', 'penalis-emailer'); ?> →
+                </a>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Get recently completed jobs from the queue table.
+     *
+     * Returns jobs where all items are sent or permanently_failed
+     * (no pending/processing/failed rows remain), ordered by most recent.
+     *
+     * @param int $limit
+     * @return array
+     */
+    private function get_recent_completed_jobs(int $limit = 5): array {
+        global $wpdb;
+        $table = Penalis_Database::get_queue_table();
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT
+                    job_id,
+                    SUM(status = 'sent') AS sent,
+                    SUM(status = 'permanently_failed') AS permanently_failed,
+                    MAX(sent_at) AS last_sent_at
+                 FROM {$table}
+                 GROUP BY job_id
+                 HAVING
+                    SUM(status IN ('pending','processing','failed')) = 0
+                    AND SUM(status = 'sent') > 0
+                 ORDER BY last_sent_at DESC
+                 LIMIT %d",
+                $limit
+            ),
+            ARRAY_A
+        );
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return array_map(function (array $row): array {
+            return [
+                'job_id'             => $row['job_id'],
+                'sent'               => (int) $row['sent'],
+                'permanently_failed' => (int) $row['permanently_failed'],
+                'last_sent_at'       => (int) $row['last_sent_at'],
+            ];
+        }, $rows);
+    }
+
     /**
      * Render tips section
      *
