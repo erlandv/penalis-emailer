@@ -116,6 +116,7 @@ class Penalis_Admin_Interface {
         add_action('admin_post_penalis_save_template', [$this->settings_page, 'handle_save']);
         add_action('admin_post_penalis_reset_template', [$this->settings_page, 'handle_reset']);
         add_action('admin_post_penalis_send_draft', [$this->draft_page, 'handle_send_draft']);
+        add_action('admin_post_penalis_save_uninstall_settings', [$this->settings_page, 'handle_save_uninstall_settings']);
         
         // Admin notices - single handler for all pages
         add_action('admin_notices', [$this, 'show_admin_notices']);
@@ -127,66 +128,72 @@ class Penalis_Admin_Interface {
     /**
      * Add admin menu pages
      *
+     * All menu items are registered with CAP_EDITOR so they are visible to
+     * both administrators and editors. Access control is enforced inside each
+     * page's render() method — editors see a "no access" notice on admin-only
+     * pages instead of a blank screen or a WordPress error.
+     *
      * @return void
      */
     public function add_admin_menu(): void {
-        // Main menu page - Dashboard
+        // Main menu page — clicking it lands on Dashboard (admin) or
+        // redirects to Email History (editor).
         add_menu_page(
             __('Penalis Email', 'penalis-emailer'),
             __('Penalis Email', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             Penalis_Config::PAGE_SLUG,
             [$this, 'render_main_page'],
             'dashicons-email',
             30
         );
-        
-        // Dashboard submenu (same as main page)
+
+        // Dashboard submenu (same slug as main page — replaces the auto-duplicate)
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Dashboard', 'penalis-emailer'),
             __('Dashboard', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             Penalis_Config::PAGE_SLUG,
             [$this, 'render_main_page']
         );
-        
+
         // Compose Email submenu
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Compose Email', 'penalis-emailer'),
             __('Compose Email', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             'penalis-email-compose',
             [$this->compose_page, 'render']
         );
-        
+
         // Draft Management submenu
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Draft Management', 'penalis-emailer'),
             __('Drafts', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             'penalis-email-drafts',
             [$this->draft_page, 'render']
         );
-        
-        // Email History submenu
+
+        // Email History submenu — accessible by editors (read-only, automatic tab)
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Email History', 'penalis-emailer'),
             __('Email History', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             'penalis-email-history',
             [$this, 'render_history_page']
         );
-        
-        // Settings submenu
+
+        // Template Settings submenu
         add_submenu_page(
             Penalis_Config::PAGE_SLUG,
             __('Email Template Settings', 'penalis-emailer'),
             __('Template Settings', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             Penalis_Config::SETTINGS_PAGE_SLUG,
             [$this->settings_page, 'render']
         );
@@ -196,18 +203,23 @@ class Penalis_Admin_Interface {
             Penalis_Config::PAGE_SLUG,
             __('Queue Monitor', 'penalis-emailer'),
             __('Queue Monitor', 'penalis-emailer'),
-            'manage_options',
+            Penalis_Config::CAP_EDITOR,
             'penalis-email-queue',
             [$this->queue_monitor_page, 'render']
         );
     }
     
     /**
-     * Render main page (dashboard or compose based on tab)
+     * Render main page (Dashboard for admins, Access Denied for editors)
      *
      * @return void
      */
     public function render_main_page(): void {
+        if (!current_user_can(Penalis_Config::CAP_ADMIN)) {
+            $this->dashboard_page->render_no_access_page();
+            return;
+        }
+
         // Check if tab parameter exists
         $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : '';
         
@@ -217,7 +229,6 @@ class Penalis_Admin_Interface {
                 $this->settings_page->render();
                 break;
             default:
-                // Default to dashboard
                 $this->dashboard_page->render();
                 break;
         }

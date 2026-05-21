@@ -1,481 +1,134 @@
 # Changelog
 
-### Version 2.1.0
-
-#### New Features
-
-**Email Sender Tracking**
-- Manual emails now correctly record who sent them in the "Sent By" column of Email History
-- Previously, emails sent via the async queue always showed "Unknown" because the sender was captured inside WP-Cron (no active session)
-- Fix: sender's user ID is now captured during the HTTP request at enqueue time and stored in the queue table alongside each job item
-- The queue processor reads `sent_by` from the queue row when writing the log entry, so the correct user is always recorded
-- Database schema bumped to `2.0.2` — a `sent_by` column is added to `penalis_email_queue` via `dbDelta` on next plugin load
-
-**Placeholder & Formatting Guide in Compose Page**
-- Added a "Placeholder & Formatting Guide" card directly below the Email Body textarea on the Compose Email page
-- Matches the same 3-column layout used in Auto-Email Template Settings
-- Columns: Quick Tips, Available Placeholders (`{USER_NAME}`, `{USER_EMAIL}`, `{USERNAME}`, `{DATE}`, `{SITE_NAME}`, `{SITE_URL}`), and Formatting Guide (bold, italic, links, buttons, lists, line breaks)
-
-**Queue Snippets on Dashboard**
-- Dashboard now shows two new queue-related widgets below the existing Recent Emails / Recent Drafts grid
-- **Active Jobs** — lists all currently running jobs with job ID, sent/total count, progress percentage, and pending count; shows "Queue is idle" when empty
-- **Recently Completed Jobs** — lists the last 5 completed jobs with job ID, sent count, permanently failed count (highlighted in red if any), and time ago
-- Both widgets include a "View All Queue Monitor →" CTA button linking to `?page=penalis-email-queue`
-- `Penalis_Dashboard_Page` now receives `Penalis_Email_Queue_Repository` via constructor injection (auto-wired by the service container)
+All notable changes to this project will be documented in this file.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-### Version 2.0.0 (Previous)
+## [2.2.0] (current)
 
-This major release introduces a background email queue system, migration of storage
-from `wp_options` to custom database tables, and significant UI/UX improvements to
-the Compose page.
+### Added
+- Editor role can now access the plugin with limited permissions — all menu items are visible, but only the Email History page is accessible
+- Email History for editors is read-only and shows only the Automatic Emails tab; attempting to access the Manual tab via URL falls back to Automatic
+- Admin-only pages (Dashboard, Compose, Drafts, Template Settings, Queue Monitor) show a clear "Access Denied" notice for editors instead of a blank page
+- New "Uninstall Settings" section in Template Settings to control whether plugin data is deleted on uninstall
+- Default uninstall behavior is now **preserve data** — data is only deleted if explicitly opted in; a warning banner is shown when deletion is enabled
 
----
-
-#### Breaking Changes
-
-- Email log and draft storage has been moved from `wp_options` to dedicated custom
-  database tables (`wp_penalis_email_log`, `wp_penalis_email_queue`,
-  `wp_penalis_email_draft`). Existing data in `wp_options` is migrated automatically
-  on plugin update.
-- Manual email sending is now asynchronous (background queue). The page no longer
-  waits for all emails to be delivered before responding.
-- `send_manual_email()` now returns `queued: true` and `job_id` instead of
-  immediately returning a sent count.
+### Changed
+- Email History now defaults to the Automatic Emails tab (previously Manual Emails)
+- Automatic Emails tab is now positioned first (left), Manual Emails second
 
 ---
 
-#### New Features
+## [2.1.0]
 
-**Email Queue System**
-- Manual email sending is now processed asynchronously via WP-Cron
-- Each recipient is inserted into the queue as an individual job
-- Batch processing: send N emails per cron run (default: 30, configurable)
-- Interval between batches is configurable (default: 60 seconds, minimum: 30)
-- Rate limiting: configurable delay between emails within a batch (default: 500 ms)
-- Automatic retry with exponential backoff for failed emails:
-  - 1st failure: retry after 5 minutes
-  - 2nd failure: retry after 15 minutes
-  - 3rd failure: permanently failed (no further retries)
-- Maximum retry attempts are configurable (default: 3)
+### Added
+- Dashboard now shows Active Jobs and Recently Completed Jobs queue widgets
+- Placeholder & Formatting Guide card added to the Compose Email page
 
-**Queue Monitor Page**
-- New "Queue Monitor" admin page for monitoring queue status
-- Active Jobs table: progress bar, sent/pending/failed counts per job
-- Recently Completed Jobs table: last 10 completed jobs
-- Cancel Job button: cancels a running job without affecting already-sent emails
-- Refresh button: updates job status in-place without page reload
-- Queue Settings form: configure batch size, throttle delay, interval, and max
-  retries directly from the admin UI
-- Queue Statistics: breakdown of total items by status in the queue table
-- Throughput Estimate: auto-calculated emails/minute estimate based on current settings
-- Cron Health Notice: warning when `DISABLE_WP_CRON = true` or no run is scheduled
-- "Clean up completed items" button: removes sent/permanently_failed rows from the
-  queue table
-
-**Queue Progress Banner**
-- Real-time progress banner appears automatically after emails are queued
-- Animated progress bar while sending is in progress
-- "X / Y sent" counter updated every 5 seconds via AJAX polling
-- Banner turns green and auto-dismisses after 8 seconds when all emails are sent
-- Polling stops automatically when the job completes or after 10 minutes (120 polls)
-- Also activates after sending a draft from the Draft Management page
-
-**Custom Database Tables**
-- Three new custom tables: `penalis_email_log`, `penalis_email_queue`,
-  `penalis_email_draft`
-- Automatic migration of legacy data from `wp_options` to custom tables on update
-- Schema versioning via `SCHEMA_VERSION` constant — `dbDelta` runs automatically
-  when the version changes
-- Uninstall hook: all custom tables are cleanly removed when the plugin is uninstalled
-
-**Email Draft Management**
-- New draft feature: save, load, edit, and send email drafts
-- "Drafts" page with a management table (subject, recipients, created, last modified)
-- Bulk delete drafts with confirmation dialog
-- Auto-save every 60 seconds while composing in the Compose page
-- Auto-save indicator showing the last saved timestamp
-- Load draft from a dropdown on the Compose page
-- Team collaboration transparency:
-  - "Created" column: shows who created the draft and when
-  - "Last Modified" column: shows who last edited the draft and when
-  - Email history: records who sent the email (not who created the draft)
-
-**Compose Page — Recipients List**
-- Infinite scroll: only the first 30 users are rendered on page load (configurable
-  via `RECIPIENTS_INITIAL_LOAD` in `class-config.php`)
-- Subsequent batches are loaded automatically via AJAX as the admin scrolls down
-- AJAX search: user search works across all users, not just those currently rendered
-- Clearing the search box restores the first batch via AJAX without a page reload
-- Previously checked selections are preserved when search replaces the list
-- Recipients sidebar uses `position: sticky` so the Send button is always visible
+### Fixed
+- "Sent By" column in Email History always showing "Unknown" for emails sent via the async queue
 
 ---
 
-#### Improvements
+## [2.0.0]
 
-**Compose Page Layout**
-- New 2-column layout: email content on the left, recipients sidebar on the right
-- Action buttons (Preview, Save Draft, Send) grouped above the recipients card
-- "Send to X users" button displays the selected recipient count in real-time
+### Added
+- Background email queue system — manual emails are now sent asynchronously via WP-Cron
+- Queue Monitor admin page with job progress, settings, cancel job, and cron health status
+- Real-time progress banner after queuing emails, with live sent/total counter
+- Email draft management — save, load, edit, auto-save, and send drafts
+- Draft management page with bulk delete and team transparency (created by, last edited by, sent by)
+- Custom database tables for email logs, queue, and drafts (migrated from `wp_options`)
+- Infinite scroll and AJAX search for the recipients list on the Compose page
+- Automatic retry with exponential backoff for failed queue items (up to 3 attempts)
+- Queue settings configurable from the admin UI (batch size, throttle delay, interval, max retries)
 
-**Template Settings Page**
-- Redesigned with card layout and a 3-column grid guide
-- Placeholder reference, formatting guide, and tips consolidated in one view
+### Changed
+- Compose page redesigned with a 2-column layout (content left, recipients sidebar right)
+- Template Settings page redesigned with card layout and 3-column guide grid
+- Dashboard now includes a Recent Drafts widget and Manage Drafts quick action
 
-**Dashboard Page**
-- "Recent Drafts" widget added alongside the "Recent Emails" widget
-- "Manage Drafts" quick action button added
+### Fixed
+- Drafts no longer appear in Email History or manual email logs
+- `created_by` field now always populated correctly when saving a new draft
 
-**Email History**
-- Manual and automatic email logs are now stored in a custom table instead of
-  `wp_options`
-- Drafts no longer appear in the Email History page
-
----
-
-#### Bug Fixes
-
-- Drafts no longer appear in the manual email log or the Email History page
-- `created_by` is now always populated correctly when saving a new draft
-- Drafts are deleted (not converted) after being sent successfully
-- Removed duplicate `wp_ajax_penalis_get_queue_status` hook registration in
-  `register_hooks()`
+### Removed
+- Email log and draft storage from `wp_options` (replaced by custom tables)
 
 ---
 
-#### Configuration
+## [1.3.3]
 
-New constants in `includes/class-config.php` that can be adjusted by developers:
+### Added
+- Dedicated "Email" column in Manual Emails history tab showing recipient email addresses
+- Clickable author profile links on recipient names in Email History
+- Preheader text support for email previews
 
-| Constant | Default | Description |
-|----------|---------|-------------|
-| `RECIPIENTS_INITIAL_LOAD` | `30` | Users rendered on initial Compose page load |
-| `DEFAULT_QUEUE_BATCH_SIZE` | `30` | Emails per cron batch |
-| `DEFAULT_QUEUE_INTERVAL` | `60` | Seconds between batches |
-| `DEFAULT_QUEUE_MAX_ATTEMPTS` | `3` | Max retries before permanently failed |
-| `DEFAULT_QUEUE_THROTTLE_DELAY` | `500000` | Microseconds between emails (500 ms) |
+### Fixed
+- Tooltip positioning on recipient name overflow
+- Selection counting accuracy in bulk operations
 
-`QUEUE_BATCH_SIZE`, `QUEUE_INTERVAL`, `QUEUE_MAX_ATTEMPTS`, and
-`QUEUE_THROTTLE_DELAY` can also be changed from the Queue Monitor page in the admin
-UI without editing code.
+### Removed
+- Deprecated `render_with_template()` and `render_without_template()` methods
 
 ---
 
-#### Technical
+## [1.3.2]
 
-- Autoloader updated to recognise `Queue` and `Database` class prefixes
-- Activation hook: `Penalis_Database::install()` is called when the plugin is activated
-- Deactivation hook: WP-Cron queue hook is unscheduled when the plugin is deactivated
-- Uninstall hook: all custom tables and options are removed on uninstall
-- `Penalis_Email_Queue_Repository` and `Penalis_Email_Queue_Processor` registered as
-  singletons in the service container
-- `Penalis_Queue_Monitor_Page` added as a new admin submenu
+### Added
+- "Select All Users" button to select all eligible users across all pages via AJAX
+- Role-based bulk selection ("Authors Only", "Contributors Only") now selects across all pages
 
----
-
-### Version 1.3.3
-
-
-#### **New Features**
-- **Email History Enhancements**
-  - Added dedicated "Email" column in Manual Emails tab showing recipient email addresses
-  - Display recipient email alongside name in history table for better identification
-  - Added clickable author profile links to recipient names for quick access to user profiles
-  - Improved recipient information display with both name and email visible
-
-- **Email Template Improvements**
-  - Added preheader text support for email previews
-  - Preheader text appears in email client preview panes before opening the email
-  - Enhances email open rates by providing context in inbox preview
-
-#### **Code Quality & Refactoring**
-- **Template System Cleanup**
-  - Removed deprecated `render_with_template()` method from Email Template class
-  - Removed deprecated `render_without_template()` method from Email Template class
-  - Removed deprecated `use_template` parameter from email sending workflow
-  - Simplified email rendering logic by consolidating to single `render()` method
-  - Cleaner codebase with reduced technical debt
-
-#### **Improvements**
-- **Better Accessibility**
-  - Restructured checkbox markup in history table for improved screen reader support
-  - Improved checkbox accessibility with proper ARIA labels
-  - Removed redundant CSS for cleaner stylesheet
-  - Standardized checkbox column alignment and spacing across all admin tables
-
-- **Enhanced User Experience**
-  - Improved tooltip positioning for recipient overflow display
-  - Fixed selection counting accuracy in bulk operations
-  - Better visual hierarchy in history table with email information
-  - Consistent spacing and alignment across admin interface
-
-#### **Bug Fixes**
-- Fixed tooltip positioning issues when hovering over recipient names
-- Fixed selection counting logic to accurately reflect selected items
-- Improved checkbox alignment consistency across different table views
+### Fixed
+- "Sent By" counter showing numbers higher than total users (string/integer type mismatch)
+- Role selection showing incorrect counts
+- Compose Email menu not highlighted as active in the sidebar
 
 ---
 
-### Version 1.3.2
+## [1.3.1]
 
-#### **New Features**
-- **Select All Users Across Pages**
-  - Added "Select All [Total] Users" button to select all eligible users at once
-  - Separate "Select All (on this page)" button for current page only
-  - AJAX-powered selection without page reload
-  - Visual loading state during selection process
-  - Gmail-style bulk selection UX pattern
-
-- **Smart Role-Based Selection**
-  - "Authors Only" and "Contributors Only" now select ALL users with that role across all pages
-  - Server-side role filtering via AJAX for accurate selection
-  - Automatic creation of hidden checkboxes for users not on current page
-  - Loading state feedback during role selection
-
-#### **Improvements**
-- **Enhanced User Selection Counter**
-  - Shows total available users (e.g., "52 of 52 users selected")
-  - Accurately counts both visible and hidden selected users
-  - Separate tracking for visible table checkboxes and hidden checkboxes
-
-- **Better Button Labeling**
-  - Clear distinction between "Select All (on this page)" and "Select All X Users"
-  - Primary button styling for "Select All Users" for better visual hierarchy
-  - Consistent loading states across all selection buttons
-
-- **Improved Pagination Handling**
-  - Hidden checkboxes persist across page navigation
-  - Selection state maintained when switching between pages
-  - Deselect All properly clears both visible and hidden selections
-
-#### **Bug Fixes**
-- **Fixed Active Menu State**
-  - Fixed Compose Email menu not showing as active when on compose page
-  - Changed Compose Email from tab-based routing to dedicated page slug (`penalis-email-compose`)
-  - Updated all internal links to use new slug format
-  - Fixed pagination links in Recipients table to maintain correct page context
-
-- **Fixed User Selection Counting**
-  - Fixed "72 of 52 users selected" bug caused by string/integer type mismatch
-  - Convert AJAX-returned user IDs from strings to integers for consistent comparison
-  - Properly scope checkbox selectors to avoid counting unintended DOM elements
-  - Fixed role selection showing incorrect counts (e.g., "19 of 52" for Contributors)
-
-- **Fixed Pagination Issues**
-  - Reduced recipients per page from 50 to 20 for better usability
-  - Fixed pagination navigation to properly maintain page state
-  - Updated pagination URLs to use correct page slug
-
-#### **Code Quality**
-- **Improved JavaScript Architecture**
-  - Event delegation for better DOM handling with dynamic checkboxes
-  - Separate class names for hidden checkboxes (`hidden-user-checkbox`) to avoid conflicts
-  - Clear separation between visible table checkboxes and hidden checkboxes
-  - Consistent integer conversion for all user ID comparisons
-
-- **Enhanced AJAX Endpoints**
-  - Added `penalis_get_all_user_ids` endpoint for fetching all eligible users
-  - Added `penalis_get_users_by_role` endpoint for role-based filtering
-  - Proper nonce verification and capability checks for all endpoints
-  - Efficient queries using `fields => 'ID'` for performance
-
-- **Better Security**
-  - Added nonces for new AJAX endpoints (`getAllUserIds`, `getUsersByRole`)
-  - Role validation against eligible roles before processing
-  - Proper sanitization of role parameter
-
-#### **User Experience**
-- **Consistent Behavior**
-  - All selection buttons now work consistently across pagination
-  - Role filters select ALL users with that role, not just current page
-  - Clear visual feedback with loading states and disabled buttons
-
-- **Intuitive Interface**
-  - Button labels clearly indicate scope of selection
-  - Loading messages provide feedback during AJAX operations
-  - Error messages guide users when operations fail
-
-#### **Performance**
-- Efficient AJAX queries fetch only user IDs, not full user objects
-- Single AJAX call per selection operation
-- No page reloads required for any selection operation
-- Lazy loading of hidden checkboxes only when needed
+### Fixed
+- Compose Email menu not showing as active when on the compose page
+- Pagination links not maintaining correct page context
 
 ---
 
-### Version 1.3.1
+## [1.3.0]
 
-#### **Bug Fixes**
-- **Fixed Active Menu State**
-  - Fixed Compose Email menu not showing as active when on compose page
-  - Changed Compose Email from tab-based routing to dedicated page slug (`penalis-email-compose`)
-  - Updated all internal links to use new slug format
-  - Fixed pagination links in Recipients table to maintain correct page context
+### Added
+- Dashboard page as the default landing page with email statistics, quick actions, and recent activity feed
+- "Recipient Names" column in Manual Emails history tab with tooltip for overflow
 
-- **Improved Pagination**
-  - Reduced recipients per page from 50 to 20 for better usability
-  - Fixed pagination navigation to properly maintain page state
-  - Updated pagination URLs to use correct page slug
+### Changed
+- Full design system overhaul aligned with WordPress admin UI (Dashicons, color palette, spacing)
+- Replaced 26 manual `require_once` calls with an intelligent pattern-based autoloader
 
-- **Code Cleanup**
-  - Removed legacy tab-based routing for compose and settings pages
-  - Audited and updated all references to old URL format (`&tab=compose`, `&tab=settings`)
-  - Updated Quick Actions links in Dashboard to use proper page slugs
-  - Improved consistency across admin navigation
+### Fixed
+- Timezone display in Email History now respects WordPress timezone settings
 
 ---
 
-### Version 1.3.0
+## [1.2.0]
 
-#### **New Features**
-- **Dashboard Page**
-  - Added new dashboard as default landing page with statistics overview
-  - Statistics cards showing total emails, manual emails, and automatic emails
-  - Quick actions section for common tasks (Compose, History, Settings)
-  - Recent activity feed displaying last 5 emails sent
-  - Tips & best practices section for user guidance
-  - Fully responsive design with mobile optimization
+### Added
+- Bulk delete and "Clear All History" per tab in Email History
+- Tab-based navigation in Email History (Manual / Automatic)
 
-- **Enhanced Email History**
-  - Added "Recipient Names" column in Manual Emails tab
-  - Display up to 5 recipient names inline with tooltip for overflow
-  - Hover tooltip shows all remaining recipients
-  - Improved timezone handling for accurate timestamp display
-  - Fixed timezone sync with WordPress settings (UTC to local conversion)
-
-#### **Code Organization & Refactoring**
-- **Service Container Integration**
-  - Enforced required dependencies across all classes
-  - Removed optional parameters and null coalescing operators
-  - Integrated service container with automatic dependency injection
-  - Added `penalis_get_service()` helper function
-
-- **Intelligent Autoloader**
-  - Replaced 26 manual `require_once` statements with pattern-based autoloader
-  - Automatic class detection for Admin, Interface, Exception, Repository, Validator
-  - On-demand class loading for improved performance
-  - Special handling for base exception and admin interface classes
-
-- **Email Sending Logic**
-  - Consolidated duplicate email sending code into reusable `send_email()` method
-  - Eliminated redundant `compose_email()` and `apply_email_filters()` methods
-  - Reduced code duplication across automatic, manual, and test email workflows
-
-- **Exception Handling**
-  - Replaced generic exceptions with typed custom exceptions
-  - Added `Penalis_Container_Exception` for service container errors
-  - Implemented exception handling in all email sending methods
-  - Added structured error context for better debugging
-  - Integrated action hooks: `penalis_email_sent_success`, `penalis_email_send_failed`
-
-- **Repository Pattern**
-  - Created `Penalis_Post_Meta_Repository_Interface` for abstraction
-  - Updated Email Logger to depend on interface instead of concrete class
-  - Consistent interface-based pattern across all repositories
-
-- **Configuration Management**
-  - Centralized automatic email configuration in Config class
-  - Added `DEFAULT_AUTO_EMAIL_FROM` constant
-  - Created `get_auto_email_subject()` and `get_auto_email_from()` methods with filter support
-  - Replaced hardcoded strings throughout codebase
-
-- **Admin Interface**
-  - Consolidated history page rendering logic
-  - Removed deprecated `render_main_page()` method
-  - Improved separation of concerns with dedicated page classes
-  - Extracted inline templates into reusable view files
-
-- **View Layer Organization**
-  - Created dedicated view files: `email-details-card.php`, `preview-modal.php`
-  - Standardized all view includes to use `require` (not `require_once`)
-  - Added comprehensive view files documentation (README.md)
-  - Consistent security checks and escaping across all views
-
-#### **Design System Overhaul**
-- **WordPress Admin Consistency**
-  - Removed all emoji icons, replaced with Dashicons
-  - Removed colored border-left styling from all components
-  - Aligned color palette with WordPress design system (#c3c4c7, #1d2327, #646970)
-  - Standardized border radius (3-4px), shadows, and spacing
-  - Updated typography: removed uppercase transforms, adjusted font weights (500-600)
-
-- **Component Refinements**
-  - Form cards: cleaner headers, better spacing, standard borders
-  - Buttons: consistent sizing (8px 16px), lighter font weights
-  - Modal dialogs: smaller, cleaner design with subtle shadows
-  - Tips/Warning/Info boxes: neutral backgrounds, standard borders
-  - User selection: white backgrounds, clean borders
-  - Pagination: added borders, lighter font weights
-  - Formatting guide: improved structure with code block styling
-
-- **Responsive Design**
-  - Mobile-optimized dashboard with stacked layouts
-  - Adjusted icon and font sizes for smaller screens
-  - Tooltip positioning adjustments for mobile viewports
-
-#### **Bug Fixes**
-- Fixed autoloader pattern to recognize Dashboard classes
-- Fixed timezone display in email history (UTC to WordPress timezone)
-- Fixed `human_time_diff()` comparison using GMT parameter
-- Added fallback timezone conversion for WordPress < 5.3
-
-#### **Documentation**
-- Added view files README with conventions and usage examples
-- Updated PHPDoc comments with proper exception types
-- Improved inline code documentation
-- Added context explanations for complex logic
-
-#### **Performance**
-- Lazy loading of classes through autoloader
-- Reduced bootstrap overhead by deferring class loading
-- Optimized dashboard queries (only fetch 5 recent emails)
-- Efficient recipient name fetching with on-demand user data loading
+### Changed
+- Email History moved to a dedicated admin page with its own menu item
 
 ---
 
-### Version 1.2.0
-- **Email History Enhancements**
-  - Separated Email History into dedicated page with own menu item
-  - Added tab-based navigation (Manual/Automatic emails)
-  - Automatic emails now included in history tracking
-  - Added visual distinction between manual and automatic emails
-  - Optimized automatic email columns (removed redundant Subject column)
-  
-- **Delete History Feature**
-  - Implemented bulk delete functionality for email logs
-  - Added "Clear All History" option per tab (Manual/Automatic)
-  - WordPress-style bulk actions interface
-  - Legacy email entry support with pseudo-ID generation
-  - Proper nonce verification and capability checks
-  
-- **UI/UX Improvements**
-  - Improved checkbox alignment in history tables
-  - Better table styling and responsive design
-  - Removed filter/search functionality for cleaner interface
-  - Enhanced bulk actions bar layout
-  
-- **Code Quality**
-  - Removed single delete functionality (keeping only bulk operations)
-  - Cleaned up debugging console logs
-  - Improved CSS organization and WordPress standards compliance
-  - Better separation of concerns in admin pages
+## [1.1.0]
 
-### Version 1.1.0
-- Complete architecture refactoring
-- Added service container with dependency injection
-- Implemented repository pattern
-- Added comprehensive validation system
-- Created 6 interfaces for loose coupling
-- Added 6 custom exception classes
-- Separated CSS/JS from PHP
-- Added markdown parser
-- 110+ unit tests with 100% pass rate
-- Comprehensive documentation
+### Changed
+- Full architecture refactor: service container, repository pattern, validation system, custom exceptions, interfaces
 
-### Version 1.0.0
-- Initial release with core functionality
-- Automatic post publication notifications
-- Manual email interface
-- HTML email templates
+---
+
+## [1.0.0]
+
+### Added
+- Initial release: automatic post publication notifications, manual email interface, HTML email templates

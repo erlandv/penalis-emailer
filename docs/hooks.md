@@ -18,7 +18,9 @@ add_filter('penalis_logo_url', function(string $url): string {
 
 ### `penalis_eligible_roles`
 
-Modify the WordPress user roles that are eligible to receive manual emails and appear in the recipients list.
+Modify the WordPress user roles that are eligible to receive manual emails and appear in the recipients list on the Compose page.
+
+> **Note:** This filter controls who appears as a *recipient* in the Compose page, not who can *access* the plugin. Access control is managed separately — by default, only administrators have full access, while editors have read-only access to Email History. See the Security section in the Developer Guide for details.
 
 **Default:** `['author', 'contributor']`
 

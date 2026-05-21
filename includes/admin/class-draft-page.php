@@ -67,7 +67,8 @@ class Penalis_Draft_Page extends Penalis_Admin_Page {
      */
     public function render(): void {
         if (!$this->can_access()) {
-            wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
+            $this->render_no_access_page();
+            return;
         }
         
         // Get all drafts

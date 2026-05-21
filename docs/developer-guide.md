@@ -469,7 +469,9 @@ All developer-facing configuration lives in `includes/class-config.php`. Values 
 All user-facing entry points implement the following:
 
 - **Nonce verification** — all form submissions and AJAX requests
-- **Capability checks** — `current_user_can('manage_options')` on every admin action
+- **Capability checks** — two levels of access control:
+  - `manage_options` (`Penalis_Config::CAP_ADMIN`) — required for all write operations and admin-only pages (Dashboard, Compose, Drafts, Template Settings, Queue Monitor, all AJAX actions)
+  - `edit_others_posts` (`Penalis_Config::CAP_EDITOR`) — grants read-only access to the Email History page (Automatic tab only) for users with the Editor role
 - **Input sanitization** — `sanitize_text_field()`, `wp_kses_post()`, `intval()` as appropriate
 - **Output escaping** — `esc_html()`, `esc_attr()`, `esc_url()` on all output
 - **Prepared statements** — `$wpdb->prepare()` for all direct DB queries
@@ -480,8 +482,8 @@ The repository includes a GitHub Actions workflow (`.github/workflows/release.ym
 
 ```bash
 # Tag and push to trigger a release build
-git tag v2.1.0
-git push origin v2.1.0
+git tag v2.2.0
+git push origin v2.2.0
 ```
 
 The resulting ZIP contains only production files (`penalis-emailer.php`, `uninstall.php`, `readme.txt`, `license.txt`, `includes/`, `assets/`) — development files such as `README.md`, `CHANGELOG.md`, and `.github/` are excluded.

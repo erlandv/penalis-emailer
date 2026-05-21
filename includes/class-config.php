@@ -26,6 +26,13 @@ class Penalis_Config {
     const SETTINGS_PAGE_SLUG = 'penalis-email-settings';
     const USERS_PER_PAGE = 20;
 
+    // Capability constants
+    const CAP_ADMIN  = 'manage_options'; // Full access
+    const CAP_EDITOR = 'edit_others_posts'; // Editor read-only access (Email History - Automatic)
+
+    // Uninstall settings
+    const OPTION_KEY_DELETE_DATA_ON_UNINSTALL = 'penalis_delete_data_on_uninstall';
+
     // Recipients list in Compose page (infinite scroll batch size)
     // How many users to render on initial load and per scroll batch.
     // Configurable here — not exposed in UI (dev-facing setting).

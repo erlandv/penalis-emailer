@@ -29,12 +29,34 @@ abstract class Penalis_Admin_Page {
     protected $page_slug;
     
     /**
-     * Check if current user can access this page
+     * Check if current user can access this page (admin only by default)
      *
      * @return bool
      */
     protected function can_access(): bool {
         return current_user_can('manage_options');
+    }
+    
+    /**
+     * Render a "no access" page for users without sufficient permissions.
+     *
+     * Displays a styled notice inside the normal WP admin chrome so the
+     * user understands the page exists but is restricted to administrators.
+     *
+     * @return void
+     */
+    public function render_no_access_page(): void {
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Penalis Email', 'penalis-emailer'); ?></h1>
+            <div class="notice notice-error" style="margin-top: 20px;">
+                <p>
+                    <strong><?php echo esc_html__('Access Denied', 'penalis-emailer'); ?></strong><br>
+                    <?php echo esc_html__('You do not have permission to access this page. Please contact your site administrator.', 'penalis-emailer'); ?>
+                </p>
+            </div>
+        </div>
+        <?php
     }
     
     /**

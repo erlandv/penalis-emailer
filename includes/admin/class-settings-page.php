@@ -54,7 +54,8 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
      */
     public function render(): void {
         if (!$this->can_access()) {
-            wp_die(__('You do not have permission to access this page.', 'penalis-emailer'));
+            $this->render_no_access_page();
+            return;
         }
         
         // Get current template body
@@ -76,6 +77,10 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
             <hr>
             
             <?php $this->render_reset_form(); ?>
+
+            <hr>
+
+            <?php $this->render_uninstall_settings(); ?>
         </div>
         
         <?php $this->render_preview_modal(); ?>
@@ -318,24 +323,83 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
     }
     
     /**
-     * Handle template reset
+     * Render uninstall settings section
      *
      * @return void
      */
-    public function handle_reset(): void {
-        // Verify security
-        if (!$this->verify_security('penalis_reset_template', 'penalis_reset_nonce')) {
+    private function render_uninstall_settings(): void {
+        $delete_on_uninstall = (bool) get_option(Penalis_Config::OPTION_KEY_DELETE_DATA_ON_UNINSTALL, false);
+        ?>
+        <h2><?php echo esc_html__('Uninstall Settings', 'penalis-emailer'); ?></h2>
+        <p class="description">
+            <?php echo esc_html__('Control what happens to plugin data when this plugin is deleted from WordPress admin.', 'penalis-emailer'); ?>
+        </p>
+
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('penalis_save_uninstall_settings', 'penalis_uninstall_nonce'); ?>
+            <input type="hidden" name="action" value="penalis_save_uninstall_settings">
+
+            <div class="penalis-form-card">
+                <h3>
+                    <span class="dashicons dashicons-trash"></span>
+                    <?php echo esc_html__('Data Deletion', 'penalis-emailer'); ?>
+                </h3>
+
+                <div class="penalis-form-group">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                        <input type="checkbox"
+                               name="delete_data_on_uninstall"
+                               id="delete_data_on_uninstall"
+                               value="1"
+                               style="margin-top: 3px; flex-shrink: 0;"
+                               <?php checked($delete_on_uninstall, true); ?>>
+                        <span>
+                            <strong><?php echo esc_html__('Delete all plugin data when uninstalling', 'penalis-emailer'); ?></strong><br>
+                            <span class="description">
+                                <?php echo esc_html__('When enabled, uninstalling this plugin will permanently delete all email logs, drafts, queue data, and plugin settings. This cannot be undone.', 'penalis-emailer'); ?>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <?php if ($delete_on_uninstall): ?>
+                <div class="notice notice-warning inline" style="margin: 12px 0 0; padding: 8px 12px;">
+                    <p>
+                        <span class="dashicons dashicons-warning" style="color: #dba617;"></span>
+                        <strong><?php echo esc_html__('Warning:', 'penalis-emailer'); ?></strong>
+                        <?php echo esc_html__('Data deletion is currently enabled. Uninstalling this plugin will permanently erase all data.', 'penalis-emailer'); ?>
+                    </p>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <p class="submit">
+                <button type="submit" class="button button-primary">
+                    <?php echo esc_html__('Save Uninstall Settings', 'penalis-emailer'); ?>
+                </button>
+            </p>
+        </form>
+        <?php
+    }
+
+    /**
+     * Handle save uninstall settings
+     *
+     * @return void
+     */
+    public function handle_save_uninstall_settings(): void {
+        if (!$this->verify_security('penalis_save_uninstall_settings', 'penalis_uninstall_nonce')) {
             wp_die(__('Security verification failed.', 'penalis-emailer'));
         }
-        
-        // Delete custom template (will fallback to default)
-        delete_option(Penalis_Config::OPTION_KEY_AUTO_BODY);
-        
-        // Redirect with success message
+
+        $delete_on_uninstall = isset($_POST['delete_data_on_uninstall']) && $_POST['delete_data_on_uninstall'] === '1';
+
+        update_option(Penalis_Config::OPTION_KEY_DELETE_DATA_ON_UNINSTALL, $delete_on_uninstall);
+
         $this->redirect_with_notice(
             $this->page_slug,
             'success',
-            __('Auto-email template reset to default successfully.', 'penalis-emailer')
+            __('Uninstall settings saved successfully.', 'penalis-emailer')
         );
     }
 }

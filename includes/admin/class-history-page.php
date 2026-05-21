@@ -29,6 +29,18 @@ class Penalis_History_Page extends Penalis_Admin_Page {
     private $email_logger;
     
     /**
+     * Check if current user can access this page
+     *
+     * Editors (edit_others_posts) have read-only access to the Automatic tab.
+     * Administrators have full access to both tabs.
+     *
+     * @return bool
+     */
+    protected function can_access(): bool {
+        return current_user_can(Penalis_Config::CAP_EDITOR);
+    }
+
+    /**
      * Constructor
      *
      * @param Penalis_Email_Logger $email_logger Email logger instance
@@ -51,11 +63,13 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         
         // Get current tab from parameter or URL
         if (empty($tab)) {
-            $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'manual';
+            $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'automatic';
         }
         
-        // Validate tab
-        $tab = in_array($tab, ['manual', 'automatic']) ? $tab : 'manual';
+        // Validate tab — editors can only see the automatic tab
+        $is_admin    = current_user_can(Penalis_Config::CAP_ADMIN);
+        $valid_tabs  = $is_admin ? ['manual', 'automatic'] : ['automatic'];
+        $tab         = in_array($tab, $valid_tabs) ? $tab : 'automatic';
         
         ?>
         <div class="wrap">
@@ -67,14 +81,16 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             
             <!-- Tabs -->
             <h2 class="nav-tab-wrapper">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=manual')); ?>" 
-                   class="nav-tab <?php echo $tab === 'manual' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Manual Emails', 'penalis-emailer'); ?>
-                </a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=automatic')); ?>" 
                    class="nav-tab <?php echo $tab === 'automatic' ? 'nav-tab-active' : ''; ?>">
                     <?php echo esc_html__('Automatic Emails', 'penalis-emailer'); ?>
                 </a>
+                <?php if (current_user_can(Penalis_Config::CAP_ADMIN)): ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=penalis-email-history&tab=manual')); ?>" 
+                   class="nav-tab <?php echo $tab === 'manual' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Manual Emails', 'penalis-emailer'); ?>
+                </a>
+                <?php endif; ?>
             </h2>
             
             <div class="tab-content" style="margin-top: 20px;">
@@ -100,7 +116,9 @@ class Penalis_History_Page extends Penalis_Admin_Page {
             <?php if (empty($log_entries)): ?>
                 <p><?php echo esc_html__('No emails sent yet.', 'penalis-emailer'); ?></p>
             <?php else: ?>
+                <?php if (current_user_can(Penalis_Config::CAP_ADMIN)): ?>
                 <?php $this->render_bulk_actions_bar($tab); ?>
+                <?php endif; ?>
                 <?php $this->render_history_table($log_entries, $tab); ?>
                 
                 <p class="description">
@@ -162,12 +180,14 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
+                    <?php if (current_user_can(Penalis_Config::CAP_ADMIN)): ?>
                     <td id="cb" class="manage-column column-cb check-column">
                         <input type="checkbox" id="select-all-logs">
                         <label for="select-all-logs">
                             <span class="screen-reader-text"><?php echo esc_html__('Select All', 'penalis-emailer'); ?></span>
                         </label>
                     </td>
+                    <?php endif; ?>
                     <?php if ($tab === 'manual'): ?>
                         <th scope="col"><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
                         <th scope="col" style="width: 80px;"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
@@ -215,12 +235,14 @@ class Penalis_History_Page extends Penalis_Admin_Page {
         
         ?>
         <tr class="history-row">
+            <?php if (current_user_can(Penalis_Config::CAP_ADMIN)): ?>
             <th scope="row" class="check-column">
                 <input type="checkbox" class="log-checkbox" id="cb-select-<?php echo esc_attr($log_id); ?>" value="<?php echo esc_attr($log_id); ?>">
                 <label for="cb-select-<?php echo esc_attr($log_id); ?>">
                     <span class="screen-reader-text"><?php echo esc_html__('Select email', 'penalis-emailer'); ?></span>
                 </label>
             </th>
+            <?php endif; ?>
             
             <?php if ($tab === 'manual'): ?>
                 <!-- Manual Email Columns -->
