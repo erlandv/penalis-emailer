@@ -23,6 +23,8 @@
             this.initAutosave();
             // Initialise infinite scroll for the recipients list
             InfiniteScrollHandler.init();
+            // Initialise CC handler
+            CcHandler.init();
         },
         
         bindEvents: function() {
@@ -59,6 +61,11 @@
             
             $('#selected-count').text(selectedCount);
             $('#main-selected-count').text(selectedCount);
+
+            // Update CC field availability based on recipient count
+            if (typeof CcHandler !== 'undefined') {
+                CcHandler.updateAvailability(selectedCount);
+            }
         },
         
         // Debounce timer for search input
@@ -526,7 +533,8 @@
                 from_name: currentData.from_name,
                 subject: currentData.subject,
                 body: currentData.body,
-                user_ids: currentData.user_ids
+                user_ids: currentData.user_ids,
+                cc_user_ids: currentData.cc_user_ids
             }, function(response) {
                 if (response.success) {
                     // Update draft ID if new draft was created
@@ -575,12 +583,16 @@
             
             // Combine and deduplicate
             const allUserIds = [...new Set([...visibleUserIds, ...hiddenUserIds])];
+
+            // Get CC user IDs
+            const ccUserIds = CcHandler.getSelectedIds();
             
             return {
                 from_name: $('#from_name').val(),
                 subject: $('#subject').val(),
                 body: $('#body').val(),
-                user_ids: allUserIds
+                user_ids: allUserIds,
+                cc_user_ids: ccUserIds
             };
         }
     };
@@ -1439,6 +1451,289 @@
             if (jobId) {
                 this.start(jobId);
             }
+        }
+    };
+
+    /**
+     * CC Field Handler
+     *
+     * Manages the CC input in the Compose Email form.
+     * - Loads admin/editor users via AJAX on init
+     * - Renders a tag-pill combobox for selection
+     * - Enables / disables the field based on recipient count
+     * - Restores pre-selected CC from draft data
+     */
+    const CcHandler = {
+
+        allUsers:     [],   // [{id, name, email}]
+        selectedIds:  [],   // [userId, ...]
+
+        /**
+         * Initialise: load users then restore draft data.
+         */
+        init: function() {
+            if (!$('#penalis-cc-group').length) {
+                return; // Not on compose page
+            }
+            this.bindEvents();
+            this.loadUsers();
+        },
+
+        /**
+         * Bind UI events.
+         */
+        bindEvents: function() {
+            const self = this;
+
+            // Typing in search box
+            $('#penalis-cc-input').on('input', function() {
+                self.filterDropdown($(this).val().trim());
+            }).on('focus', function() {
+                if (self.allUsers.length) {
+                    self.filterDropdown($(this).val().trim());
+                }
+            }).on('keydown', function(e) {
+                // Close dropdown on Escape
+                if (e.key === 'Escape') {
+                    self.closeDropdown();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#penalis-cc-group').length) {
+                    self.closeDropdown();
+                }
+            });
+        },
+
+        /**
+         * Load CC-eligible users from AJAX.
+         */
+        loadUsers: function() {
+            if (!penalisAdmin.nonces || !penalisAdmin.nonces.getCcUsers) {
+                return;
+            }
+            const self = this;
+
+            $.post(penalisAdmin.ajaxUrl, {
+                action: 'penalis_get_cc_users',
+                nonce:  penalisAdmin.nonces.getCcUsers
+            }, function(response) {
+                if (response.success && response.data.users) {
+                    self.allUsers = response.data.users;
+                    self.restoreDraftData();
+                }
+            });
+        },
+
+        /**
+         * Restore pre-selected CC from the JSON embedded in the page (draft data).
+         */
+        restoreDraftData: function() {
+            const $el = $('#penalis-cc-draft-data');
+            if (!$el.length) return;
+
+            let draftEmails;
+            try {
+                draftEmails = JSON.parse($el.text());
+            } catch (e) {
+                return;
+            }
+
+            if (!Array.isArray(draftEmails) || draftEmails.length === 0) return;
+
+            // Map emails back to user objects and add them as tags
+            const self = this;
+            draftEmails.forEach(function(email) {
+                const user = self.allUsers.find(function(u) {
+                    return u.email === email;
+                });
+                if (user && !self.selectedIds.includes(user.id)) {
+                    self.addTag(user);
+                }
+            });
+        },
+
+        /**
+         * Filter dropdown based on search term.
+         *
+         * @param {string} term
+         */
+        filterDropdown: function(term) {
+            const self = this;
+            const $dropdown = $('#penalis-cc-dropdown');
+
+            const available = this.allUsers.filter(function(u) {
+                if (self.selectedIds.includes(u.id)) return false;
+                if (!term) return true;
+                const lcTerm = term.toLowerCase();
+                return u.name.toLowerCase().includes(lcTerm) || u.email.toLowerCase().includes(lcTerm);
+            });
+
+            if (available.length === 0) {
+                $dropdown.html(
+                    '<div class="penalis-cc-no-results">' +
+                    (term ? (penalisAdmin.i18n.ccNoResults || 'No matching users found.') : (penalisAdmin.i18n.ccAllSelected || 'All eligible users already selected.')) +
+                    '</div>'
+                ).show();
+                return;
+            }
+
+            const html = available.map(function(u) {
+                return '<div class="penalis-cc-option" data-id="' + u.id + '" data-name="' + self.esc(u.name) + '" data-email="' + self.esc(u.email) + '">' +
+                    '<span class="penalis-cc-option-name">' + self.esc(u.name) + '</span>' +
+                    '<span class="penalis-cc-option-email">' + self.esc(u.email) + '</span>' +
+                    '</div>';
+            }).join('');
+
+            $dropdown.html(html).show();
+
+            // Click a user option to select
+            $dropdown.find('.penalis-cc-option').on('click', function() {
+                const user = {
+                    id:    parseInt($(this).data('id')),
+                    name:  $(this).data('name'),
+                    email: $(this).data('email')
+                };
+                self.addTag(user);
+                self.closeDropdown();
+                $('#penalis-cc-input').val('').focus();
+            });
+        },
+
+        /**
+         * Close and clear the dropdown.
+         */
+        closeDropdown: function() {
+            $('#penalis-cc-dropdown').hide().empty();
+        },
+
+        /**
+         * Add a user as a CC tag pill.
+         *
+         * @param {{id: number, name: string, email: string}} user
+         */
+        addTag: function(user) {
+            if (this.selectedIds.includes(user.id)) return;
+
+            this.selectedIds.push(user.id);
+            this.renderTags();
+            this.updateHiddenInputs();
+            this.updateBadge();
+        },
+
+        /**
+         * Remove a user from CC selection by ID.
+         *
+         * @param {number} userId
+         */
+        removeTag: function(userId) {
+            this.selectedIds = this.selectedIds.filter(function(id) {
+                return id !== userId;
+            });
+            this.renderTags();
+            this.updateHiddenInputs();
+            this.updateBadge();
+        },
+
+        /**
+         * Re-render all tag pills from current selectedIds.
+         */
+        renderTags: function() {
+            const self     = this;
+            const $container = $('#penalis-cc-tags');
+            $container.empty();
+
+            this.selectedIds.forEach(function(id) {
+                const user = self.allUsers.find(function(u) { return u.id === id; });
+                if (!user) return;
+
+                const $tag = $(
+                    '<span class="penalis-cc-tag" data-id="' + id + '">' +
+                    '<span class="penalis-cc-tag-name">' + self.esc(user.name) + '</span>' +
+                    '<button type="button" class="penalis-cc-tag-remove" aria-label="Remove CC" data-id="' + id + '">&times;</button>' +
+                    '</span>'
+                );
+
+                $tag.find('.penalis-cc-tag-remove').on('click', function() {
+                    self.removeTag(parseInt($(this).data('id')));
+                });
+
+                $container.append($tag);
+            });
+        },
+
+        /**
+         * Sync hidden inputs so CC user IDs are submitted with the form.
+         */
+        updateHiddenInputs: function() {
+            const $container = $('#penalis-cc-hidden-inputs');
+            $container.empty();
+
+            this.selectedIds.forEach(function(id) {
+                $container.append(
+                    $('<input>', { type: 'hidden', name: 'cc_user_ids[]', value: id })
+                );
+            });
+        },
+
+        /**
+         * Update the CC badge showing count.
+         */
+        updateBadge: function() {
+            const $badge = $('#penalis-cc-badge');
+            if (this.selectedIds.length > 0) {
+                $badge.text(this.selectedIds.length).show();
+            } else {
+                $badge.hide();
+            }
+        },
+
+        /**
+         * Get array of selected CC user IDs.
+         *
+         * @return {number[]}
+         */
+        getSelectedIds: function() {
+            return this.selectedIds.slice();
+        },
+
+        /**
+         * Enable or disable the CC input based on recipient count.
+         *
+         * @param {number} recipientCount
+         */
+        updateAvailability: function(recipientCount) {
+            const $wrapper = $('#penalis-cc-input-wrapper');
+            const $notice  = $('#penalis-cc-disabled-notice');
+            const $input   = $('#penalis-cc-input');
+
+            if (recipientCount > 1) {
+                // Disable — too many recipients
+                $wrapper.hide();
+                $notice.show();
+                $input.prop('disabled', true);
+            } else {
+                // Enable — 0 or 1 recipient
+                $wrapper.show();
+                $notice.hide();
+                $input.prop('disabled', false);
+            }
+        },
+
+        /**
+         * Simple HTML escaping helper.
+         *
+         * @param {string} str
+         * @return {string}
+         */
+        esc: function(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
         }
     };
 

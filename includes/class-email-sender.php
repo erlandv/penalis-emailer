@@ -175,13 +175,17 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
      *   - 'job_id'   → unique identifier for this batch (new in v2.0.0)
      *   - 'queued'   → true (new flag to distinguish async from sync result)
      *
+     * Note on CC: cc_emails is only applied when exactly 1 recipient is selected.
+     * For bulk sends (2+ recipients), CC is intentionally ignored.
+     *
      * @param string $subject   Email subject
      * @param array  $user_ids  Array of user IDs to send to
      * @param string $message   Email body (markdown/HTML)
      * @param string $from_name Sender display name
+     * @param string $cc_emails JSON-encoded array of CC email addresses (empty = no CC)
      * @return array
      */
-    public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis'): array {
+    public function send_manual_email(string $subject, array $user_ids, string $message = '', string $from_name = 'Penalis', string $cc_emails = ''): array {
         // Apply recipients filter (same as before)
         $user_ids = apply_filters('penalis_email_recipients', $user_ids);
 
@@ -206,7 +210,7 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
             if ($user && is_email($user->user_email)) {
                 $valid_ids[] = (int) $user_id;
             } else {
-                $invalid_ids[]          = $user_id;
+                $invalid_ids[]               = $user_id;
                 $results['errors'][$user_id] = 'User not found or invalid email';
             }
         }
@@ -226,8 +230,12 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
         // returns 0, so we must store the sender ID alongside the queue items.
         $sent_by = get_current_user_id();
 
+        // CC is only meaningful for single-recipient sends.
+        // For bulk sends (2+ recipients) CC is ignored to avoid spamming CC recipients.
+        $effective_cc = (count($valid_ids) === 1) ? $cc_emails : '';
+
         // Bulk-insert all valid recipients into the queue
-        $enqueued        = $this->queue->bulk_enqueue($job_id, $valid_ids, $subject, $message, $from_name, $sent_by);
+        $enqueued        = $this->queue->bulk_enqueue($job_id, $valid_ids, $subject, $message, $from_name, $sent_by, $effective_cc);
         $results['success'] = $enqueued;
 
         if ($enqueued > 0) {
@@ -236,8 +244,8 @@ class Penalis_Email_Sender implements Penalis_Email_Sender_Interface {
 
             // Fire action so other code can react (e.g. admin notices)
             do_action('penalis_email_queued', [
-                'job_id'    => $job_id,
-                'subject'   => $subject,
+                'job_id'          => $job_id,
+                'subject'         => $subject,
                 'recipient_count' => $enqueued,
             ]);
         }

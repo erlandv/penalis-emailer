@@ -83,6 +83,9 @@ class Penalis_Ajax_Handler {
         add_action('wp_ajax_penalis_get_all_user_ids', [$this, 'get_all_user_ids']);
         add_action('wp_ajax_penalis_get_users_by_role', [$this, 'get_users_by_role']);
         add_action('wp_ajax_penalis_load_recipients',  [$this, 'load_recipients']);
+
+        // CC user list
+        add_action('wp_ajax_penalis_get_cc_users', [$this, 'get_cc_users']);
         
         // Delete actions
         add_action('wp_ajax_penalis_bulk_delete_logs', [$this, 'bulk_delete_logs']);
@@ -422,7 +425,7 @@ class Penalis_Ajax_Handler {
     }
     
     /**
-     * AJAX handler for send draft
+     * AJAX handler for sending a draft via AJAX.
      *
      * @return void
      */
@@ -457,13 +460,20 @@ class Penalis_Ajax_Handler {
         
         // Get email sender
         $email_sender = Penalis_Service_Container::get(Penalis_Email_Sender::class);
+
+        // Resolve cc_emails from draft (array of emails, already decoded by repository)
+        $draft_cc = $draft['cc_emails'] ?? [];
+        $cc_emails_json = !empty($draft_cc) && is_array($draft_cc)
+            ? wp_json_encode(array_values($draft_cc))
+            : '';
         
         // Send emails
         $results = $email_sender->send_manual_email(
             $draft['subject'],
             $draft['recipients'],
             $draft['body'],
-            $draft['from_name']
+            $draft['from_name'],
+            $cc_emails_json
         );
         
         // Delete draft after sending (log already created by send_manual_email)
@@ -542,22 +552,46 @@ class Penalis_Ajax_Handler {
         }
         
         // Get draft data
-        $draft_id = isset($_POST['draft_id']) ? sanitize_text_field($_POST['draft_id']) : '';
+        $draft_id  = isset($_POST['draft_id'])  ? sanitize_text_field($_POST['draft_id'])  : '';
         $from_name = isset($_POST['from_name']) ? sanitize_text_field($_POST['from_name']) : '';
-        $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
-        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
-        $user_ids = isset($_POST['user_ids']) && is_array($_POST['user_ids']) 
-            ? array_map('intval', $_POST['user_ids']) 
+        $subject   = isset($_POST['subject'])   ? sanitize_text_field($_POST['subject'])   : '';
+        $body      = isset($_POST['body'])      ? wp_kses_post($_POST['body'])             : '';
+        $user_ids  = isset($_POST['user_ids']) && is_array($_POST['user_ids'])
+            ? array_map('intval', $_POST['user_ids'])
             : [];
+
+        // Resolve CC user IDs to email addresses
+        $cc_emails_json = '';
+        if (isset($_POST['cc_user_ids']) && is_array($_POST['cc_user_ids'])) {
+            $cc_eligible_roles = Penalis_Config::CC_ELIGIBLE_ROLES;
+            $cc_email_list     = [];
+
+            foreach ($_POST['cc_user_ids'] as $cc_uid) {
+                $cc_user = get_userdata((int) $cc_uid);
+                if (!$cc_user || !is_email($cc_user->user_email)) {
+                    continue;
+                }
+                $user_roles = (array) $cc_user->roles;
+                if (!array_intersect($user_roles, $cc_eligible_roles)) {
+                    continue;
+                }
+                $cc_email_list[] = $cc_user->user_email;
+            }
+
+            if (!empty($cc_email_list)) {
+                $cc_emails_json = wp_json_encode(array_values(array_unique($cc_email_list)));
+            }
+        }
         
         // Prepare draft data
         $draft_data = [
-            'type' => 'manual',
-            'from_name' => $from_name,
-            'subject' => $subject,
-            'body' => $body,
+            'type'            => 'manual',
+            'from_name'       => $from_name,
+            'subject'         => $subject,
+            'body'            => $body,
             'recipient_count' => count($user_ids),
-            'recipients' => $user_ids
+            'recipients'      => $user_ids,
+            'cc_emails'       => $cc_emails_json,
         ];
         
         // Check if updating existing draft or creating new
@@ -567,8 +601,8 @@ class Penalis_Ajax_Handler {
             
             if ($success) {
                 wp_send_json_success([
-                    'message' => __('Draft auto-saved', 'penalis-emailer'),
-                    'draft_id' => $draft_id,
+                    'message'   => __('Draft auto-saved', 'penalis-emailer'),
+                    'draft_id'  => $draft_id,
                     'timestamp' => time()
                 ]);
             } else {
@@ -586,8 +620,8 @@ class Penalis_Ajax_Handler {
                 $new_draft_id = !empty($drafts) ? $drafts[0]['id'] : '';
                 
                 wp_send_json_success([
-                    'message' => __('Draft auto-saved', 'penalis-emailer'),
-                    'draft_id' => $new_draft_id,
+                    'message'   => __('Draft auto-saved', 'penalis-emailer'),
+                    'draft_id'  => $new_draft_id,
                     'timestamp' => time()
                 ]);
             } else {
@@ -742,5 +776,39 @@ class Penalis_Ajax_Handler {
             ),
             'deleted' => (int) $deleted,
         ]);
+    }
+
+    /**
+     * AJAX handler for fetching CC-eligible users (administrators and editors).
+     *
+     * Returns a list of users that can be selected as CC recipients.
+     * Requires manage_options capability.
+     *
+     * @return void
+     */
+    public function get_cc_users(): void {
+        check_ajax_referer('penalis_get_cc_users', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
+        }
+
+        $users = get_users([
+            'role__in' => Penalis_Config::CC_ELIGIBLE_ROLES,
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+            'fields'   => ['ID', 'display_name', 'user_email'],
+        ]);
+
+        $result = [];
+        foreach ($users as $user) {
+            $result[] = [
+                'id'    => (int) $user->ID,
+                'name'  => $user->display_name,
+                'email' => $user->user_email,
+            ];
+        }
+
+        wp_send_json_success(['users' => $result]);
     }
 }

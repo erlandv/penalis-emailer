@@ -313,12 +313,19 @@ class Penalis_Draft_Page extends Penalis_Admin_Page {
             return;
         }
         
+        // Resolve cc_emails from draft (decoded array by repository)
+        $draft_cc       = $draft['cc_emails'] ?? [];
+        $cc_emails_json = !empty($draft_cc) && is_array($draft_cc)
+            ? wp_json_encode(array_values($draft_cc))
+            : '';
+
         // Send emails
         $results = $this->email_sender->send_manual_email(
             $draft['subject'],
             $draft['recipients'],
             $draft['body'],
-            $draft['from_name']
+            $draft['from_name'],
+            $cc_emails_json
         );
         
         // Delete draft after sending (log already created by send_manual_email)
