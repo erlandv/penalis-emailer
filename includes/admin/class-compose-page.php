@@ -140,7 +140,8 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
             $sanitized['subject'],
             $sanitized['user_ids'],
             $sanitized['body'],
-            $sanitized['from_name']
+            $sanitized['from_name'],
+            $sanitized['cc_emails']
         );
         
         // If sent from draft, delete the draft (log already created by send_manual_email)
@@ -173,12 +174,13 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         
         // Prepare draft data
         $draft_data = [
-            'type' => 'manual',
-            'from_name' => $sanitized['from_name'],
-            'subject' => $sanitized['subject'],
-            'body' => $sanitized['body'],
+            'type'            => 'manual',
+            'from_name'       => $sanitized['from_name'],
+            'subject'         => $sanitized['subject'],
+            'body'            => $sanitized['body'],
             'recipient_count' => count($sanitized['user_ids']),
-            'recipients' => $sanitized['user_ids']
+            'recipients'      => $sanitized['user_ids'],
+            'cc_emails'       => $sanitized['cc_emails'],
         ];
         
         // Save or update draft
@@ -207,13 +209,38 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
      * @return array Sanitized data
      */
     private function sanitize_inputs(array $post_data): array {
+        // Parse CC user IDs and resolve to email addresses
+        $cc_emails_json = '';
+        if (isset($post_data['cc_user_ids']) && is_array($post_data['cc_user_ids'])) {
+            $cc_eligible_roles = Penalis_Config::CC_ELIGIBLE_ROLES;
+            $cc_email_list     = [];
+
+            foreach ($post_data['cc_user_ids'] as $cc_uid) {
+                $cc_user = get_userdata((int) $cc_uid);
+                if (!$cc_user || !is_email($cc_user->user_email)) {
+                    continue;
+                }
+                // Confirm user has a CC-eligible role
+                $user_roles = (array) $cc_user->roles;
+                if (!array_intersect($user_roles, $cc_eligible_roles)) {
+                    continue;
+                }
+                $cc_email_list[] = $cc_user->user_email;
+            }
+
+            if (!empty($cc_email_list)) {
+                $cc_emails_json = wp_json_encode(array_values(array_unique($cc_email_list)));
+            }
+        }
+
         return [
             'from_name' => sanitize_text_field($post_data['from_name'] ?? Penalis_Config::DEFAULT_FROM_NAME),
-            'subject' => sanitize_text_field($post_data['subject'] ?? ''),
-            'body' => wp_kses_post($post_data['body'] ?? ''),
-            'user_ids' => isset($post_data['user_ids']) && is_array($post_data['user_ids']) 
-                ? array_map('intval', $post_data['user_ids']) 
-                : []
+            'subject'   => sanitize_text_field($post_data['subject']   ?? ''),
+            'body'      => wp_kses_post($post_data['body']              ?? ''),
+            'user_ids'  => isset($post_data['user_ids']) && is_array($post_data['user_ids'])
+                ? array_map('intval', $post_data['user_ids'])
+                : [],
+            'cc_emails' => $cc_emails_json,
         ];
     }
     
@@ -334,6 +361,11 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         $body                = $draft_data['body']       ?? '';
         $selected_recipients = $draft_data['recipients'] ?? [];
         $draft_id            = $draft_data['id']         ?? '';
+        // cc_emails from draft is an array (decoded by repository); keep as-is for the view
+        $draft_cc_emails     = $draft_data['cc_emails']  ?? [];
+        if (!is_array($draft_cc_emails)) {
+            $draft_cc_emails = [];
+        }
         
         ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="penalis-email-form">
@@ -391,7 +423,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
                     <?php endif; ?>
                     
                     <!-- Email Details Card -->
-                    <?php $this->render_email_details_card($from_name, $subject); ?>
+                    <?php $this->render_email_details_card($from_name, $subject, $draft_cc_emails); ?>
                     
                     <!-- Email Content Card -->
                     <?php $this->render_email_content_card($body); ?>
@@ -429,17 +461,18 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
     /**
      * Render email details card
      *
-     * @param string $from_name Default from name
-     * @param string $subject   Default subject
+     * @param string $from_name   Default from name
+     * @param string $subject     Default subject
+     * @param array  $cc_emails   Array of pre-selected CC email addresses (from draft)
      * @return void
      */
-    private function render_email_details_card(string $from_name = '', string $subject = ''): void {
+    private function render_email_details_card(string $from_name = '', string $subject = '', array $cc_emails = []): void {
         if (empty($from_name)) {
             $from_name = Penalis_Config::DEFAULT_FROM_NAME;
         }
         
         // Pass variables to view
-        $data = compact('from_name', 'subject');
+        $data = compact('from_name', 'subject', 'cc_emails');
         extract($data);
         
         require PENALIS_EMAILER_PATH . 'includes/admin/views/email-details-card.php';

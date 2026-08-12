@@ -192,6 +192,7 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                         <th scope="col"><?php echo esc_html__('Subject', 'penalis-emailer'); ?></th>
                         <th scope="col" style="width: 80px;"><?php echo esc_html__('Recipients', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Recipient Names', 'penalis-emailer'); ?></th>
+                        <th scope="col"><?php echo esc_html__('CC', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Sent By', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Sent At', 'penalis-emailer'); ?></th>
                         <th scope="col"><?php echo esc_html__('Status', 'penalis-emailer'); ?></th>
@@ -268,6 +269,18 @@ class Penalis_History_Page extends Penalis_Admin_Page {
                 <!-- Recipient Names Column -->
                 <td>
                     <?php $this->render_recipient_names($entry); ?>
+                </td>
+                
+                <!-- CC Column -->
+                <td>
+                    <?php
+                    $cc_list = isset($entry['cc_emails']) && is_array($entry['cc_emails']) ? $entry['cc_emails'] : [];
+                    if (!empty($cc_list)) {
+                        echo '<span style="color: #666;">' . esc_html(implode(', ', $cc_list)) . '</span>';
+                    } else {
+                        echo '<span style="color: #ccc;">—</span>';
+                    }
+                    ?>
                 </td>
                 
                 <!-- Sent By Column -->

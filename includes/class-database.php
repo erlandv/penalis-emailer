@@ -28,7 +28,7 @@ class Penalis_Database {
      *
      * @var string
      */
-    const SCHEMA_VERSION = '2.0.2';
+    const SCHEMA_VERSION = '2.0.3';
 
     /**
      * Option key for storing installed schema version
@@ -120,6 +120,7 @@ class Penalis_Database {
             sent_by       BIGINT UNSIGNED NOT NULL DEFAULT 0,
             sent_at       INT UNSIGNED    NOT NULL DEFAULT 0,
             status        VARCHAR(20)     NOT NULL DEFAULT 'sent',
+            cc_emails     TEXT,
             PRIMARY KEY  (id),
             UNIQUE KEY   log_key (log_key),
             KEY          type (type),
@@ -146,6 +147,7 @@ class Penalis_Database {
             created_at    INT UNSIGNED    NOT NULL DEFAULT 0,
             sent_at       INT UNSIGNED    NOT NULL DEFAULT 0,
             error_message TEXT,
+            cc_emails     TEXT,
             PRIMARY KEY  (id),
             KEY          job_id (job_id),
             KEY          status (status),
@@ -170,6 +172,7 @@ class Penalis_Database {
             updated_by    BIGINT UNSIGNED NOT NULL DEFAULT 0,
             created_at    INT UNSIGNED    NOT NULL DEFAULT 0,
             updated_at    INT UNSIGNED    NOT NULL DEFAULT 0,
+            cc_emails     TEXT,
             PRIMARY KEY  (id),
             UNIQUE KEY   draft_key (draft_key),
             KEY          created_by (created_by),

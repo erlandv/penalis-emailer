@@ -134,9 +134,10 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
      *                           back to wp_get_current_user(). Pass an explicit ID
      *                           when logging from a cron/background context where
      *                           the current user is not available.
+     * @param string $cc_emails  JSON-encoded array of CC email addresses (empty = no CC)
      * @return void
      */
-    public function log_manual_email(array $recipients, string $subject, string $body = '', string $job_id = '', int $sent_by = 0): void {
+    public function log_manual_email(array $recipients, string $subject, string $body = '', string $job_id = '', int $sent_by = 0, string $cc_emails = ''): void {
         // Use the provided sender ID, or fall back to the current logged-in user.
         // The fallback handles legacy/direct calls that don't pass $sent_by.
         if ($sent_by === 0) {
@@ -162,7 +163,8 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
             'recipients'      => $recipients,
             'sent_at'         => time(),
             'sent_by'         => $sent_by,
-            'status'          => 'sent'
+            'status'          => 'sent',
+            'cc_emails'       => $cc_emails,
         ];
         
         $this->manual_log_repository->save($log_entry);

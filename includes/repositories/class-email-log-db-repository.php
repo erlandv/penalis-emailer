@@ -88,8 +88,9 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
                 'sent_by'         => $log_entry['sent_by']         ?? 0,
                 'sent_at'         => $log_entry['sent_at']         ?? time(),
                 'status'          => $log_entry['status']          ?? 'sent',
+                'cc_emails'       => $log_entry['cc_emails']       ?? '',
             ],
-            ['%s','%s','%s','%s','%s','%d','%s','%s','%d','%s','%s','%s','%d','%d','%s']
+            ['%s','%s','%s','%s','%s','%d','%s','%s','%d','%s','%s','%s','%d','%d','%s','%s']
         );
 
         return $result !== false;
@@ -272,8 +273,9 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
                 'updated_by'      => get_current_user_id(),
                 'created_at'      => $draft_data['created_at']      ?? $now,
                 'updated_at'      => $now,
+                'cc_emails'       => $draft_data['cc_emails']       ?? '',
             ],
-            ['%s','%s','%s','%s','%d','%s','%d','%d','%d','%d']
+            ['%s','%s','%s','%s','%d','%s','%d','%d','%d','%d','%s']
         );
 
         return $result !== false;
@@ -343,9 +345,10 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
                 'recipients'      => wp_json_encode($recipients),
                 'updated_by'      => get_current_user_id(),
                 'updated_at'      => time(),
+                'cc_emails'       => $draft_data['cc_emails']       ?? '',
             ],
             ['draft_key' => $id],
-            ['%s','%s','%s','%d','%s','%d','%d'],
+            ['%s','%s','%s','%d','%s','%d','%d','%s'],
             ['%s']
         );
 
@@ -403,6 +406,10 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
         $row['recipients']      = !empty($row['recipients'])
             ? json_decode($row['recipients'], true)
             : [];
+        // cc_emails stored as JSON string; decode to array for callers
+        $row['cc_emails']       = !empty($row['cc_emails'])
+            ? json_decode($row['cc_emails'], true)
+            : [];
 
         return $row;
     }
@@ -424,6 +431,10 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
         $row['updated_at']      = (int) $row['updated_at'];
         $row['recipients']      = !empty($row['recipients'])
             ? json_decode($row['recipients'], true)
+            : [];
+        // cc_emails stored as JSON string; decode to array for callers
+        $row['cc_emails']       = !empty($row['cc_emails'])
+            ? json_decode($row['cc_emails'], true)
             : [];
 
         return $row;

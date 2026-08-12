@@ -5,7 +5,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.2.0] (current)
+## [2.3.0] (current)
+
+### Added
+- CC (Carbon Copy) support on Manual Email compose page
+- Admins can select one or more administrator/editor users as CC recipients when sending an email to a single contributor
+- CC field renders as a tag-pill combobox — searchable by name or email, with removable tags for each selected user
+- CC field is automatically disabled with an informational notice when more than 1 recipient is selected (CC is intentionally single-recipient only)
+- CC email addresses are stored in `wp_penalis_email_queue`, `wp_penalis_email_log`, and `wp_penalis_email_draft` tables
+- CC data persists across draft save/load and is included in the autosave payload
+- CC recipients are displayed in the Manual Emails tab of Email History
+- New AJAX endpoint `penalis_get_cc_users` to fetch administrator and editor users for the CC selector
+- New constant `Penalis_Config::CC_ELIGIBLE_ROLES` defines which roles are eligible as CC targets
+
+### Changed
+- Database schema bumped to `2.0.3` — adds `cc_emails TEXT` column to queue, log, and draft tables (non-destructive migration via `dbDelta`)
+
+---
+
+## [2.2.0]
 
 ### Added
 - Editor role can now access the plugin with limited permissions — all menu items are visible, but only the Email History page is accessible

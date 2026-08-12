@@ -186,6 +186,18 @@ class Penalis_Email_Queue_Processor {
             'From: ' . $from_name . ' <no-reply@' . $site_domain . '>',
         ];
 
+        // Add CC header if cc_emails is set and non-empty
+        if (!empty($item['cc_emails'])) {
+            $cc_list = json_decode($item['cc_emails'], true);
+            if (is_array($cc_list) && !empty($cc_list)) {
+                // Sanitize each address before adding to header
+                $safe_cc = array_filter(array_map('sanitize_email', $cc_list), 'is_email');
+                if (!empty($safe_cc)) {
+                    $headers[] = 'Cc: ' . implode(', ', $safe_cc);
+                }
+            }
+        }
+
         // Apply same filters as the synchronous sender for consistency
         $subject = apply_filters('penalis_email_subject', $item['subject'], 0);
         $body    = apply_filters('penalis_email_message', $email_html, 0);
@@ -215,7 +227,6 @@ class Penalis_Email_Queue_Processor {
         }
 
         // Avoid duplicate log entries — check if a log for this job_id already exists
-        $repository = $this->logger->get_repository();
         $existing   = $this->find_log_by_job_id($job_id);
         if ($existing) {
             return;
@@ -233,20 +244,21 @@ class Penalis_Email_Queue_Processor {
         );
         $recipients = array_map('intval', (array) $recipients);
 
-        // Retrieve subject/body/sent_by from the first sent item
+        // Retrieve subject/body/sent_by/cc_emails from the first sent item
         $first_item = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT subject, body, sent_by FROM {$queue_table} WHERE job_id = %s LIMIT 1",
+                "SELECT subject, body, sent_by, cc_emails FROM {$queue_table} WHERE job_id = %s LIMIT 1",
                 $job_id
             ),
             ARRAY_A
         );
 
-        $subject = $first_item['subject'] ?? '';
-        $body    = $first_item['body']    ?? '';
-        $sent_by = isset($first_item['sent_by']) ? (int) $first_item['sent_by'] : 0;
+        $subject   = $first_item['subject']   ?? '';
+        $body      = $first_item['body']      ?? '';
+        $sent_by   = isset($first_item['sent_by']) ? (int) $first_item['sent_by'] : 0;
+        $cc_emails = $first_item['cc_emails'] ?? '';
 
-        $this->logger->log_manual_email($recipients, $subject, $body, $job_id, $sent_by);
+        $this->logger->log_manual_email($recipients, $subject, $body, $job_id, $sent_by, $cc_emails);
     }
 
     /**

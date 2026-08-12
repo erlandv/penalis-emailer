@@ -186,6 +186,7 @@ abstract class Penalis_Admin_Page {
                 'sendDraftAjax' => wp_create_nonce('penalis_send_draft_ajax'),
                 'autosaveDraft' => wp_create_nonce('penalis_autosave_draft'),
                 'getQueueStatus' => wp_create_nonce('penalis_get_queue_status'),
+                'getCcUsers'     => wp_create_nonce('penalis_get_cc_users'),
             ],
             'i18n' => [
                 'selectRecipients' => __('Please select at least one recipient.', 'penalis-emailer'),
@@ -231,6 +232,9 @@ abstract class Penalis_Admin_Page {
                 'loadingRecipients' => __('Loading...', 'penalis-emailer'),
                 'noMoreRecipients'  => __('All users loaded.', 'penalis-emailer'),
                 'searchNoResults'   => __('No users found.', 'penalis-emailer'),
+                // CC field i18n
+                'ccNoResults'       => __('No matching admins or editors found.', 'penalis-emailer'),
+                'ccAllSelected'     => __('All eligible users already selected.', 'penalis-emailer'),
             ]
         ];
     }

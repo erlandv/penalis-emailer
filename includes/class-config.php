@@ -53,6 +53,9 @@ class Penalis_Config {
     
     // User Roles
     const ELIGIBLE_ROLES = ['author', 'contributor'];
+
+    // Roles eligible to be selected as CC recipients (admin/editor staff)
+    const CC_ELIGIBLE_ROLES = ['administrator', 'editor'];
     
     // Log Settings
     const DEFAULT_LOG_LIMIT = 50;

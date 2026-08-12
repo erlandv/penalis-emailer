@@ -67,8 +67,9 @@ class Penalis_Email_Queue_Repository {
                 'next_attempt' => time(),
                 'created_at'   => time(),
                 'sent_at'      => 0,
+                'cc_emails'    => $data['cc_emails'] ?? '',
             ],
-            ['%s','%d','%s','%s','%s','%s','%d','%d','%d','%d']
+            ['%s','%d','%s','%s','%s','%s','%d','%d','%d','%d','%s']
         );
 
         return $result !== false;
@@ -84,9 +85,10 @@ class Penalis_Email_Queue_Repository {
      * @param string $body      Email body
      * @param string $from_name Sender display name
      * @param int    $sent_by   WordPress user ID of the sender (0 = unknown)
+     * @param string $cc_emails JSON-encoded array of CC email addresses (empty = no CC)
      * @return int Number of rows inserted
      */
-    public function bulk_enqueue(string $job_id, array $user_ids, string $subject, string $body, string $from_name, int $sent_by = 0): int {
+    public function bulk_enqueue(string $job_id, array $user_ids, string $subject, string $body, string $from_name, int $sent_by = 0, string $cc_emails = ''): int {
         global $wpdb;
 
         if (empty($user_ids)) {
@@ -98,7 +100,7 @@ class Penalis_Email_Queue_Repository {
         $values       = [];
 
         foreach ($user_ids as $user_id) {
-            $placeholders[] = '(%s, %d, %s, %s, %s, %d, %s, %d, %d, %d, %d)';
+            $placeholders[] = '(%s, %d, %s, %s, %s, %d, %s, %d, %d, %d, %d, %s)';
             $values[]       = $job_id;
             $values[]       = (int) $user_id;
             $values[]       = $subject;
@@ -106,10 +108,11 @@ class Penalis_Email_Queue_Repository {
             $values[]       = $from_name;
             $values[]       = $sent_by;
             $values[]       = 'pending';
-            $values[]       = 0;       // attempts
-            $values[]       = $now;    // next_attempt
-            $values[]       = $now;    // created_at
-            $values[]       = 0;       // sent_at
+            $values[]       = 0;          // attempts
+            $values[]       = $now;       // next_attempt
+            $values[]       = $now;       // created_at
+            $values[]       = 0;          // sent_at
+            $values[]       = $cc_emails; // cc_emails
         }
 
         $placeholder_string = implode(', ', $placeholders);
@@ -117,7 +120,7 @@ class Penalis_Email_Queue_Repository {
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
             "INSERT INTO {$this->table}
-             (job_id, user_id, subject, body, from_name, sent_by, status, attempts, next_attempt, created_at, sent_at)
+             (job_id, user_id, subject, body, from_name, sent_by, status, attempts, next_attempt, created_at, sent_at, cc_emails)
              VALUES {$placeholder_string}",
             ...$values
         );
