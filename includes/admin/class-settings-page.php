@@ -298,7 +298,7 @@ class Penalis_Settings_Page extends Penalis_Admin_Page {
         }
         
         // Sanitize template body
-        $template_body = isset($_POST['email_body']) ? wp_kses_post($_POST['email_body']) : '';
+        $template_body = isset($_POST['email_body']) ? wp_kses_post(wp_unslash($_POST['email_body'])) : '';
         
         // Validate template body
         if (!$this->validator->validate_template(['email_body' => $template_body])) {

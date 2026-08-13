@@ -116,7 +116,7 @@ class Penalis_Ajax_Handler {
             wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
         }
         
-        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        $body = isset($_POST['body']) ? wp_kses_post(wp_unslash($_POST['body'])) : '';
         
         if (empty($body)) {
             wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
@@ -148,7 +148,7 @@ class Penalis_Ajax_Handler {
             wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
         }
         
-        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        $body = isset($_POST['body']) ? wp_kses_post(wp_unslash($_POST['body'])) : '';
         
         if (empty($body)) {
             wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
@@ -181,7 +181,7 @@ class Penalis_Ajax_Handler {
             wp_send_json_error(['message' => __('Insufficient permissions', 'penalis-emailer')]);
         }
         
-        $body = isset($_POST['body']) ? wp_kses_post($_POST['body']) : '';
+        $body = isset($_POST['body']) ? wp_kses_post(wp_unslash($_POST['body'])) : '';
         
         if (empty($body)) {
             wp_send_json_error(['message' => __('Body is required', 'penalis-emailer')]);
@@ -555,7 +555,7 @@ class Penalis_Ajax_Handler {
         $draft_id  = isset($_POST['draft_id'])  ? sanitize_text_field($_POST['draft_id'])  : '';
         $from_name = isset($_POST['from_name']) ? sanitize_text_field($_POST['from_name']) : '';
         $subject   = isset($_POST['subject'])   ? sanitize_text_field($_POST['subject'])   : '';
-        $body      = isset($_POST['body'])      ? wp_kses_post($_POST['body'])             : '';
+        $body      = isset($_POST['body'])      ? wp_kses_post(wp_unslash($_POST['body'])) : '';
         $user_ids  = isset($_POST['user_ids']) && is_array($_POST['user_ids'])
             ? array_map('intval', $_POST['user_ids'])
             : [];
