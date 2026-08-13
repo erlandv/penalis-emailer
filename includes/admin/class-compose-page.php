@@ -236,7 +236,7 @@ class Penalis_Compose_Page extends Penalis_Admin_Page {
         return [
             'from_name' => sanitize_text_field($post_data['from_name'] ?? Penalis_Config::DEFAULT_FROM_NAME),
             'subject'   => sanitize_text_field($post_data['subject']   ?? ''),
-            'body'      => wp_kses_post($post_data['body']              ?? ''),
+            'body'      => wp_kses_post(wp_unslash($post_data['body']    ?? '')),
             'user_ids'  => isset($post_data['user_ids']) && is_array($post_data['user_ids'])
                 ? array_map('intval', $post_data['user_ids'])
                 : [],
