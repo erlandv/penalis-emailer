@@ -5,7 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.3.0] (current)
+## [2.3.1] (current)
+
+### Fixed
+- Applied `wp_unslash()` before `wp_kses_post()` on all `$_POST['body']` reads in AJAX handlers (`preview_email`, `preview_auto_email`, `send_test_email`, `autosave_draft`) — prevents WordPress magic quotes from inserting unwanted backslashes around quotation marks in email body output
+- Applied `wp_unslash()` before `wp_kses_post()` on `$_POST['email_body']` in the settings page `handle_save()` — same fix for the auto-email template editor
+- Applied `wp_unslash()` inside `sanitize_inputs()` in the compose page — same fix for manual email body submitted via the compose form; this affected actual sent emails, not only previews
+- Replaced bare string interpolation in `SHOW TABLES LIKE` query with `$wpdb->prepare()` + `$wpdb->esc_like()` in `Penalis_Database::tables_exist()` — follows WordPress DB coding standards
+
+---
+
+## [2.3.0]
 
 ### Added
 - CC (Carbon Copy) support on Manual Email compose page
