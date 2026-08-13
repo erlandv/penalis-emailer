@@ -326,8 +326,9 @@ class Penalis_Database {
         ];
 
         foreach ($tables as $table) {
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $result = $wpdb->get_var("SHOW TABLES LIKE '{$table}'");
+            $result = $wpdb->get_var(
+                $wpdb->prepare( "SHOW TABLES LIKE %s", $wpdb->esc_like( $table ) )
+            );
             if ($result !== $table) {
                 return false;
             }
