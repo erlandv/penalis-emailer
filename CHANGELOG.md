@@ -5,7 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.3.1] (current)
+## [2.3.2] (current)
+
+### Fixed
+- Fixed a bug in `Penalis_Email_Log_DB_Repository::cleanup()` where entries sharing the same `sent_at` timestamp as the cutoff row could be incorrectly deleted — replaced `DELETE WHERE sent_at <= cutoff` with an explicit `DELETE WHERE id NOT IN (keep_ids)` strategy using primary keys, with `id DESC` as a tiebreaker for deterministic ordering
+- Implemented automatic log pruning: `cleanup_old_logs()` is now called after every log entry is saved (both automatic and manual), keeping storage bounded at `LOG_CLEANUP_KEEP_COUNT` (100) entries — this makes the UI label "Older entries are automatically archived" accurate
+- `LOG_CLEANUP_KEEP_COUNT` constant (value: `100`) in `Penalis_Config` was previously declared but never used anywhere; it is now actively consumed by the auto-cleanup calls above
+
+---
+
+## [2.3.1]
+
 
 ### Fixed
 - Applied `wp_unslash()` before `wp_kses_post()` on all `$_POST['body']` reads in AJAX handlers (`preview_email`, `preview_auto_email`, `send_test_email`, `autosave_draft`) — prevents WordPress magic quotes from inserting unwanted backslashes around quotation marks in email body output

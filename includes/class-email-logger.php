@@ -108,6 +108,10 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         
         // Also save timestamp in post meta for backward compatibility and quick lookup
         $this->post_meta_repository->save($post_id, time());
+        
+        // Prune old entries so storage stays bounded.
+        // This is what makes the UI claim "automatically archived" truthful.
+        $this->cleanup_old_logs(Penalis_Config::LOG_CLEANUP_KEEP_COUNT);
     }
     
     /**
@@ -168,6 +172,10 @@ class Penalis_Email_Logger implements Penalis_Email_Logger_Interface {
         ];
         
         $this->manual_log_repository->save($log_entry);
+        
+        // Prune old entries so storage stays bounded.
+        // This is what makes the UI claim "automatically archived" truthful.
+        $this->cleanup_old_logs(Penalis_Config::LOG_CLEANUP_KEEP_COUNT);
     }
     
     /**

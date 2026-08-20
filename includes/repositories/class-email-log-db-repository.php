@@ -201,6 +201,11 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
     /**
      * Delete old entries, keeping only the most recent $keep_count.
      *
+     * Uses primary-key-based deletion to avoid accidentally removing entries
+     * that share the same sent_at timestamp as the cutoff row. The previous
+     * "WHERE sent_at <= cutoff" approach would delete ALL rows at the boundary
+     * timestamp, which could include entries that should still be retained.
+     *
      * @param int $keep_count
      * @return int Number deleted
      */
@@ -213,20 +218,27 @@ class Penalis_Email_Log_DB_Repository implements Penalis_Email_Log_Repository_In
             return 0;
         }
 
-        // Find the sent_at of the Nth newest entry
-        $cutoff = $wpdb->get_var(
+        // Fetch the primary keys of the newest $keep_count entries.
+        // Ties in sent_at are broken by id DESC so the result is deterministic.
+        $keep_ids = $wpdb->get_col(
             $wpdb->prepare(
-                "SELECT sent_at FROM {$this->log_table} ORDER BY sent_at DESC LIMIT 1 OFFSET %d",
+                "SELECT id FROM {$this->log_table} ORDER BY sent_at DESC, id DESC LIMIT %d",
                 $keep_count
             )
         );
 
-        if ($cutoff === null) {
+        if (empty($keep_ids)) {
             return 0;
         }
 
+        $placeholders = implode(',', array_fill(0, count($keep_ids), '%d'));
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $deleted = $wpdb->query(
-            $wpdb->prepare("DELETE FROM {$this->log_table} WHERE sent_at <= %d", $cutoff)
+            $wpdb->prepare(
+                "DELETE FROM {$this->log_table} WHERE id NOT IN ({$placeholders})",
+                ...$keep_ids
+            )
         );
 
         return (int) $deleted;
