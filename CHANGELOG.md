@@ -5,7 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.3.2] (current)
+## [2.3.3] (current)
+
+### Fixed
+- Fixed a bug where clearing Automatic Email History via "Clear All Automatic History" did not also clear the `_penalis_email_sent` post meta — after a clear, `has_email_been_sent()` would permanently return `true` for all previously published posts, silently blocking both email delivery and history recording for any subsequent publish events on those posts
+
+---
+
+## [2.3.2]
 
 ### Fixed
 - Fixed a bug in `Penalis_Email_Log_DB_Repository::cleanup()` where entries sharing the same `sent_at` timestamp as the cutoff row could be incorrectly deleted — replaced `DELETE WHERE sent_at <= cutoff` with an explicit `DELETE WHERE id NOT IN (keep_ids)` strategy using primary keys, with `id DESC` as a tiebreaker for deterministic ordering

@@ -347,6 +347,20 @@ class Penalis_Ajax_Handler {
         $repository = $this->email_logger->get_repository();
         
         $deleted_count = $repository->delete_by_type($type);
+
+        // When clearing automatic (or all) logs, also remove the post meta that
+        // tracks which posts have already received an automatic email.
+        // Without this, has_email_been_sent() would keep returning true for every
+        // post that was published before the clear, permanently blocking both email
+        // delivery and history recording for those posts.
+        if (in_array($type, ['automatic', 'all'], true)) {
+            global $wpdb;
+            $wpdb->delete(
+                $wpdb->postmeta,
+                ['meta_key' => Penalis_Config::META_KEY_EMAIL_SENT],
+                ['%s']
+            );
+        }
         
         wp_send_json_success([
             'message' => sprintf(__('%d log entries deleted successfully', 'penalis-emailer'), $deleted_count),
